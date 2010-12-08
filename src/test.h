@@ -7,6 +7,8 @@
 
 /* Module API */
 int test_base64(void);
+int test_bfcp(void);
+int test_bfcp_bin(void);
 int test_conf(void);
 int test_crc32(void);
 int test_fmt_pl(void);
@@ -66,6 +68,7 @@ int test_uri_params_headers(void);
 
 
 struct mbuf;
+int fuzzy_bfcp(struct mbuf *mb);
 int fuzzy_rtp(struct mbuf *mb);
 int fuzzy_rtcp(struct mbuf *mb);
 int fuzzy_sipmsg(struct mbuf *mb);

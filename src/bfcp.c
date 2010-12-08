@@ -1,0 +1,195 @@
+/**
+ * @file bfcp.c BFCP Testcode
+ *
+ * Copyright (C) 2010 Creytiv.com
+ */
+#include <string.h>
+#include <re.h>
+#include "test.h"
+
+
+#define DEBUG_MODULE "bfcptest"
+#define DEBUG_LEVEL 5
+#include <re_dbg.h>
+
+
+static const uint8_t bfcp_msg[] =
+
+	/* USERSTATUS w/FLOOR-REQUEST-INFORMATION */
+	"\x20\x06\x00\x0f"
+	"\x01\x02\x03\x04"  /* conf id                  */
+	"\xfe\xdc\xba\x98"  /* transaction id | user id */
+
+	/* floor id */
+	"\x1e\x3c\x88\x99"
+
+	/* overall-request-status */
+	"\x24\x0c\x74\xad\x0a\x04\x04\x02\x12\x04\x4f\x4b"
+
+	/* floor-request-status */
+	"\x22\x0c\x00\x02\x0a\x04\x02\x02\x12\x04\x6f\x6b"
+
+	/* beneficiary-information */
+	"\x1c\x0c\x00\x01\x18\x03\x61\x00\x1a\x03\x62\x00"
+
+	/* requested-by-information */
+	"\x20\x0c\x00\x02\x18\x03\x63\x00\x1a\x03\x64\x00"
+
+	/* priority */
+	"\x08\x04\x40\x00"
+
+	/* participant-provided-info */
+	"\x10\x03\x78\x00"
+
+	"";
+
+
+int test_bfcp(void)
+{
+	const size_t sz = sizeof(bfcp_msg) - 1;
+	struct bfcp_floor_reqinfo fri;
+	struct mbuf *mb;
+	struct bfcp_floor_reqstat frsv[] = {
+		{2, {BFCP_ACCEPTED, 2}, "ok"}
+	};
+	int n, err = 0;
+
+	mb = mbuf_alloc(512);
+	if (!mb)
+		return ENOMEM;
+
+	fri.frid = 0x8899;
+	fri.ors.frid = 0x74ad;
+	fri.ors.reqstat.stat = BFCP_DENIED;
+	fri.ors.reqstat.qpos = 2;
+	fri.ors.statinfo = "OK";
+	fri.frsv = frsv;
+	fri.frsc = ARRAY_SIZE(frsv);
+	fri.bfi.bfid = 1;
+	fri.bfi.dname = "a";
+	fri.bfi.uri = "b";
+	fri.rbi.rbid = 2;
+	fri.rbi.dname = "c";
+	fri.rbi.uri = "d";
+	fri.prio = 2;
+	fri.ppi = "x";
+
+	err = bfcp_msg_encode(mb, BFCP_USERSTATUS,
+			      0x01020304, 0xfedc, 0xba98,
+			      1,
+			      BFCP_FLOOR_REQUEST_INFO, &fri);
+	if (err)
+		goto out;
+
+	if (mb->end != sz) {
+		DEBUG_WARNING("expected %u bytes, got %u bytes\n",
+			      sz, mb->end);
+
+		(void)re_printf("\nEncoded message:\n");
+		hexdump(stderr, mb->buf, mb->end);
+
+		err = EPROTO;
+		goto out;
+	}
+	if (!err) {
+		n = memcmp(mb->buf, bfcp_msg, mb->end);
+		if (0 != n) {
+			err = EBADMSG;
+			DEBUG_WARNING("error offset: %d\n", n);
+		}
+	}
+
+	if (err) {
+		DEBUG_WARNING("BFCP encode error: %s\n", strerror(err));
+
+		(void)re_printf("\nReference message:\n");
+		hexdump(stderr, bfcp_msg, sz);
+
+		(void)re_printf("\nEncoded message:\n");
+		hexdump(stderr, mb->buf, mb->end);
+		goto out;
+	}
+
+	mb->pos = 0;
+
+	while (mbuf_get_left(mb) >= 4) {
+		struct bfcp_msg *msg = NULL;
+
+		err = bfcp_msg_decode(&msg, mb);
+		if (err) {
+			DEBUG_WARNING("decode error: %s\n", strerror(err));
+			break;
+		}
+
+		mem_deref(msg);
+	}
+
+ out:
+	mem_deref(mb);
+	return err;
+}
+
+
+static int parse_msg(const uint8_t *p, size_t n)
+{
+	struct mbuf *mb = mbuf_alloc(512);
+	int err;
+	if (!mb)
+		return ENOMEM;
+
+	err = mbuf_write_mem(mb, p, n);
+	if (err)
+		return err;
+
+	mb->pos = 0;
+
+	while (mbuf_get_left(mb) >= 4) {
+		struct bfcp_msg *msg;
+
+		err = bfcp_msg_decode(&msg, mb);
+		if (err)
+			break;
+
+		mem_deref(msg);
+	}
+
+	mem_deref(mb);
+	return err;
+}
+
+
+int test_bfcp_bin(void)
+{
+	static const uint8_t msg[] =
+
+		/* Tandberg MXP 1700 */
+		"\x20\x04\x00\x04"
+		"\x00\x00\x00\x01"
+		"\x00\x01\x00\x01"
+
+		"\x1e\x10\x00\x01"
+		"\x24\x08\x00\x01"
+		"\x0a\x04\x03\x00"
+		"\x22\x04\x00\x02"
+
+		"";
+	int err = 0;
+
+	err = parse_msg(msg, sizeof(msg) - 1);
+
+	return err;
+}
+
+
+int fuzzy_bfcp(struct mbuf *mb)
+{
+	struct bfcp_msg *msg = NULL;
+	int err;
+
+	err = bfcp_msg_decode(&msg, mb);
+	if (err == EBADMSG)
+		err = 0;
+
+	mem_deref(msg);
+	return err;
+}
