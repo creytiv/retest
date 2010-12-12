@@ -64,6 +64,34 @@ static const uint8_t bfcp_msg[] =
 	"";
 
 
+static int parse_msg(const uint8_t *p, size_t n)
+{
+	struct mbuf *mb = mbuf_alloc(512);
+	int err;
+	if (!mb)
+		return ENOMEM;
+
+	err = mbuf_write_mem(mb, p, n);
+	if (err)
+		return err;
+
+	mb->pos = 0;
+
+	while (mbuf_get_left(mb) >= 4) {
+		struct bfcp_msg *msg;
+
+		err = bfcp_msg_decode(&msg, mb);
+		if (err)
+			break;
+
+		mem_deref(msg);
+	}
+
+	mem_deref(mb);
+	return err;
+}
+
+
 int test_bfcp(void)
 {
 	const size_t sz = sizeof(bfcp_msg) - 1;
@@ -156,49 +184,7 @@ int test_bfcp(void)
 		goto out;
 	}
 
-	mb->pos = 0;
-
-	while (mbuf_get_left(mb) >= 4) {
-		struct bfcp_msg *msg = NULL;
-
-		err = bfcp_msg_decode(&msg, mb);
-		if (err) {
-			DEBUG_WARNING("decode error: %s\n", strerror(err));
-			break;
-		}
-
-		mem_deref(msg);
-	}
-
  out:
-	mem_deref(mb);
-	return err;
-}
-
-
-static int parse_msg(const uint8_t *p, size_t n)
-{
-	struct mbuf *mb = mbuf_alloc(512);
-	int err;
-	if (!mb)
-		return ENOMEM;
-
-	err = mbuf_write_mem(mb, p, n);
-	if (err)
-		return err;
-
-	mb->pos = 0;
-
-	while (mbuf_get_left(mb) >= 4) {
-		struct bfcp_msg *msg;
-
-		err = bfcp_msg_decode(&msg, mb);
-		if (err)
-			break;
-
-		mem_deref(msg);
-	}
-
 	mem_deref(mb);
 	return err;
 }
@@ -221,7 +207,8 @@ int test_bfcp_bin(void)
 		"";
 	int err = 0;
 
-	err = parse_msg(msg, sizeof(msg) - 1);
+	err  = parse_msg(msg, sizeof(msg) - 1);
+	err |= parse_msg(bfcp_msg, sizeof(bfcp_msg) - 1);
 
 	return err;
 }
