@@ -15,31 +15,37 @@
 
 static const uint8_t bfcp_msg[] =
 
-	/* USERSTATUS w/FLOOR-REQUEST-INFORMATION */
-	"\x20\x06\x00\x0f"
-	"\x01\x02\x03\x04"  /* conf id                  */
-	"\xfe\xdc\xba\x98"  /* transaction id | user id */
+	/* FloorRequest */
+	"\x20\x01\x00\x04"  /* | ver | primitive | length  | */
+	"\x01\x02\x03\x04"  /* |       conference id       | */
+	"\xfe\xdc\xba\x98"  /* | transaction id | user id  | */
+	""
+	"\x04\x04\x00\x01"  /* FLOOR-ID */
+	"\x02\x04\x00\x02"  /* BENEFICIARY-ID */
+	"\x10\x03\x58\x00"  /* PARTICIPANT-PROVIDED-INFO */
+       	"\x08\x04\x40\x00"  /* PRIORITY */
 
-	/* floor id */
-	"\x1e\x3c\x88\x99"
 
-	/* overall-request-status */
-	"\x24\x0c\x74\xad\x0a\x04\x04\x02\x12\x04\x4f\x4b"
-
-	/* floor-request-status */
-	"\x22\x0c\x00\x02\x0a\x04\x02\x02\x12\x04\x6f\x6b"
-
-	/* beneficiary-information */
-	"\x1c\x0c\x00\x01\x18\x03\x61\x00\x1a\x03\x62\x00"
-
-	/* requested-by-information */
-	"\x20\x0c\x00\x02\x18\x03\x63\x00\x1a\x03\x64\x00"
-
-	/* priority */
-	"\x08\x04\x40\x00"
-
-	/* participant-provided-info */
-	"\x10\x03\x78\x00"
+	/* UserStatus w/FLOOR-REQUEST-INFORMATION */
+	"\x20\x06\x00\x0f"  /* | ver | primitive | length  | */
+	"\x01\x02\x03\x04"  /* |       conference id       | */
+	"\xfe\xdc\xba\x98"  /* | transaction id | user id  | */
+	""
+	"\x1e\x3c\x88\x99"  /* FLOOR-ID */
+       	"\x24\x0c\x74\xad"  /* OVERALL-REQUEST-STATUS */
+	"\x0a\x04\x04\x02"
+	"\x12\x04\x4f\x4b"
+       	"\x22\x0c\x00\x02"  /* FLOOR-REQUEST-STATUS */
+	"\x0a\x04\x02\x02"
+	"\x12\x04\x6f\x6b"
+	"\x1c\x0c\x00\x01"  /* BENEFICIARY-INFORMATION */
+	"\x18\x03\x61\x00"
+	"\x1a\x03\x62\x00"
+	"\x20\x0c\x00\x02"  /* REQUESTED-BY-INFORMATION */
+	"\x18\x03\x63\x00"
+	"\x1a\x03\x64\x00"
+	"\x08\x04\x40\x00"  /* PRIORITY */
+	"\x10\x03\x78\x00"  /* PARTICIPANT-PROVIDED-INFO */
 
 	"";
 
@@ -53,10 +59,22 @@ int test_bfcp(void)
 		{2, {BFCP_ACCEPTED, 2}, "ok"}
 	};
 	int n, err = 0;
+	uint16_t floorid = 1, bfid = 2;
+	uint8_t prio = 2;
 
 	mb = mbuf_alloc(512);
 	if (!mb)
 		return ENOMEM;
+
+	err = bfcp_msg_encode(mb, BFCP_FLOORREQUEST,
+			      0x01020304, 0xfedc, 0xba98,
+			      4,
+			      BFCP_FLOOR_ID, &floorid,
+			      BFCP_BENEFICIARY_ID, &bfid,
+			      BFCP_PARTICIPANT_PROV_INFO, "X",
+			      BFCP_PRIORITY, &prio);
+	if (err)
+		goto out;
 
 	fri.frid = 0x8899;
 	fri.ors.frid = 0x74ad;
