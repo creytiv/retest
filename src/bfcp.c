@@ -26,6 +26,14 @@ static const uint8_t bfcp_msg[] =
        	"\x08\x04\x40\x00"  /* PRIORITY */
 
 
+	/* FloorRelease */
+	"\x20\x02\x00\x01"  /* | ver | primitive | length  | */
+	"\x01\x02\x03\x04"  /* |       conference id       | */
+	"\xfe\xdc\xba\x98"  /* | transaction id | user id  | */
+	""
+	"\x06\x04\x00\x03"  /* FLOOR-REQUEST-ID */
+
+
 	/* UserStatus w/FLOOR-REQUEST-INFORMATION */
 	"\x20\x06\x00\x0f"  /* | ver | primitive | length  | */
 	"\x01\x02\x03\x04"  /* |       conference id       | */
@@ -47,6 +55,12 @@ static const uint8_t bfcp_msg[] =
 	"\x08\x04\x40\x00"  /* PRIORITY */
 	"\x10\x03\x78\x00"  /* PARTICIPANT-PROVIDED-INFO */
 
+	/* Hello */
+	"\x20\x0b\x00\x00"  /* | ver | primitive | length  | */
+	"\x01\x02\x03\x04"  /* |       conference id       | */
+	"\xfe\xdc\xba\x98"  /* | transaction id | user id  | */
+	""
+
 	"";
 
 
@@ -59,7 +73,7 @@ int test_bfcp(void)
 		{2, {BFCP_ACCEPTED, 2}, "ok"}
 	};
 	int n, err = 0;
-	uint16_t floorid = 1, bfid = 2;
+	uint16_t floorid = 1, bfid = 2, frid = 3;
 	uint8_t prio = 2;
 
 	mb = mbuf_alloc(512);
@@ -73,6 +87,13 @@ int test_bfcp(void)
 			      BFCP_BENEFICIARY_ID, &bfid,
 			      BFCP_PARTICIPANT_PROV_INFO, "X",
 			      BFCP_PRIORITY, &prio);
+	if (err)
+		goto out;
+
+	err = bfcp_msg_encode(mb, BFCP_FLOORRELEASE,
+			      0x01020304, 0xfedc, 0xba98,
+			      1,
+			      BFCP_FLOOR_REQUEST_ID, &frid);
 	if (err)
 		goto out;
 
@@ -96,6 +117,13 @@ int test_bfcp(void)
 			      0x01020304, 0xfedc, 0xba98,
 			      1,
 			      BFCP_FLOOR_REQUEST_INFO, &fri);
+	if (err)
+		goto out;
+
+	err = bfcp_msg_encode(mb, BFCP_HELLO,
+			      0x01020304, 0xfedc, 0xba98,
+			      0
+			      );
 	if (err)
 		goto out;
 
