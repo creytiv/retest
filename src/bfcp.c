@@ -25,14 +25,12 @@ static const uint8_t bfcp_msg[] =
 	"\x10\x03\x58\x00"  /* PARTICIPANT-PROVIDED-INFO */
        	"\x08\x04\x40\x00"  /* PRIORITY */
 
-
 	/* FloorRelease */
 	"\x20\x02\x00\x01"  /* | ver | primitive | length  | */
 	"\x01\x02\x03\x04"  /* |       conference id       | */
 	"\xfe\xdc\xba\x98"  /* | transaction id | user id  | */
 	""
 	"\x06\x04\x00\x03"  /* FLOOR-REQUEST-ID */
-
 
 	/* UserStatus w/FLOOR-REQUEST-INFORMATION */
 	"\x20\x06\x00\x0f"  /* | ver | primitive | length  | */
