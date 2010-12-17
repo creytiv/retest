@@ -106,7 +106,7 @@ int test_bfcp(void)
 	if (!mb)
 		return ENOMEM;
 
-	err = bfcp_msg_encode(mb, BFCP_FLOORREQUEST,
+	err = bfcp_msg_encode(mb, BFCP_FLOOR_REQUEST,
 			      0x01020304, 0xfedc, 0xba98,
 			      4,
 			      BFCP_FLOOR_ID, &floorid,
@@ -116,7 +116,7 @@ int test_bfcp(void)
 	if (err)
 		goto out;
 
-	err = bfcp_msg_encode(mb, BFCP_FLOORRELEASE,
+	err = bfcp_msg_encode(mb, BFCP_FLOOR_RELEASE,
 			      0x01020304, 0xfedc, 0xba98,
 			      1,
 			      BFCP_FLOOR_REQUEST_ID, &frid);
@@ -139,7 +139,7 @@ int test_bfcp(void)
 	fri.prio = 2;
 	fri.ppi = "x";
 
-	err = bfcp_msg_encode(mb, BFCP_USERSTATUS,
+	err = bfcp_msg_encode(mb, BFCP_USER_STATUS,
 			      0x01020304, 0xfedc, 0xba98,
 			      1,
 			      BFCP_FLOOR_REQUEST_INFO, &fri);
