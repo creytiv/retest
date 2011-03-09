@@ -47,6 +47,8 @@ int test_fmt_pl(void)
 		goto out;
 	if (0 != pl_cmp(&pl3, &pl3))
 		goto out;
+	if (0 != pl_cmp(&pl_null, &pl_null))
+		goto out;
 
 	/* pl_casecmp() */
 	if (EINVAL != pl_casecmp(NULL, NULL))
@@ -74,6 +76,8 @@ int test_fmt_pl(void)
 	if (0 != pl_casecmp(&pl7, &pl7_))
 		goto out;
 	if (0 == pl_casecmp(&pl7, &pl7__))
+		goto out;
+	if (0 != pl_casecmp(&pl_null, &pl_null))
 		goto out;
 
 	/* pl_strcmp() */
