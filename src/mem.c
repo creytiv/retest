@@ -18,9 +18,9 @@ struct obj {
 	uint32_t pattern;
 };
 
-static void destructor(void *data)
+static void destructor(void *arg)
 {
-	struct obj *obj = data;
+	struct obj *obj = arg;
 
 	if (PATTERN != obj->pattern) {
 		DEBUG_WARNING("destroy error: %08x\n", obj->pattern);
