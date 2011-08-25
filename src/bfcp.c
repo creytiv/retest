@@ -94,13 +94,13 @@ int test_bfcp(void)
 {
 	const size_t sz = sizeof(bfcp_msg) - 1;
 	struct bfcp_floor_reqinfo fri;
-	struct mbuf *mb;
 	struct bfcp_floor_reqstat frsv[] = {
 		{2, {BFCP_ACCEPTED, 2}, "ok"}
 	};
-	int n, err = 0;
+	struct mbuf *mb;
 	uint16_t floorid = 1, bfid = 2, frid = 3;
-	uint8_t prio = 2;
+	enum bfcp_prio prio = BFCP_PRIO_NORMAL;
+	int n, err = 0;
 
 	mb = mbuf_alloc(512);
 	if (!mb)
@@ -123,8 +123,8 @@ int test_bfcp(void)
 	if (err)
 		goto out;
 
-	fri.frid = 0x8899;
-	fri.ors.frid = 0x74ad;
+	fri.freqid = 0x8899;
+	fri.ors.freqid = 0x74ad;
 	fri.ors.reqstat.stat = BFCP_DENIED;
 	fri.ors.reqstat.qpos = 2;
 	fri.ors.statinfo = "OK";
