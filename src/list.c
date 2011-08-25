@@ -89,9 +89,9 @@ int test_list(void)
 }
 
 
-static void node_destructor(void *data)
+static void node_destructor(void *arg)
 {
-	struct node *node = data;
+	struct node *node = arg;
 
 	if (node->le.prev || node->le.next || node->le.list || node->le.data) {
 		DEBUG_WARNING("le: prev=%p next=%p data=%p\n",

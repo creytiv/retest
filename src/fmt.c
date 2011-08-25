@@ -47,6 +47,8 @@ int test_fmt_pl(void)
 		goto out;
 	if (0 != pl_cmp(&pl3, &pl3))
 		goto out;
+	if (0 != pl_cmp(&pl_null, &pl_null))
+		goto out;
 
 	/* pl_casecmp() */
 	if (EINVAL != pl_casecmp(NULL, NULL))
@@ -74,6 +76,8 @@ int test_fmt_pl(void)
 	if (0 != pl_casecmp(&pl7, &pl7_))
 		goto out;
 	if (0 == pl_casecmp(&pl7, &pl7__))
+		goto out;
+	if (0 != pl_casecmp(&pl_null, &pl_null))
 		goto out;
 
 	/* pl_strcmp() */
@@ -180,6 +184,61 @@ int test_fmt_pl_u64(void)
 		if (testv[i].v != v) {
 			DEBUG_WARNING("pl_u64 test %u failed %llu != %llu\n",
 				      i, testv[i].v, v);
+			err = EINVAL;
+			break;
+		}
+	}
+
+	return err;
+}
+
+
+int test_fmt_pl_x3264(void)
+{
+	const struct {
+		const char *str;
+		uint32_t x32;
+		uint64_t x64;
+	} testv[] = {
+		/* Working cases */
+		{"0",            0x0,        0x0              },
+		{"1",            0x1,        0x1              },
+		{"123",          0x123,      0x123            },
+		{"1234",         0x1234,     0x1234           },
+		{"abc",          0xabc,      0xabc            },
+		{"94967295",     0x94967295, 0x94967295       },
+		{"4bca9ef2",     0x4bca9ef2, 0x4bca9ef2       },
+		{"18ab44cd8954", 0x44cd8954, 0x18ab44cd8954ULL},
+
+		/* Error cases */
+		{"hei",          0,          0                },
+		{"",             0,          0                },
+		{"0x123",        0,          0                },
+		{",.!$%",        0,          0                },
+	};
+	uint32_t i;
+	int err = 0;
+
+	for (i=0; i<ARRAY_SIZE(testv); i++) {
+		struct pl pl;
+		uint32_t x32;
+		uint64_t x64;
+
+		pl_set_str(&pl, testv[i].str);
+
+		x32 = pl_x32(&pl);
+		x64 = pl_x64(&pl);
+
+		if (testv[i].x32 != x32) {
+			DEBUG_WARNING("pl_x32 test %u failed %x != %x\n",
+				      i, testv[i].x32, x32);
+			err = EINVAL;
+			break;
+		}
+
+		if (testv[i].x64 != x64) {
+			DEBUG_WARNING("pl_x64 test %u failed %lx != %lx\n",
+				      i, testv[i].x64, x64);
 			err = EINVAL;
 			break;
 		}

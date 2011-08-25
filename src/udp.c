@@ -31,6 +31,7 @@ static void udp_recv_handler(const struct sa *src, struct mbuf *mb,
 		udp_err = EINVAL;
 
 	switch (tindex++) {
+
 	case 0:
 		if (mb->end != data.l)
 			udp_err = EBADMSG;

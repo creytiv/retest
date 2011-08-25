@@ -14,6 +14,7 @@ int test_crc32(void);
 int test_fmt_pl(void);
 int test_fmt_pl_u32(void);
 int test_fmt_pl_u64(void);
+int test_fmt_pl_x3264(void);
 int test_fmt_print(void);
 int test_fmt_regex(void);
 int test_fmt_snprintf(void);

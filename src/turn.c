@@ -23,9 +23,9 @@ struct turntest {
 };
 
 
-static void destructor(void *data)
+static void destructor(void *arg)
 {
-	struct turntest *tt = data;
+	struct turntest *tt = arg;
 
 	tmr_cancel(&tt->tmr);
 

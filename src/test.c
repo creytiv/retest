@@ -31,6 +31,7 @@ static const struct test tests[] = {
 	TEST(test_fmt_pl),
 	TEST(test_fmt_pl_u32),
 	TEST(test_fmt_pl_u64),
+	TEST(test_fmt_pl_x3264),
 	TEST(test_fmt_print),
 	TEST(test_fmt_regex),
 	TEST(test_fmt_snprintf),

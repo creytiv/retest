@@ -264,8 +264,8 @@ int test_uri_cmp(void)
 		/* Compare */
 		match = uri_cmp(&l, &r);
 		if (!uriv[i].match != !match) {
-			DEBUG_WARNING("uri cmp: (%r) expected %d, got %d\n",
-				      &uriv[i].l, uriv[i].match, match);
+			DEBUG_WARNING("uri cmp: (%s) expected %d, got %d\n",
+				      uriv[i].l, uriv[i].match, match);
 			err = EINVAL;
 			break;
 		}
@@ -281,8 +281,8 @@ int test_uri_cmp(void)
 		/* Compare */
 		match = uri_cmp(&l, &r);
 		if (!uriv[i].match != !match) {
-			DEBUG_WARNING("uri cmp: (%r) expected %d, got %d\n",
-				      &uriv[i].l, uriv[i].match, match);
+			DEBUG_WARNING("uri cmp: (%s) expected %d, got %d\n",
+				      uriv[i].l, uriv[i].match, match);
 			err = EINVAL;
 			break;
 		}
