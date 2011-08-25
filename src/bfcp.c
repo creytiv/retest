@@ -136,7 +136,7 @@ int test_bfcp(void)
 	fri.rbi.rbid = 2;
 	fri.rbi.dname = "c";
 	fri.rbi.uri = "d";
-	fri.prio = 2;
+	fri.prio = BFCP_PRIO_NORMAL;
 	fri.ppi = "x";
 
 	err = bfcp_msg_encode(mb, BFCP_USER_STATUS,
