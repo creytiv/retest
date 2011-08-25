@@ -20,6 +20,8 @@ endif
 
 include $(LIBRE_MK)
 
+LIBREM_PATH	:= $(shell [ -e ../rem ] && echo "../rem")
+
 INSTALL := install
 ifeq ($(DESTDIR),)
 PREFIX  := /usr/local
@@ -28,7 +30,19 @@ PREFIX  := /usr
 endif
 BINDIR	:= $(PREFIX)/bin
 CFLAGS	+= -I$(LIBRE_INC)
+CFLAGS  += -I$(LIBREM_PATH)/include -I$(SYSROOT)/local/include/rem
 BIN	:= $(PROJECT)$(BIN_SUFFIX)
+
+ifneq ($(LIBREM_PATH),)
+SPLINT_OPTIONS += -I$(LIBREM_PATH)/include
+endif
+
+ifneq ($(LIBREM_PATH),)
+LIBS	+= -L$(LIBREM_PATH)
+endif
+
+LIBS	+= -lrem -lm
+
 
 include src/srcs.mk
 
