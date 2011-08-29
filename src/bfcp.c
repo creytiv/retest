@@ -33,17 +33,20 @@ static const uint8_t bfcp_msg[] =
 	"\x06\x04\x00\x03"  /* FLOOR-REQUEST-ID */
 
 	/* UserStatus w/FLOOR-REQUEST-INFORMATION */
-	"\x20\x06\x00\x0f"  /* | ver | primitive | length  | */
+	"\x20\x06\x00\x12"  /* | ver | primitive | length  | */
 	"\x01\x02\x03\x04"  /* |       conference id       | */
 	"\xfe\xdc\xba\x98"  /* | transaction id | user id  | */
 	""
-	"\x1e\x3c\x88\x99"  /* FLOOR-ID */
+	"\x1e\x48\x88\x99"  /* FLOOR-ID */
        	"\x24\x0c\x74\xad"  /* OVERALL-REQUEST-STATUS */
 	"\x0a\x04\x04\x02"
 	"\x12\x04\x4f\x4b"
-       	"\x22\x0c\x00\x02"  /* FLOOR-REQUEST-STATUS */
+       	"\x22\x0c\x00\x02"  /* FLOOR-REQUEST-STATUS #1 */
 	"\x0a\x04\x02\x02"
 	"\x12\x04\x6f\x6b"
+       	"\x22\x0c\x00\x04"  /* FLOOR-REQUEST-STATUS #2 */
+	"\x0a\x04\x07\x03"
+	"\x12\x04\x6a\x61"
 	"\x1c\x0c\x00\x01"  /* BENEFICIARY-INFORMATION */
 	"\x18\x03\x61\x00"
 	"\x1a\x03\x62\x00"
@@ -94,8 +97,9 @@ int test_bfcp(void)
 {
 	const size_t sz = sizeof(bfcp_msg) - 1;
 	struct bfcp_floor_reqinfo fri;
-	struct bfcp_floor_reqstat frsv[] = {
-		{2, {BFCP_ACCEPTED, 2}, "ok"}
+	struct bfcp_floor_reqstat frsv[2] = {
+		{2, {BFCP_ACCEPTED, 2}, "ok"},
+		{4, {BFCP_REVOKED,  3}, "ja"}
 	};
 	struct mbuf *mb;
 	uint16_t floorid = 1, bfid = 2, frid = 3;
@@ -192,7 +196,6 @@ int test_bfcp_bin(void)
 {
 	static const uint8_t msg[] =
 
-		/* Tandberg MXP 1700 */
 		"\x20\x04\x00\x04"
 		"\x00\x00\x00\x01"
 		"\x00\x01\x00\x01"
@@ -205,7 +208,7 @@ int test_bfcp_bin(void)
 		"";
 	int err = 0;
 
-	err  = parse_msg(msg, sizeof(msg) - 1);
+	err |= parse_msg(msg, sizeof(msg) - 1);
 	err |= parse_msg(bfcp_msg, sizeof(bfcp_msg) - 1);
 
 	return err;
