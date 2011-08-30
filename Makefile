@@ -20,7 +20,7 @@ endif
 
 include $(LIBRE_MK)
 
-LIBREM_PATH	:= $(shell [ -e ../rem ] && echo "../rem")
+LIBREM_PATH	:= $(shell [ -d ../rem ] && echo "../rem")
 
 INSTALL := install
 ifeq ($(DESTDIR),)

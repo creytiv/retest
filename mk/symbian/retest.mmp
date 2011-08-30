@@ -60,9 +60,11 @@ SOURCE        ecrt.cpp
 
 USERINCLUDE   .
 SYSTEMINCLUDE \epoc32\include \epoc32\include\libc \epoc32\include\re
+SYSTEMINCLUDE \epoc32\include\rem
 LIBRARY       estlib.lib euser.lib
 LIBRARY       esock.lib insock.lib
 STATICLIBRARY resdp.lib resip.lib resipsess.lib restun.lib redns.lib re.lib
+STATICLIBRARY rem.lib
 #ifndef EKA2
 STATICLIBRARY ecrt0.lib
 STATICLIBRARY libgcc.a
