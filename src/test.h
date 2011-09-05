@@ -64,6 +64,7 @@ int test_uri_encode(void);
 int test_uri_headers(void);
 int test_uri_user(void);
 int test_uri_params_headers(void);
+int test_vidconv(void);
 
 
 struct mbuf;

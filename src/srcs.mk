@@ -32,3 +32,4 @@ SRCS	+= tmr.c
 SRCS	+= turn.c
 SRCS	+= udp.c
 SRCS	+= uri.c
+SRCS	+= vidconv.c

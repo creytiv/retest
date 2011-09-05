@@ -80,6 +80,7 @@ static const struct test tests[] = {
 	TEST(test_uri_headers),
 	TEST(test_uri_user),
 	TEST(test_uri_params_headers),
+	TEST(test_vidconv),
 };
 
 

@@ -51,6 +51,7 @@ SOURCE        tmr.c
 SOURCE        turn.c
 SOURCE        udp.c
 SOURCE        uri.c
+SOURCE        vidconv.c
 
 #ifdef EKA2
 SOURCEPATH    .
