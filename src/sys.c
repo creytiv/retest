@@ -61,6 +61,11 @@ int test_sys_endian(void)
 		return EINVAL;
 	}
 
+	if (s_le != sys_htols(s_ho)) {
+		DEBUG_WARNING("sys_htols failed: 0x%04x\n", sys_htols(s_ho));
+		return EINVAL;
+	}
+
 	/* 0x12345678
 	 *
 	 * 0x0000: 0x78
@@ -77,6 +82,11 @@ int test_sys_endian(void)
 	l_ho = sys_ltohl(l_le);
 	if (0x12345678 != l_ho) {
 		DEBUG_WARNING("endian long: 0x%08x\n", l_ho);
+		return EINVAL;
+	}
+
+	if (l_le != sys_htoll(l_ho)) {
+		DEBUG_WARNING("sys_htoll failed: 0x%08x\n", sys_htoll(l_ho));
 		return EINVAL;
 	}
 
