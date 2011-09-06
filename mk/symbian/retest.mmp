@@ -65,7 +65,7 @@ SYSTEMINCLUDE \epoc32\include\rem
 LIBRARY       estlib.lib euser.lib
 LIBRARY       esock.lib insock.lib
 STATICLIBRARY resdp.lib resip.lib resipsess.lib restun.lib redns.lib re.lib
-STATICLIBRARY rem.lib
+STATICLIBRARY rem.lib rebfcp.lib
 #ifndef EKA2
 STATICLIBRARY ecrt0.lib
 STATICLIBRARY libgcc.a
