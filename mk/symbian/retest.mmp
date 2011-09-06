@@ -24,6 +24,7 @@ END
 
 SOURCEPATH    ..\..\src
 SOURCE        base64.c
+SOURCE        bfcp.c
 SOURCE        conf.c
 SOURCE        crc32.c
 SOURCE        fmt.c

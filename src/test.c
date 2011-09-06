@@ -24,6 +24,8 @@ struct test {
 
 static const struct test tests[] = {
 	TEST(test_base64),
+	TEST(test_bfcp),
+	TEST(test_bfcp_bin),
 	TEST(test_conf),
 	TEST(test_crc32),
 	TEST(test_fmt_pl),
@@ -94,6 +96,7 @@ struct ftest {
 #define FTEST(a) {a, #a}
 
 static const struct ftest fuztests[] = {
+	FTEST(fuzzy_bfcp),
 	FTEST(fuzzy_rtp),
 	FTEST(fuzzy_rtcp),
 	FTEST(fuzzy_sipmsg),

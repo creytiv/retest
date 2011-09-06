@@ -5,6 +5,7 @@
 #
 
 SRCS	+= base64.c
+SRCS	+= bfcp.c
 SRCS	+= conf.c
 SRCS	+= crc32.c
 SRCS	+= fmt.c
