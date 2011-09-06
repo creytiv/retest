@@ -90,15 +90,8 @@ int test_vidconv(void)
 			rand_bytes(f0->data[i], f0->linesize[i]);
 	}
 
-#if 1
-	/* this routine is OK */
-	vidconv_scale(f1, f0, &rect1);
-	vidconv_scale(f2, f1, &rect2);
-#else
-	/* this routine failes for certain SCALE values */
-	vidconv_process(f1, f0, &rect1);
-	vidconv_process(f2, f1, &rect2);
-#endif
+	vidconv(f1, f0, &rect1);
+	vidconv(f2, f1, &rect2);
 
 	if (!vidframe_cmp(f2, f0)) {
 
