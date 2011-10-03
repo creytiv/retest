@@ -83,11 +83,13 @@ static void udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 static void turnc_handler(int err, uint16_t scode, const char *reason,
 			  const struct sa *relay_addr,
 			  const struct sa *mapped_addr,
+			  const struct stun_msg *msg,
 			  void *arg)
 {
 	struct turntest *tt = arg;
 
 	(void)reason;
+	(void)msg;
 
 	if (err) {
 		complete_test(tt, err);
