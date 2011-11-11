@@ -13,140 +13,210 @@
 #include <re_dbg.h>
 
 
-static char dummy_arg = 'a';
-static const struct pl data = PL("test data");
-static const struct pl data2 = PL("data2mplajksdjqooz ka;osdkalsjdlkj");
-static struct tmr tmr;
-static struct sa cli, srv;
-static struct udp_sock *usc, *uss, *uss2;
-static struct mbuf mbs;
-static int udp_err = 0;
-static int tindex;
+struct udp_test {
+	struct udp_sock *usc;
+	struct udp_sock *uss;
+	struct udp_helper *uh;
+	struct tmr tmr;
+	struct sa cli;
+	struct sa srv;
+	int tindex;
+	int err;
+};
 
 
-static void udp_recv_handler(const struct sa *src, struct mbuf *mb,
-			     void *arg)
+static const char *data0 = "data from client to server";
+
+
+static void destructor(void *arg)
 {
-	if (&dummy_arg != arg)
-		udp_err = EINVAL;
+	struct udp_test *ut = arg;
+	tmr_cancel(&ut->tmr);
+	mem_deref(ut->uh);
+	mem_deref(ut->usc);
+	mem_deref(ut->uss);
+}
 
-	switch (tindex++) {
+
+static int send_data(struct udp_sock *us, const struct sa *peer,
+		     const char *data)
+{
+	struct mbuf *mb = mbuf_alloc(strlen(data) + 1);
+	int err;
+	if (!mb)
+		return ENOMEM;
+
+	(void)mbuf_write_str(mb, data);
+	mb->pos = 0;
+
+	err = udp_send(us, peer, mb);
+
+	mem_deref(mb);
+
+	return err;
+}
+
+
+static bool mbuf_compare(const struct mbuf *mb, const char *str)
+{
+	if (mbuf_get_left(mb) != strlen(str))
+		return false;
+
+	if (0 != memcmp(mbuf_buf(mb), str, strlen(str)))
+		return false;
+
+	return true;
+}
+
+
+static void udp_recv_client(const struct sa *src, struct mbuf *mb, void *arg)
+{
+	struct udp_test *ut = arg;
+
+	switch (ut->tindex++) {
 
 	case 0:
-		if (mb->end != data.l)
-			udp_err = EBADMSG;
-
-		if (0 != memcmp(mb->buf, data.p, mb->end))
-			udp_err = EBADMSG;
-		if (udp_err)
-			break;
-
-		if (!sa_cmp(src, &cli, SA_ALL)) {
-			udp_err = EINVAL;
+		if (!mbuf_compare(mb, data0)) {
+			ut->err = EBADMSG;
 			break;
 		}
-
-		/* Send from no UDP socket */
-		mbuf_reset(&mbs);
-		udp_err = mbuf_write_pl(&mbs, &data2);
-		if (udp_err)
+		if (!sa_cmp(src, &ut->srv, SA_ALL)) {
+			ut->err = EPROTO;
 			break;
-
-		mbs.pos = 0;
-		udp_err = udp_send_anon(&srv, &mbs);
-		break;
-
-	case 1:
-		if (mb->end != data2.l)
-			udp_err = EBADMSG;
-
-		if (0 != memcmp(mb->buf, data2.p, mb->end))
-			udp_err = EBADMSG;
+		}
 		break;
 
 	default:
-		udp_err = EINVAL;
+		ut->err = ERANGE;
 		break;
 	}
 
-	if (tindex >= 2)
+	if (ut->tindex >= 1)
 		re_cancel();
+}
+
+
+/* Echo server */
+static void udp_recv_server(const struct sa *src, struct mbuf *mb, void *arg)
+{
+	struct udp_test *ut = arg;
+	int err;
+
+	err = udp_send(ut->uss, src, mb);
+	if (err)
+		ut->err = err;
+}
+
+
+static bool udp_helper_send(int *err, struct sa *dst,
+			    struct mbuf *mb, void *arg)
+{
+	struct udp_test *ut = arg;
+	const size_t pos = mb->pos;
+
+	if (!sa_cmp(dst, &ut->srv, SA_ALL)) {
+		*err = EPROTO;
+		return false;
+	}
+
+	if (!mbuf_compare(mb, data0)) {
+		*err = EBADMSG;
+		return false;
+	}
+
+	/* Append a fake protocol trailer */
+	mb->pos = mb->end;
+	*err = mbuf_write_str(mb, "XXXX");
+
+	mb->pos = pos;
+
+	return false;
+}
+
+
+static bool udp_helper_recv(struct sa *src, struct mbuf *mb, void *arg)
+{
+	struct udp_test *ut = arg;
+
+	if (!sa_cmp(src, &ut->srv, SA_ALL))
+		ut->err = EPROTO;
+
+	mb->end -= 4;
+
+	if (!mbuf_compare(mb, data0))
+		ut->err = EBADMSG;
+
+	return false;
 }
 
 
 static void timeout_handler(void *arg)
 {
-	(void)arg;
-	udp_err = ENOMEM;
+	struct udp_test *ut = arg;
+	ut->err = ENOMEM;
 	re_cancel();
 }
 
 
 int test_udp(void)
 {
+	struct udp_sock *uss2;
+	struct udp_test *ut;
 	int err;
 
-	udp_err = 0;
-	mbuf_init(&mbs);
-	tmr_init(&tmr);
+	ut = mem_zalloc(sizeof(*ut), destructor);
+	if (!ut)
+		return ENOMEM;
 
-	err = sa_set_str(&cli, "127.0.0.1", 0);
-	if (err)
-		goto out;
-	err = sa_set_str(&srv, "127.0.0.1", 0);
-	if (err)
-		goto out;
+	tmr_init(&ut->tmr);
 
-	err = udp_listen(&usc, &cli, udp_recv_handler, &dummy_arg);
+	err  = sa_set_str(&ut->cli, "127.0.0.1", 0);
+	err |= sa_set_str(&ut->srv, "127.0.0.1", 0);
 	if (err)
 		goto out;
 
-	err = udp_listen(&uss, &srv, udp_recv_handler, &dummy_arg);
+	err  = udp_listen(&ut->usc, &ut->cli, udp_recv_client, ut);
+	err |= udp_listen(&ut->uss, &ut->srv, udp_recv_server, ut);
 	if (err)
 		goto out;
 
-	err = udp_local_get(usc, &cli);
+	udp_rxbuf_presz_set(ut->uss, 16);
+
+	err  = udp_local_get(ut->usc, &ut->cli);
+	err |= udp_local_get(ut->uss, &ut->srv);
 	if (err)
 		goto out;
-	err = udp_local_get(uss, &srv);
+
+	err = udp_register_helper(&ut->uh, ut->usc, 0,
+				  udp_helper_send, udp_helper_recv, ut);
 	if (err)
 		goto out;
 
 	/* expect failure */
-	if (!udp_listen(&uss2, &srv, udp_recv_handler, &dummy_arg)) {
-		err = EINVAL;
+	if (!udp_listen(&uss2, &ut->srv, udp_recv_client, ut)) {
+		err = EBUSY;
 		goto out;
 	}
 
-	err = mbuf_write_pl(&mbs, &data);
-	if (err)
-		goto out;
-
-	tindex = 0;
-
 	/* Send from connected client UDP socket */
-	udp_connect(usc, true);
+	udp_connect(ut->usc, true);
 
-	mbs.pos = 0;
-	err = udp_send(usc, &srv, &mbs);
+	/* Start test */
+	err = send_data(ut->usc, &ut->srv, data0);
 	if (err)
 		goto out;
 
-	tmr_start(&tmr, 100, timeout_handler, NULL);
+	tmr_start(&ut->tmr, 100, timeout_handler, ut);
 
 	err = re_main(NULL);
 	if (err)
 		goto out;
 
-	if (udp_err)
-		err = udp_err;
+	if (ut->err)
+		err = ut->err;
 
  out:
-	mbuf_reset(&mbs);
-	tmr_cancel(&tmr);
-	usc = mem_deref(usc);
-	uss = mem_deref(uss);
-	uss2 = mem_deref(uss2);
+	mem_deref(ut);
 
 	return err;
 }
