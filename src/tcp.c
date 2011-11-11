@@ -34,30 +34,50 @@
  *                                                       =====> tcp_recv_h
  */
 
-static struct tmr tmr;
-static const struct pl ping = PL("ping from client to server\n");
-static const struct pl pong = PL("pong from server 2 client\n");
-static int tcp_err = 0;
-static struct tcp_conn *tc2 = NULL;
+struct tcp_test {
+	struct tcp_sock *ts;
+	struct tcp_conn *tc;
+	struct tcp_conn *tc2;
+	struct tmr tmr;
+	int err;
+};
 
 
-static void abort_test(int err)
+static const char *ping = "ping from client to server\n";
+static const char *pong = "pong from server 2 client\n";
+
+
+static void destructor(void *arg)
 {
-	DEBUG_INFO("Abort Test (%s)\n", strerror(err));
-	tcp_err = err;
-	tmr_cancel(&tmr);
+	struct tcp_test *tt = arg;
+
+	tmr_cancel(&tt->tmr);
+	mem_deref(tt->tc2);
+	mem_deref(tt->tc);
+	mem_deref(tt->ts);
+}
+
+
+static void abort_test(struct tcp_test *tt, int err)
+{
+	if (err) {
+		DEBUG_INFO("abort error: %s\n", strerror(err));
+		tt->err = err;
+	}
+
+	tmr_cancel(&tt->tmr);
 	re_cancel();
 }
 
 
-static int send_pl(struct tcp_conn *tc, const struct pl *data)
+static int send_data(struct tcp_conn *tc, const char *data)
 {
 	struct mbuf mb;
 	int err;
 
 	mbuf_init(&mb);
 
-	err = mbuf_write_pl(&mb, data);
+	err = mbuf_write_str(&mb, data);
 	if (err)
 		goto out;
 
@@ -72,138 +92,140 @@ static int send_pl(struct tcp_conn *tc, const struct pl *data)
 }
 
 
+static bool mbuf_compare(const struct mbuf *mb, const char *str)
+{
+	if (mbuf_get_left(mb) != strlen(str)) {
+		DEBUG_WARNING("compare: mbuf=%u str=%u (bytes)\n",
+			      mbuf_get_left(mb), strlen(str));
+		return false;
+	}
+
+	if (0 != memcmp(mbuf_buf(mb), str, strlen(str))) {
+		DEBUG_WARNING("compare: mbuf=[%b] str=[%s]\n",
+			      mbuf_buf(mb), mbuf_get_left(mb), str);
+		return false;
+	}
+
+	return true;
+}
+
+
 static void tcp_server_recv_handler(struct mbuf *mb, void *arg)
 {
+	struct tcp_test *tt = arg;
 	int err;
-
-	(void)arg;
 
 	DEBUG_INFO("Server: TCP Receive data (%u bytes)\n",
 		   mbuf_get_left(mb));
 
-	if (!mb)
-		err = ENOMEM;
-	else if (mb->end != ping.l)
-		err = EINVAL;
-	else if (0 != memcmp(mb->buf, ping.p, mb->end))
-		err = EINVAL;
-	else
-		err = 0;
+	if (!mbuf_compare(mb, ping)) {
+		abort_test(tt, EBADMSG);
+		return;
+	}
 
+	err = send_data(tt->tc2, pong);
 	if (err)
-		abort_test(err);
-
-	err = send_pl(tc2, &pong);
-	if (err)
-		abort_test(err);
+		abort_test(tt, err);
 }
 
 
 static void tcp_server_close_handler(int err, void *arg)
 {
-	(void)arg;
+	struct tcp_test *tt = arg;
 	DEBUG_INFO("Server: TCP Close (%s)\n", strerror(err));
-	abort_test(err);
+	abort_test(tt, err);
 }
 
 
 static void tcp_server_conn_handler(const struct sa *peer, void *arg)
 {
-	struct tcp_sock **ts = arg;
+	struct tcp_test *tt = arg;
 	int err;
 
 	(void)peer;
-	(void)arg;
 
 	DEBUG_INFO("Server: Incoming CONNECT from %J\n", peer);
 
-	err = tcp_accept(&tc2, *ts, NULL, tcp_server_recv_handler,
-			 tcp_server_close_handler, NULL);
+	err = tcp_accept(&tt->tc2, tt->ts, NULL, tcp_server_recv_handler,
+			 tcp_server_close_handler, tt);
 	if (err) {
-		abort_test(err);
+		abort_test(tt, err);
+		return;
 	}
 }
 
 
 static void tcp_client_estab_handler(void *arg)
 {
-	struct tcp_conn **tc = arg;
+	struct tcp_test *tt = arg;
 	int err;
 
 	DEBUG_INFO("Client: TCP Established\n");
 
-	err = send_pl(*tc, &ping);
+	err = send_data(tt->tc, ping);
 	if (err)
-		abort_test(err);
+		abort_test(tt, err);
 }
 
 
 static void tcp_client_recv_handler(struct mbuf *mb, void *arg)
 {
-	int err;
-
-	(void)arg;
+	struct tcp_test *tt = arg;
 
 	DEBUG_INFO("Client: TCP receive: %u bytes\n", mbuf_get_left(mb));
 
-	if (!mb)
-		err = ENOMEM;
-	else if (mb->end != pong.l)
-		err = EINVAL;
-	else if (0 != memcmp(mb->buf, pong.p, mb->end))
-		err = EINVAL;
-	else
-		err = 0;
+	if (!mbuf_compare(mb, pong)) {
+		abort_test(tt, EBADMSG);
+		return;
+	}
 
-	abort_test(err);
+	abort_test(tt, 0);
 }
 
 
 static void tcp_client_close_handler(int err, void *arg)
 {
-	(void)arg;
+	struct tcp_test *tt = arg;
 	DEBUG_NOTICE("Client: TCP Close (%s)\n", strerror(err));
 
-	abort_test(err);
+	abort_test(tt, err);
 }
 
 
 static void timeout_handler(void *arg)
 {
-	(void)arg;
-	abort_test(ENOMEM);
+	struct tcp_test *tt = arg;
+	abort_test(tt, ENOMEM);
 }
 
 
 int test_tcp(void)
 {
-	struct tcp_sock *ts = NULL;
-	struct tcp_conn *tc = NULL;
+	struct tcp_test *tt;
 	struct sa srv;
 	int err;
 
-	tcp_err = 0;
-	tmr_init(&tmr);
+	tt = mem_zalloc(sizeof(*tt), destructor);
+	if (!tt)
+		return ENOMEM;
 
 	err = sa_set_str(&srv, "127.0.0.1", 0);
 	if (err)
 		goto out;
 
-	tmr_start(&tmr, 1000, timeout_handler, NULL);
+	tmr_start(&tt->tmr, 1000, timeout_handler, tt);
 
-	err = tcp_listen(&ts, &srv, tcp_server_conn_handler, &ts);
+	err = tcp_listen(&tt->ts, &srv, tcp_server_conn_handler, tt);
 	if (err)
 		goto out;
 
-	err = tcp_local_get(ts, &srv);
+	err = tcp_local_get(tt->ts, &srv);
 	if (err)
 		goto out;
 
-	DEBUG_INFO("TCP Server listening on %J\n", &srv);
-
-	err = tcp_connect(&tc, &srv, tcp_client_estab_handler,
+	err = tcp_connect(&tt->tc, &srv, tcp_client_estab_handler,
 			  tcp_client_recv_handler, tcp_client_close_handler,
-			  &tc);
+			  tt);
 	if (err)
 		goto out;
 
@@ -211,16 +233,11 @@ int test_tcp(void)
 	if (err)
 		goto out;
 
-	if (tcp_err)
-		err = tcp_err;
-
-	DEBUG_INFO("Test done (%s)\n", strerror(err));
+	if (tt->err)
+		err = tt->err;
 
  out:
-	tmr_cancel(&tmr);
-	tc = mem_deref(tc);
-	tc2 = mem_deref(tc2);
-	ts = mem_deref(ts);
+	mem_deref(tt);
 
 	return err;
 }
