@@ -160,17 +160,18 @@ int test_sip_addr(void)
 int test_sip_via(void)
 {
 	struct {
-		const char *transp;
+		enum sip_transp tp;
 		const char *host;
 		uint16_t port;
 		const char *branch;
 	} testv[] = {
-		{"UDP", "1.2.3.4",                  1234, "z9ghkdkasd"},
-		{"TCP", "123.123.123.123",          0,    "b0ajsd01abcdef918"},
-		{"TCP", "myhost.com",               0,    "b0ajsd01ab2838475"},
+		{SIP_TRANSP_UDP, "1.2.3.4",         1234, "z9ghkdkasd"},
+		{SIP_TRANSP_TCP, "123.123.123.123", 0,    "b0ajsd01abcdef918"},
+		{SIP_TRANSP_TCP, "myhost.com",      0,    "b0ajsd01ab2838475"},
 #ifdef HAVE_INET6
-		{"TCP", "fe80::215:58ff:fe2d:90ab", 5060, "b0ajs01cde38475"},
-		{"TLS", "fe80::215:58ff:fe2d:90ab", 0,    "47daasd5"}
+		{SIP_TRANSP_TCP, "fe80::215:58ff:fe2d:90ab", 5060,
+		 "b0ajs01cde38475"},
+		{SIP_TRANSP_TLS, "fe80::215:58ff:fe2d:90ab", 0, "47daasd5"}
 #endif
 	};
 	struct sip_msg *msg = NULL;
@@ -194,7 +195,7 @@ int test_sip_via(void)
 		err = mbuf_printf(mb,
 				  "BYE sip:foo SIP/2.0\r\n"
 				  "Via : SIP / 2.0 / %s ",
-				  testv[i].transp);
+				  sip_transp_name(testv[i].tp));
 		if (err)
 			goto out;
 
@@ -227,10 +228,10 @@ int test_sip_via(void)
 
 		/* Compare */
 
-		err = pl_strcmp(&msg->via.transp, testv[i].transp);
-		if (err) {
-			DEBUG_WARNING("%u: via transp: '%r' != '%s'\n",
-				      i, &msg->via.transp, testv[i].transp);
+		if (msg->via.tp != testv[i].tp) {
+			DEBUG_WARNING("%u: via transp: '%s' != '%s'\n",
+				      i, sip_transp_name(msg->via.tp),
+				      sip_transp_name(testv[i].tp));
 			goto out;
 		}
 
