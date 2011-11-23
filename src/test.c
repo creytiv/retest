@@ -222,7 +222,7 @@ int test_oom(const char *name)
 static int test_unit(const char *name)
 {
 	size_t i;
-	int err;
+	int err = 0;
 
 	if (name) {
 		const struct test *test = find_test(name);
@@ -237,7 +237,6 @@ static int test_unit(const char *name)
 				      name, strerror(err));
 			return err;
 		}
-		return err;
 	}
 	else {
 		for (i=0; i<ARRAY_SIZE(tests); i++) {
@@ -335,4 +334,29 @@ int test_fuzzy(const char *name)
  out:
 	mem_deref(mb);
 	return err;
+}
+
+
+void test_listcases(void)
+{
+	size_t i, n;
+
+	n = ARRAY_SIZE(tests);
+
+	(void)re_printf("\n%u test cases:\n", n);
+
+	for (i=0; i<(n+1)/2; i++) {
+
+		(void)re_printf("    %-32s    %s\n",
+				tests[i].name, tests[i+(n+1)/2].name);
+	}
+
+	(void)re_printf("\n%u fuzzy test cases:\n", ARRAY_SIZE(fuztests));
+
+	for (i=0; i<ARRAY_SIZE(fuztests); i++) {
+
+		(void)re_printf("    %s\n", fuztests[i].name);
+	}
+
+	(void)re_printf("\n");
 }

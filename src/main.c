@@ -55,6 +55,7 @@ static void usage(void)
 	(void)re_fprintf(stderr, "\t-p n      Performance tests\n");
 	(void)re_fprintf(stderr, "\t-a        All tests (default)\n");
 	(void)re_fprintf(stderr, "\t-f        Fuzzy testing\n");
+	(void)re_fprintf(stderr, "\t-l        List all testcases\n");
 }
 #endif
 
@@ -75,6 +76,7 @@ int main(int argc, char *argv[])
 	bool do_perf = false;
 	bool do_fuzzy = false;
 	bool do_all = false;
+	bool do_list = false;
 	bool ansi = true;
 	const char *name = NULL;
 	uint32_t n = 10;
@@ -89,7 +91,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "hrop:af");
+		const int c = getopt(argc, argv, "hrop:afl");
 		if (0 > c)
 			break;
 
@@ -119,6 +121,10 @@ int main(int argc, char *argv[])
 
 		case 'a':
 			do_all = true;
+			break;
+
+		case 'l':
+			do_list = true;
 			break;
 		}
 	}
@@ -175,6 +181,10 @@ int main(int argc, char *argv[])
 		do_reg = true;
 		do_oom = true;
 		do_perf = true;
+	}
+
+	if (do_list) {
+		test_listcases();
 	}
 
 	if (do_reg) {
