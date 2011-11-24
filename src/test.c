@@ -348,7 +348,8 @@ void test_listcases(void)
 	for (i=0; i<(n+1)/2; i++) {
 
 		(void)re_printf("    %-32s    %s\n",
-				tests[i].name, tests[i+(n+1)/2].name);
+				tests[i].name,
+				(i+(n+1)/2) < n ? tests[i+(n+1)/2].name : "");
 	}
 
 	(void)re_printf("\n%u fuzzy test cases:\n", ARRAY_SIZE(fuztests));
