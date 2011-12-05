@@ -8,6 +8,7 @@ SRCS	+= base64.c
 SRCS	+= bfcp.c
 SRCS	+= conf.c
 SRCS	+= crc32.c
+SRCS	+= dns.c
 SRCS	+= fmt.c
 SRCS	+= g711.c
 SRCS	+= hash.c

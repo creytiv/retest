@@ -27,6 +27,7 @@ SOURCE        base64.c
 SOURCE        bfcp.c
 SOURCE        conf.c
 SOURCE        crc32.c
+SOURCE        dns.c
 SOURCE        fmt.c
 SOURCE        g711.c
 SOURCE        hash.c
