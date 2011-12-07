@@ -81,7 +81,7 @@ static int parse_msg(const uint8_t *p, size_t n)
 	while (mbuf_get_left(mb) >= 4) {
 		struct bfcp_msg *msg;
 
-		err = bfcp_msg_decode(&msg, mb);
+		err = bfcp_msg_decode(&msg, mb, NULL);
 		if (err)
 			break;
 
@@ -220,7 +220,7 @@ int fuzzy_bfcp(struct mbuf *mb)
 	struct bfcp_msg *msg = NULL;
 	int err;
 
-	err = bfcp_msg_decode(&msg, mb);
+	err = bfcp_msg_decode(&msg, mb, NULL);
 	if (err == EBADMSG)
 		err = 0;
 
