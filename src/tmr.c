@@ -14,42 +14,61 @@
 
 
 enum {N_TIMERS=64};
-static struct tmr _timers[N_TIMERS];
-static int timers_ok;
+
+struct tmr_test {
+	struct tmr tmrv[N_TIMERS];
+	size_t timers_ok;
+};
 
 
 static void timeout(void *arg)
 {
-	(void)arg;
+	struct tmr_test *tt = arg;
 
-	DEBUG_INFO("timedout (timers_ok=%d)\n", timers_ok);
+	++tt->timers_ok;
 
-	++timers_ok;
-
-	if (timers_ok >= N_TIMERS) {
+	if (tt->timers_ok >= N_TIMERS)
 		re_cancel();
-	}
 }
 
 
 int test_tmr(void)
 {
-	int i, err;
+	struct tmr_test tt;
+	struct list *lst;
+	struct le *le;
+	uint64_t prev = 0;
+	size_t i;
+	int err;
 
-	timers_ok = 0;
+	memset(&tt, 0, sizeof(tt));
 
-	for (i=0; i<N_TIMERS; i++) {
-		const uint64_t delay = rand_u16() % 10;
+	for (i=0; i<N_TIMERS; i++)
+		tmr_start(&tt.tmrv[i], rand_u16() % 10, timeout, &tt);
 
-		tmr_init(&_timers[i]);
-		tmr_start(&_timers[i], delay, timeout, NULL);
+	/* verify that timers are sorted by jfs */
+	lst = tt.tmrv[0].le.list;
+	for (le = lst->head; le; le = le->next) {
+
+		const struct tmr *tmr = le->data;
+
+		if (tmr->jfs < prev) {
+			err = ETIMEDOUT;
+			goto out;
+		}
+
+		prev = tmr->jfs;
 	}
 
 	err = re_main(NULL);
 
+	if (!err && tt.timers_ok != N_TIMERS)
+		err = EINVAL;
+
+ out:
 	/* cleanup */
 	for (i=0; i<N_TIMERS; i++)
-		tmr_cancel(&_timers[i]);
+		tmr_cancel(&tt.tmrv[i]);
 
 	return err;
 }
