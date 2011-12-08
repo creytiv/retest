@@ -43,6 +43,8 @@ static const struct test tests[] = {
 	TEST(test_g711_ulaw),
 	TEST(test_hash),
 	TEST(test_hmac_sha1),
+	TEST(test_httpauth_chall),
+	TEST(test_httpauth_resp),
 	TEST(test_jbuf),
 	TEST(test_list),
 	TEST(test_list_ref),

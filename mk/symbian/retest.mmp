@@ -32,6 +32,7 @@ SOURCE        fmt.c
 SOURCE        g711.c
 SOURCE        hash.c
 SOURCE        hmac.c
+SOURCE        httpauth.c
 SOURCE        jbuf.c
 SOURCE        list.c
 SOURCE        main.c
