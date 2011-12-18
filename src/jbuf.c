@@ -29,7 +29,7 @@ int test_jbuf(void)
 		return err;
 
 	for (i=0; i<ARRAY_SIZE(frv); i++) {
-		frv[i] = mem_alloc(sizeof(char *), NULL);
+		frv[i] = mem_alloc(sizeof(frv[0]), NULL);
 		if (!frv[i]) {
 			err = ENOMEM;
 			goto out;
@@ -130,11 +130,10 @@ int test_jbuf(void)
 
 
  out:
-	jb = mem_deref(jb);
-
-	mem = mem_deref(mem);
+	mem_deref(jb);
+	mem_deref(mem);
 	for (i=0; i<ARRAY_SIZE(frv); i++)
-		frv[i] = mem_deref(frv[i]);
+		mem_deref(frv[i]);
 
 	return err;
 }

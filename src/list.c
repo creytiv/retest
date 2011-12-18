@@ -25,8 +25,8 @@ int test_list(void)
 
 	list_init(&list);
 
-	memset(&node1, 0, sizeof(struct node));
-	memset(&node2, 0, sizeof(struct node));
+	memset(&node1, 0, sizeof(node1));
+	memset(&node2, 0, sizeof(node2));
 
 	DEBUG_INFO("test_list\n");
 
