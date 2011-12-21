@@ -5,7 +5,7 @@
 #
 
 PROJECT	  := retest
-VERSION   := 0.3.0
+VERSION   := 0.4.0
 
 LIBRE_MK  := $(shell [ -f ../re/mk/re.mk ] && \
 	echo "../re/mk/re.mk")
