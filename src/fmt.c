@@ -609,3 +609,100 @@ int test_fmt_str(void)
 
 	return err;
 }
+
+
+static const struct {
+	const char *pname;
+	const char *pval;
+	bool present;
+} testv[] = {
+	/* existing parameters: */
+	{"bitrate",     "42",  true},
+	{"foo",         0,     true},
+	{"bar",         "BAR", true},
+
+	/* non-existing parameters: */
+	{"xbitrate",    0,     false},
+	{"bitratex",    0,     false},
+	{"itrat",       0,     false},
+	{"fo",          0,     false},
+	{"oo",          0,     false},
+};
+static const struct pl params = PL("bitrate=42; foo ; bar = \"BAR\"");
+
+
+static void fmt_param_handler(const struct pl *name, const struct pl *val,
+			      void *arg)
+{
+	void **argv = arg;
+	size_t *i = argv[0];
+	int *err = argv[1];
+
+	if (*i >= ARRAY_SIZE(testv)) {
+		DEBUG_WARNING("param: too many parameters (%u > %u)\n",
+			      *i, ARRAY_SIZE(testv));
+		*err = EOVERFLOW;
+		return;
+	}
+
+	if (!testv[*i].present) {
+		DEBUG_WARNING("param: %u: unexpected param '%r'\n",
+			      *i, name);
+		*err = EBADMSG;
+	}
+
+	if (0 != pl_strcmp(name, testv[*i].pname)) {
+		DEBUG_WARNING("param: %u: name mismatch: '%r' != '%s'\n",
+			      *i, name, testv[*i].pname);
+		*err = EBADMSG;
+	}
+
+	if (testv[*i].pval && 0 != pl_strcmp(val, testv[*i].pval)) {
+		DEBUG_WARNING("param: %u: value mismatch: '%r' != '%s'\n",
+			      *i, val, testv[*i].pval);
+		*err = EBADMSG;
+	}
+
+	++(*i);
+}
+
+
+int test_fmt_param(void)
+{
+	size_t i;
+	int err = 0;
+	void *argv[2] = {&i, &err};
+
+	for (i=0; i<ARRAY_SIZE(testv); i++) {
+		struct pl val;
+		bool res;
+
+		res = fmt_param_exists(&params, testv[i].pname);
+		if (!res != !testv[i].present) {
+			DEBUG_WARNING("%u: unexpected %d != %d\n",
+				      i, testv[i].present, res);
+			return EBADMSG;
+		}
+
+		if (!testv[i].pval)
+			continue;
+
+		res = fmt_param_get(&params, testv[i].pname, &val);
+		if (!res != !testv[i].present) {
+			DEBUG_WARNING("%u: unexpected %d != %d\n",
+				      i, testv[i].present, res);
+			return EBADMSG;
+		}
+
+		if (res && 0 != pl_strcmp(&val, testv[i].pval)) {
+			DEBUG_WARNING("%u: value mismatch %r != %s\n",
+				      i, &val, testv[i].pval);
+			return EINVAL;
+		}
+	}
+
+	i = 0;
+	fmt_param_apply(&params, fmt_param_handler, argv);
+
+	return err;
+}
