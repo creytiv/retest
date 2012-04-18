@@ -671,7 +671,10 @@ int test_fmt_param(void)
 {
 	size_t i;
 	int err = 0;
-	void *argv[2] = {&i, &err};
+	void *argv[2];
+
+	argv[0] = &i;
+	argv[1] = &err;
 
 	for (i=0; i<ARRAY_SIZE(testv); i++) {
 		struct pl val;
