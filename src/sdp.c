@@ -230,9 +230,9 @@ int test_sdp_all(void)
 		goto out;
 
 	err  = sdp_format_add(NULL, audio, false, ref_pt, ref_cname,
-			      ref_srate, 1, NULL, NULL, false, NULL);
+			      ref_srate, 1, NULL, NULL, NULL, false, NULL);
 	err |= sdp_format_add(NULL, audio, false, "110", cname_speex,
-			      16000, 2, NULL, NULL, false, NULL);
+			      16000, 2, NULL, NULL, NULL, false, NULL);
 	if (err)
 		goto out;
 
@@ -344,12 +344,13 @@ int test_sdp_parse(void)
 			goto out;
 
 		err = sdp_format_add(NULL, audio, false, ref_pt, ref_cname,
-				     ref_srate, 1, NULL, NULL, false, NULL);
+				     ref_srate, 1, NULL, NULL, NULL, false,
+				     NULL);
 		if (err)
 			goto out;
 
 		err = sdp_format_add(NULL, audio, false, "8", "PCMA", 8000, 1,
-				     NULL, NULL, false, NULL);
+				     NULL, NULL, NULL, false, NULL);
 		if (err)
 			goto out;
 
@@ -431,7 +432,7 @@ static int oa_addmedia(struct oa *oa, bool local,
 		int srate = va_arg(ap, int);
 
 		err = sdp_format_add(NULL, m, false, id, cname, srate, 1,
-				     NULL, NULL, false, NULL);
+				     NULL, NULL, NULL, false, NULL);
 		if (err)
 			break;
 	}
@@ -741,11 +742,11 @@ int test_sdp_bfcp(void)
 		goto out;
 
 	err  = sdp_format_add(NULL, bfcp, false, "*", NULL, 0, 0,
-			      NULL, NULL, false, NULL);
+			      NULL, NULL, NULL, false, NULL);
 	err |= sdp_format_add(NULL, audio, false, "0", NULL, 0, 0,
-			      NULL, NULL, false, NULL);
+			      NULL, NULL, NULL, false, NULL);
 	err |= sdp_format_add(NULL, video, false, "31", NULL, 0, 0,
-			      NULL, NULL, false, NULL);
+			      NULL, NULL, NULL, false, NULL);
 	if (err)
 		goto out;
 
