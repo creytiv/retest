@@ -70,7 +70,7 @@ $(BUILD): Makefile
 	@touch $@
 
 clean:
-	@rm -rf $(BIN) $(BUILD)/
+	@rm -rf $(BIN) $(BUILD)
 
 install: $(BIN)
 	@mkdir -p $(DESTDIR)$(BINDIR)
