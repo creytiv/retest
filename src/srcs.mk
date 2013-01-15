@@ -36,3 +36,7 @@ SRCS	+= turn.c
 SRCS	+= udp.c
 SRCS	+= uri.c
 SRCS	+= vidconv.c
+
+ifneq ($(USE_TLS),)
+SRCS	+= tls.c
+endif

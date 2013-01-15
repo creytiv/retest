@@ -79,6 +79,9 @@ static const struct test tests[] = {
 	TEST(test_sys_endian),
 	TEST(test_tcp),
 	TEST(test_telev),
+#ifdef USE_TLS
+	TEST(test_tls),
+#endif
 	TEST(test_tmr),
 	TEST(test_turn),
 	TEST(test_udp),

@@ -73,6 +73,9 @@ int test_uri_headers(void);
 int test_uri_user(void);
 int test_uri_params_headers(void);
 int test_vidconv(void);
+#ifdef USE_TLS
+int test_tls(void);
+#endif
 
 
 struct mbuf;
