@@ -14,6 +14,7 @@ struct tls_test {
 	struct tcp_sock *ts;
 	struct tcp_conn *tc_cli;
 	struct tcp_conn *tc_srv;
+	struct mbuf *mb;
 	struct tmr tmr;
 	bool estab_cli;
 	bool estab_srv;
@@ -81,24 +82,26 @@ static void server_recv_handler(struct mbuf *mb, void *arg)
 {
 	struct tls_test *tt = arg;
 	const size_t n = sizeof(tls_handshake) - 1;
+	int err;
 
 	if (!tt->estab_srv) {
 		check(tt, EPROTO);
 		return;
 	}
 
-	if (mbuf_get_left(mb) < n) {
-		(void)re_fprintf(stderr, "server received short"
-				 " packet: %u < %u\n",
-				 mbuf_get_left(mb), n);
-		check(tt, EBADMSG);
+	err = mbuf_write_mem(tt->mb, mbuf_buf(mb), mbuf_get_left(mb));
+	if (err) {
+		check(tt, err);
 		return;
 	}
 
-	if (0 != memcmp(mbuf_buf(mb), tls_handshake, n)) {
+	if (tt->mb->end < n)
+		return;
+
+	if (0 != memcmp(tt->mb->buf, tls_handshake, n)) {
 		(void)re_fprintf(stderr, "TLS handshake mismatch\n");
 		(void)re_fprintf(stderr, "ref:  %02w\n", tls_handshake, n);
-		(void)re_fprintf(stderr, "recv: %02w\n", mbuf_buf(mb), n);
+		(void)re_fprintf(stderr, "recv: %02w\n", tt->mb->buf, n);
 
 		check(tt, EBADMSG);
 		return;
@@ -144,6 +147,12 @@ int test_tls(void)
 
 	memset(&tt, 0, sizeof(tt));
 
+	tt.mb = mbuf_alloc(512);
+	if (!tt.mb) {
+		err = ENOMEM;
+		goto out;
+	}
+
 	err = sa_set_str(&srv, "127.0.0.1", 0);
 	if (err)
 		goto out;
@@ -186,6 +195,7 @@ int test_tls(void)
 	mem_deref(tt.tc_srv);
 	mem_deref(tt.ts);
 	mem_deref(tt.tls);
+	mem_deref(tt.mb);
 
 	return err | tt.err;
 }
