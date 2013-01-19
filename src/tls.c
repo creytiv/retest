@@ -24,7 +24,7 @@ struct tls_test {
 
 
 static const uint8_t tls_handshake[] =
-	"\x16\x03\x01\x01";
+	"\x16\x03\x01";
 
 
 static void signal_handler(int sig)
