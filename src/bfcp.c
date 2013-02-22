@@ -81,7 +81,7 @@ static int parse_msg(const uint8_t *p, size_t n)
 	while (mbuf_get_left(mb) >= 4) {
 		struct bfcp_msg *msg;
 
-		err = bfcp_msg_decode(&msg, mb, NULL);
+		err = bfcp_msg_decode(&msg, mb);
 		if (err)
 			break;
 
@@ -96,64 +96,83 @@ static int parse_msg(const uint8_t *p, size_t n)
 int test_bfcp(void)
 {
 	const size_t sz = sizeof(bfcp_msg) - 1;
-	struct bfcp_floor_reqinfo fri;
-	struct bfcp_floor_reqstat frsv[2] = {
-		{2, {BFCP_ACCEPTED, 2}, "ok"},
-		{4, {BFCP_REVOKED,  3}, "ja"}
-	};
 	struct mbuf *mb;
-	uint16_t floorid = 1, bfid = 2, frid = 3;
-	enum bfcp_prio prio = BFCP_PRIO_NORMAL;
+	struct bfcp_reqstatus oreqstatus, reqstatus1, reqstatus2;
+	uint16_t floorid = 1, bfid = 2, frid = 3, freqid;
+	uint16_t ofreqid, floorid1, floorid2, rbid;
+	enum bfcp_priority prio = BFCP_PRIO_NORMAL;
 	int n, err = 0;
 
 	mb = mbuf_alloc(512);
 	if (!mb)
 		return ENOMEM;
 
-	err = bfcp_msg_encode(mb, BFCP_FLOOR_REQUEST,
-			      0x01020304, 0xfedc, 0xba98,
-			      4,
-			      BFCP_FLOOR_ID, &floorid,
-			      BFCP_BENEFICIARY_ID, &bfid,
-			      BFCP_PARTICIPANT_PROV_INFO, "X",
-			      BFCP_PRIORITY, &prio);
+	err = bfcp_msg_encode(mb, 1, false, BFCP_FLOOR_REQUEST,
+			      0x01020304, 0xfedc, 0xba98, 4,
+			      BFCP_FLOOR_ID,       0, &floorid,
+			      BFCP_BENEFICIARY_ID, 0, &bfid,
+			      BFCP_PART_PROV_INFO, 0, "X",
+			      BFCP_PRIORITY,       0, &prio);
 	if (err)
 		goto out;
 
-	err = bfcp_msg_encode(mb, BFCP_FLOOR_RELEASE,
-			      0x01020304, 0xfedc, 0xba98,
-			      1,
-			      BFCP_FLOOR_REQUEST_ID, &frid);
+	err = bfcp_msg_encode(mb, 1, false, BFCP_FLOOR_RELEASE,
+			      0x01020304, 0xfedc, 0xba98, 1,
+			      BFCP_FLOOR_REQUEST_ID, 0, &frid);
 	if (err)
 		goto out;
 
-	fri.freqid = 0x8899;
-	fri.ors.freqid = 0x74ad;
-	fri.ors.reqstat.stat = BFCP_DENIED;
-	fri.ors.reqstat.qpos = 2;
-	fri.ors.statinfo = "OK";
-	fri.frsv = frsv;
-	fri.frsc = ARRAY_SIZE(frsv);
-	fri.bfi.bfid = 1;
-	fri.bfi.dname = "a";
-	fri.bfi.uri = "b";
-	fri.rbi.rbid = 2;
-	fri.rbi.dname = "c";
-	fri.rbi.uri = "d";
-	fri.prio = BFCP_PRIO_NORMAL;
-	fri.ppi = "x";
+	freqid = 0x8899;
 
-	err = bfcp_msg_encode(mb, BFCP_USER_STATUS,
-			      0x01020304, 0xfedc, 0xba98,
-			      1,
-			      BFCP_FLOOR_REQUEST_INFO, &fri);
+	ofreqid           = 0x74ad;
+	oreqstatus.status = BFCP_DENIED;
+	oreqstatus.qpos   = 2;
+
+	floorid1          = 2;
+	reqstatus1.status = BFCP_ACCEPTED;
+	reqstatus1.qpos   = 2;
+
+	floorid2          = 4;
+	reqstatus2.status = BFCP_REVOKED;
+	reqstatus2.qpos   = 3;
+
+	bfid = 1;
+	rbid = 2;
+	prio = BFCP_PRIO_NORMAL;
+
+	err = bfcp_msg_encode(mb, 1, false, BFCP_USER_STATUS,
+			      0x01020304, 0xfedc, 0xba98, 1,
+
+			      BFCP_FLOOR_REQ_INFO,     7, &freqid,
+
+			      BFCP_OVERALL_REQ_STATUS, 2, &ofreqid,
+			      BFCP_REQUEST_STATUS,     0, &oreqstatus,
+			      BFCP_STATUS_INFO,        0, "OK",
+
+			      BFCP_FLOOR_REQ_STATUS,   2, &floorid1,
+			      BFCP_REQUEST_STATUS,     0, &reqstatus1,
+			      BFCP_STATUS_INFO,        0, "ok",
+
+			      BFCP_FLOOR_REQ_STATUS,   2, &floorid2,
+			      BFCP_REQUEST_STATUS,     0, &reqstatus2,
+			      BFCP_STATUS_INFO,        0, "ja",
+
+			      BFCP_BENEFICIARY_INFO,   2, &bfid,
+			      BFCP_USER_DISP_NAME,     0, "a",
+			      BFCP_USER_URI,           0, "b",
+
+			      BFCP_REQUESTED_BY_INFO,  2, &rbid,
+			      BFCP_USER_DISP_NAME,     0, "c",
+			      BFCP_USER_URI,           0, "d",
+
+			      BFCP_PRIORITY,           0, &prio,
+
+			      BFCP_PART_PROV_INFO,     0, "x");
 	if (err)
 		goto out;
 
-	err = bfcp_msg_encode(mb, BFCP_HELLO,
-			      0x01020304, 0xfedc, 0xba98,
-			      0
-			      );
+	err = bfcp_msg_encode(mb, 1, false, BFCP_HELLO,
+			      0x01020304, 0xfedc, 0xba98, 0);
 	if (err)
 		goto out;
 
@@ -220,7 +239,7 @@ int fuzzy_bfcp(struct mbuf *mb)
 	struct bfcp_msg *msg = NULL;
 	int err;
 
-	err = bfcp_msg_decode(&msg, mb, NULL);
+	err = bfcp_msg_decode(&msg, mb);
 	if (err == EBADMSG)
 		err = 0;
 
