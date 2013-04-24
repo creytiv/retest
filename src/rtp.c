@@ -259,7 +259,8 @@ int test_rtcp_encode(void)
 	err |= rtcp_encode(mb, RTCP_RR, 1, 0x12345678, encode_handler, 0);
 	err |= rtcp_encode(mb, RTCP_SDES, 1, sdes_encode_handler, 0);
 	err |= rtcp_encode(mb, RTCP_BYE, 2, srcv, "ciao");
-	err |= rtcp_encode(mb, RTCP_APP, 0, 0x12345678, "name", "data", 4);
+	err |= rtcp_encode(mb, RTCP_APP, 0, 0x12345678, "name", "data",
+			   (size_t)4);
 	err |= rtcp_encode(mb, RTCP_FIR, 0, 0x12345678);
 	err |= rtcp_encode(mb, RTCP_NACK, 0, 0x12345678, 0x89ab, 0xcdef);
 	err |= rtcp_encode(mb, RTCP_RTPFB, RTCP_RTPFB_GNACK,
