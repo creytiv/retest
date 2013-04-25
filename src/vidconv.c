@@ -58,7 +58,7 @@ static void vidframe_dump(const struct vidframe *f)
 
 			(void)re_printf("%d: %d bytes [%02w]\n",
 					i, f->linesize[i], f->data[i],
-					min(f->linesize[i], 16));
+					(size_t)min(f->linesize[i], 16));
 		}
 	}
 }
