@@ -17,6 +17,7 @@ int test_mbuf(void)
 {
 	struct mbuf mb;
 	struct pl pl, hei = PL("hei"), foo = PL("foo");
+	static const char *pattern = "mmmmmmmmm";
 	char *str = NULL;
 	int err;
 
@@ -68,6 +69,17 @@ int test_mbuf(void)
 	if (err)
 		goto out;
 	err = pl_strcmp(&foo, str);
+
+	mb.pos = mb.end = 0;
+	err = mbuf_fill(&mb, 'm', 9);
+	if (err)
+		goto out;
+	if (mb.pos != strlen(pattern) ||
+	    mb.end != strlen(pattern) ||
+	    0 != memcmp(mb.buf, pattern, 9)) {
+		err = EBADMSG;
+		goto out;
+	}
 
  out:
 	mbuf_reset(&mb);
