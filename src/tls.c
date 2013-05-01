@@ -23,8 +23,9 @@ struct tls_test {
 };
 
 
-static const uint8_t tls_handshake[] =
-	"\x16\x03\x01";
+enum {HANDSHAKE_LEN = 2};
+static const uint8_t handshake_sslv2[HANDSHAKE_LEN] = "\x80\x2e";
+static const uint8_t handshake_sslv3[HANDSHAKE_LEN] = "\x16\x03";
 
 
 static void signal_handler(int sig)
@@ -81,7 +82,8 @@ static void server_estab_handler(void *arg)
 static void server_recv_handler(struct mbuf *mb, void *arg)
 {
 	struct tls_test *tt = arg;
-	const size_t n = sizeof(tls_handshake) - 1;
+	const size_t n = HANDSHAKE_LEN;
+	bool match;
 	int err;
 
 	if (!tt->estab_srv) {
@@ -98,9 +100,11 @@ static void server_recv_handler(struct mbuf *mb, void *arg)
 	if (tt->mb->end < n)
 		return;
 
-	if (0 != memcmp(tt->mb->buf, tls_handshake, n)) {
+	match = 0 == memcmp(tt->mb->buf, handshake_sslv2, n) ||
+		0 == memcmp(tt->mb->buf, handshake_sslv3, n);
+
+	if (!match) {
 		(void)re_fprintf(stderr, "TLS handshake mismatch\n");
-		(void)re_fprintf(stderr, "ref:  %02w\n", tls_handshake, n);
 		(void)re_fprintf(stderr, "recv: %02w\n", tt->mb->buf, n);
 
 		check(tt, EBADMSG);
