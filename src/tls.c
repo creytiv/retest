@@ -23,9 +23,10 @@ struct tls_test {
 };
 
 
-enum {HANDSHAKE_LEN = 2};
-static const uint8_t handshake_sslv2[HANDSHAKE_LEN] = "\x80\x2e";
-static const uint8_t handshake_sslv3[HANDSHAKE_LEN] = "\x16\x03";
+enum {
+	HANDSHAKE_LEN = 6,
+	CLIENT_HELLO = 0x01,
+};
 
 
 static void signal_handler(int sig)
@@ -83,7 +84,9 @@ static void server_recv_handler(struct mbuf *mb, void *arg)
 {
 	struct tls_test *tt = arg;
 	const size_t n = HANDSHAKE_LEN;
-	bool match;
+	const uint8_t *b;
+	uint16_t len;
+	uint8_t type;
 	int err;
 
 	if (!tt->estab_srv) {
@@ -100,14 +103,37 @@ static void server_recv_handler(struct mbuf *mb, void *arg)
 	if (tt->mb->end < n)
 		return;
 
-	match = 0 == memcmp(tt->mb->buf, handshake_sslv2, n) ||
-		0 == memcmp(tt->mb->buf, handshake_sslv3, n);
+	/* Decode SSL-header */
+	b = tt->mb->buf;
+	if ((b[0] & 0x80) == 0x80) {
 
-	if (!match) {
-		(void)re_fprintf(stderr, "TLS handshake mismatch\n");
-		(void)re_fprintf(stderr, "recv: %02w\n", tt->mb->buf, n);
+		/* SSL 2.0 */
+		len = (b[0] & 0x7f) << 8 | b[1];
+		type = b[2];
+	}
+	else if (b[0] == 0x16) {
 
+		/* SSL 3.0 or TLS 1.0 */
+		len = b[3] << 8 | b[4];
+		type = b[5];
+	}
+	else {
+		(void)re_fprintf(stderr, "tls: unknown SSL header (%w)\n",
+				 b, n);
 		check(tt, EBADMSG);
+		return;
+	}
+
+	if (tt->mb->end < len) {
+		(void)re_fprintf(stderr, "tls: short length: %u < %u\n",
+				 tt->mb->end, len);
+		check(tt, EPROTO);
+		return;
+	}
+	if (type != CLIENT_HELLO) {
+		(void)re_fprintf(stderr, "tls: unexpected record type %02x\n",
+				 type);
+		check(tt, EPROTO);
 		return;
 	}
 
