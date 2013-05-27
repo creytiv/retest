@@ -46,6 +46,7 @@ static const struct test tests[] = {
 	TEST(test_hmac_sha1),
 	TEST(test_httpauth_chall),
 	TEST(test_httpauth_resp),
+	TEST(test_ice),
 	TEST(test_jbuf),
 	TEST(test_list),
 	TEST(test_list_ref),
@@ -161,7 +162,7 @@ static int testcase_oom(const struct test *test, int levels, int *max_alloc)
 		if (ENOMEM == err) {
 			*max_alloc = max(j, *max_alloc);
 			if (!oom) {
-				(void)re_fprintf(stderr, "max %d\n", j);
+				(void)re_fprintf(stderr, "oom max %d\n", j);
 				if (j >= (int)levels) {
 					DEBUG_WARNING("levels=%u\n",
 						      levels);

@@ -14,6 +14,7 @@ SRCS	+= g711.c
 SRCS	+= hash.c
 SRCS	+= hmac.c
 SRCS	+= httpauth.c
+SRCS	+= ice.c
 SRCS	+= jbuf.c
 SRCS	+= list.c
 SRCS	+= main.c
