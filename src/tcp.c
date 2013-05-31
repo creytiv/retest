@@ -61,7 +61,6 @@ static void destructor(void *arg)
 static void abort_test(struct tcp_test *tt, int err)
 {
 	if (err) {
-		DEBUG_INFO("abort error: %s\n", strerror(err));
 		tt->err = err;
 	}
 
@@ -132,7 +131,6 @@ static void tcp_server_recv_handler(struct mbuf *mb, void *arg)
 static void tcp_server_close_handler(int err, void *arg)
 {
 	struct tcp_test *tt = arg;
-	DEBUG_INFO("Server: TCP Close (%s)\n", strerror(err));
 	abort_test(tt, err);
 }
 
@@ -186,7 +184,7 @@ static void tcp_client_recv_handler(struct mbuf *mb, void *arg)
 static void tcp_client_close_handler(int err, void *arg)
 {
 	struct tcp_test *tt = arg;
-	DEBUG_NOTICE("Client: TCP Close (%s)\n", strerror(err));
+	DEBUG_NOTICE("Client: TCP Close (%m)\n", err);
 
 	abort_test(tt, err);
 }

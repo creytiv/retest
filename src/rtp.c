@@ -280,7 +280,7 @@ int test_rtcp_encode(void)
 	}
 
 	if (err) {
-		DEBUG_WARNING("encode error: %s\n", strerror(err));
+		DEBUG_WARNING("encode error: %m\n", err);
 		hexdump(stderr, mb->buf, mb->end);
 	}
 

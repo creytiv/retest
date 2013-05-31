@@ -195,7 +195,7 @@ int test_bfcp(void)
 	}
 
 	if (err) {
-		DEBUG_WARNING("BFCP encode error: %s\n", strerror(err));
+		DEBUG_WARNING("BFCP encode error: %m\n", err);
 
 		(void)re_printf("\nReference message:\n");
 		hexdump(stderr, bfcp_msg, sz);

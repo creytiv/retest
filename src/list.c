@@ -81,10 +81,6 @@ int test_list(void)
 	err = 0;
 
  out:
-	if (err) {
-		DEBUG_WARNING("test_list failed (%s)\n", strerror(err));
-	}
-
 	return err;
 }
 

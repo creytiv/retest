@@ -483,13 +483,13 @@ int test_fmt_snprintf(void)
 	/* Test sockaddr printing */
 	err = sa_set_str(&sa4, addr4, 0);
 	if (err) {
-		DEBUG_WARNING("sa_set_str4: %s\n", strerror(err));
+		DEBUG_WARNING("sa_set_str4: %m\n", err);
 		goto out;
 	}
 #ifdef HAVE_INET6
 	err = sa_set_str(&sa6, addr6, 0);
 	if (err) {
-		DEBUG_WARNING("sa_set_str6: %s\n", strerror(err));
+		DEBUG_WARNING("sa_set_str6: %m\n", err);
 		goto out;
 	}
 #endif

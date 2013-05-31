@@ -190,22 +190,19 @@ int main(int argc, char *argv[])
 	if (do_reg) {
 		err = test_reg(name);
 		if (err)
-			(void)re_fprintf(stderr, "Failed (%s)\n",
-					 strerror(err));
+			(void)re_fprintf(stderr, "Failed (%m)\n", err);
 	}
 
 	if (do_oom) {
 		err = test_oom(name);
 		if (err)
-			(void)re_fprintf(stderr, "Failed (%s)\n",
-					 strerror(err));
+			(void)re_fprintf(stderr, "Failed (%m)\n", err);
 	}
 
 	if (do_perf) {
 		err = test_perf(name, n);
 		if (err)
-			(void)re_fprintf(stderr, "Failed (%s)\n",
-					 strerror(err));
+			(void)re_fprintf(stderr, "Failed (%m)\n", err);
 	}
 
 	if (do_fuzzy) {
@@ -214,8 +211,7 @@ int main(int argc, char *argv[])
 			err = test_fuzzy(name);
 		}
 		if (err) {
-			DEBUG_WARNING("fuzzy testing stopped: %s\n",
-				      strerror(err));
+			DEBUG_WARNING("fuzzy testing stopped: %m\n", err);
 		}
 
 		(void)re_printf("\n");

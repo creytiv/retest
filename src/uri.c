@@ -75,8 +75,8 @@ int test_uri(void)
 		pl_set_str(&pl0, uriv[i]);
 		err = uri_decode(&uri, &pl0);
 		if (err) {
-			DEBUG_WARNING("uri: uri_decode() failed (%s) (%s)\n",
-				      uriv[i], strerror(err));
+			DEBUG_WARNING("uri: uri_decode() failed (%s) (%m)\n",
+				      uriv[i], err);
 			goto out;
 		}
 
@@ -84,8 +84,6 @@ int test_uri(void)
 		mbuf_reset(&mb);
 		err = mbuf_printf(&mb, "%H", uri_encode, &uri);
 		if (err) {
-			DEBUG_INFO("uri: uri_encode() failed (%s)\n",
-				   strerror(err));
 			goto out;
 		}
 
@@ -94,8 +92,8 @@ int test_uri(void)
 		pl.l = mb.end;
 		err = pl_cmp(&pl, &pl0);
 		if (err) {
-			DEBUG_WARNING("uri comp: ref=(%s), gen=(%r) (%s)\n",
-				      &uriv[i], &pl, strerror(err));
+			DEBUG_WARNING("uri comp: ref=(%s), gen=(%r) (%m)\n",
+				      &uriv[i], &pl, err);
 			goto out;
 		}
 	}
@@ -154,8 +152,8 @@ int test_uri_encode(void)
 		pl.l = mb.end;
 		err = pl_strcmp(&pl, uriv[i].enc);
 		if (err) {
-			DEBUG_WARNING("uri enc: ref=(%s), gen=(%r) (%s)\n",
-				      &uriv[i].enc, &pl, strerror(err));
+			DEBUG_WARNING("uri enc: ref=(%s), gen=(%r) (%m)\n",
+				      &uriv[i].enc, &pl, err);
 			goto out;
 		}
 	}

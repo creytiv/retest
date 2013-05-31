@@ -133,8 +133,8 @@ int test_sa_decode(void)
 
 		e = sa_decode(&sa, testv[i].str, strlen(testv[i].str));
 		if (testv[i].err != e) {
-			DEBUG_WARNING("%u: expected (%s) got (%s)\n", i,
-				      strerror(testv[i].err), strerror(err));
+			DEBUG_WARNING("%u: expected (%m) got (%m)\n", i,
+				      testv[i].err, err);
 			err = EINVAL;
 			break;
 		}
@@ -280,7 +280,7 @@ int test_sa_ntop(void)
 
 		err = sa_set_sa(&sa, &sa0.u.sa);
 		if (err) {
-			DEBUG_WARNING("sa_set_sa: %s\n", strerror(err));
+			DEBUG_WARNING("sa_set_sa: %m\n", err);
 			break;
 		}
 		if (testv[i].af != sa_af(&sa)) {

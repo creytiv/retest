@@ -120,8 +120,8 @@ int test_sip_addr(void)
 		err = sip_addr_decode(&addr, &pl);
 		if (err) {
 			DEBUG_WARNING("sip_addr: test %u: sip_addr_decode()"
-				      " failed (%s) (%s)\n",
-				      i, addrv[i], strerror(err));
+				      " failed (%s) (%m)\n",
+				      i, addrv[i], err);
 			goto out;
 		}
 
@@ -133,8 +133,8 @@ int test_sip_addr(void)
 		mbuf_reset(&mb);
 		err = sip_addr_encode(&addr, &mb);
 		if (err) {
-			DEBUG_INFO("sip_addr: sip_addr_encode failed (%s)\n",
-				   strerror(err));
+			DEBUG_INFO("sip_addr: sip_addr_encode failed (%m)\n",
+				   err);
 			goto out;
 		}
 
@@ -396,8 +396,8 @@ int test_sip_apply(void)
 			goto out;
 		}
 		if (err) {
-			DEBUG_WARNING("%u: apply: header cmp failed (%s)\n",
-				      i, strerror(err));
+			DEBUG_WARNING("%u: apply: header cmp failed (%m)\n",
+				      i, err);
 			goto out;
 		}
 

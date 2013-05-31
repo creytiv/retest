@@ -208,8 +208,7 @@ int test_httpauth_resp(void)
 						    testv[i].ha1);
 		if (err) {
 			if (err != ENOMEM) {
-				DEBUG_WARNING("resp: auth failed %s\n",
-					      strerror(err));
+				DEBUG_WARNING("resp: auth failed %m\n", err);
 			}
 			break;
 		}

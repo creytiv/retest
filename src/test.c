@@ -172,14 +172,14 @@ static int testcase_oom(const struct test *test, int levels, int *max_alloc)
 			continue;
 		}
 
-		DEBUG_WARNING("%s: oom threshold=%u: %s\n",
-			      test->name, j, strerror(err));
+		DEBUG_WARNING("%s: oom threshold=%u: %m\n",
+			      test->name, j, err);
 		break;
 	}
 
 	if (err && ENOMEM != err) {
-		DEBUG_WARNING("%s: oom test failed (%s)\n", test->name,
-			      strerror(err));
+		DEBUG_WARNING("%s: oom test failed (%m)\n", test->name,
+			      err);
 		return err;
 	}
 	else if (0 == err) {
@@ -218,7 +218,7 @@ int test_oom(const char *name)
 	mem_threshold_set(-1);
 
 	if (err) {
-		DEBUG_WARNING("oom: %s\n", strerror(err));
+		DEBUG_WARNING("oom: %m\n", err);
 	}
 	else {
 		(void)re_fprintf(stderr, "\x1b[32mOK\x1b[;m\t"
@@ -243,8 +243,7 @@ static int test_unit(const char *name)
 
 		err = test->exec();
 		if (err) {
-			DEBUG_WARNING("%s: test failed (%s)\n",
-				      name, strerror(err));
+			DEBUG_WARNING("%s: test failed (%m)\n", name, err);
 			return err;
 		}
 	}
@@ -252,8 +251,8 @@ static int test_unit(const char *name)
 		for (i=0; i<ARRAY_SIZE(tests); i++) {
 			err = tests[i].exec();
 			if (err) {
-				DEBUG_WARNING("%s: test failed (%s)\n",
-					      tests[i].name, strerror(err));
+				DEBUG_WARNING("%s: test failed (%m)\n",
+					      tests[i].name, err);
 				return err;
 			}
 		}
