@@ -13,6 +13,7 @@ SRCS	+= fmt.c
 SRCS	+= g711.c
 SRCS	+= hash.c
 SRCS	+= hmac.c
+SRCS	+= http.c
 SRCS	+= httpauth.c
 SRCS	+= ice.c
 SRCS	+= jbuf.c
