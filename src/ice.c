@@ -233,7 +233,7 @@ static int agent_decode_sdp(struct agent *agent, struct mbuf *sdp)
 {
 	struct pl pl;
 	const char *pmax;
-	int err;
+	int err = 0;
 
 	sdp->pos = 0;
 	pl_set_mbuf(&pl, sdp);
