@@ -199,7 +199,9 @@ int test_udp(void)
 	}
 
 	/* Send from connected client UDP socket */
-	udp_connect(ut->usc, true);
+	err = udp_connect(ut->usc, &ut->srv);
+	if (err)
+		goto out;
 
 	/* Start test */
 	err = send_data(ut->usc, &ut->srv, data0);
