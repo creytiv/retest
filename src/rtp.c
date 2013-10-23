@@ -318,6 +318,43 @@ static const uint8_t rtcp_sdes[] =
 	"";
 
 
+static int test_rtcp_decode_badmsg(void)
+{
+	struct rtcp_msg *msg = NULL;
+	uint32_t ssrc = 0xcafebabe;
+	struct mbuf *mb;
+	int err = 0;
+
+	mb = mbuf_alloc(128);
+	if (!mb) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	err = rtcp_encode(mb, RTCP_PSFB, RTCP_PSFB_SLI,
+			  ssrc, ssrc, NULL, NULL);
+	if (err)
+		goto out;
+
+	/* simulate a corrupt RTCP packet */
+	mb->pos = 2;
+	(void)mbuf_write_u16(mb, htons(0));
+
+	mb->pos = 0;
+
+	if (EBADMSG != rtcp_decode(&msg, mb)) {
+		err = EBADMSG;
+		goto out;
+	}
+
+ out:
+	mem_deref(msg);
+	mem_deref(mb);
+
+	return err;
+}
+
+
 int test_rtcp_decode(void)
 {
 	struct rtcp_msg *msg = NULL;
@@ -340,6 +377,14 @@ int test_rtcp_decode(void)
 
 	mem_deref(msg);
 	mem_deref(mb);
+
+	if (err)
+		return err;
+
+	err = test_rtcp_decode_badmsg();
+	if (err)
+		return err;
+
 	return err;
 }
 
