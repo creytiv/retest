@@ -421,3 +421,71 @@ int fuzzy_rtcp(struct mbuf *mb)
 	mem_deref(msg);
 	return err;
 }
+
+
+static int afb_encode_handler(struct mbuf *mb, void *arg)
+{
+	return mbuf_write_str(mb, arg);
+}
+
+
+int test_rtcp_encode_afb(void)
+{
+	uint32_t ssrc_packet_sender, ssrc_media_source;
+	const char *afb_payload = "AFB tull";
+	struct rtcp_msg *msg = NULL;
+	struct mbuf *mb;
+	int err = 0;
+
+	mb = mbuf_alloc(512);
+	if (!mb)
+		return ENOMEM;
+
+	ssrc_packet_sender = 0xbad00bad;
+	ssrc_media_source = 0; /* always 0 */
+	err = rtcp_encode(mb, RTCP_PSFB, RTCP_PSFB_AFB,
+			  ssrc_packet_sender, ssrc_media_source,
+			  afb_encode_handler, afb_payload);
+	if (err)
+		goto out;
+
+	mb->pos = 0;
+	err = rtcp_decode(&msg, mb);
+	if (err)
+		goto out;
+
+	if (msg->hdr.count != RTCP_PSFB_AFB) {
+		DEBUG_WARNING("expected AFB, got fmt=%u\n", msg->hdr.count);
+		err = EPROTO;
+		goto out;
+	}
+
+	if (msg->r.fb.ssrc_packet != ssrc_packet_sender ||
+	    msg->r.fb.ssrc_media  != ssrc_media_source) {
+		DEBUG_WARNING("error in SSRC encoding\n");
+		err = EBADMSG;
+		goto out;
+	}
+
+	if (!msg->r.fb.fci.afb ||
+	    mbuf_get_left(msg->r.fb.fci.afb) != strlen(afb_payload)) {
+		DEBUG_WARNING("error in AFB mbuf (left=%u, size=%u)\n",
+			      mbuf_get_left(msg->r.fb.fci.afb),
+			      strlen(afb_payload));
+		err = EBADMSG;
+		goto out;
+	}
+
+	if (0 != memcmp(mbuf_buf(msg->r.fb.fci.afb),
+			afb_payload,
+			strlen(afb_payload))) {
+		DEBUG_WARNING("error in AFB mbuf content\n");
+		err = EBADMSG;
+		goto out;
+	}
+
+ out:
+	mem_deref(mb);
+	mem_deref(msg);
+	return err;
+}
