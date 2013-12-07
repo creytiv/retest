@@ -5,6 +5,36 @@
  */
 
 
+#define TEST_EQUALS(expected, actual)				\
+	if ((expected) != (actual)) {				\
+		DEBUG_WARNING("TEST_EQUALS: %s:%u:"		\
+			      " expected=%d, actual=%d\n",	\
+			      __FILE__, __LINE__,		\
+			      (expected), (actual));		\
+		return EINVAL;					\
+	}
+
+#define TEST_NOT_EQUALS(expected, actual)				\
+	if ((expected) == (actual)) {				\
+		DEBUG_WARNING("TEST_NOT_EQUALS: %s:%u:"		\
+			      " expected=%d != actual=%d\n",	\
+			      __FILE__, __LINE__,		\
+			      (expected), (actual));		\
+		return EINVAL;					\
+	}
+
+
+#define TEST_MEMCMP(expected, actual, n)				\
+	if (0 != memcmp((expected), (actual), (n))) {			\
+		DEBUG_WARNING("TEST_MEMCMP: %s:%u:"			\
+			      " expected = '%w', actual = '%w'\n",	\
+			      __FILE__, __LINE__,			\
+			      (expected), (size_t)(n),			\
+			      (actual), (size_t)(n));			\
+		return EBADMSG;						\
+	}
+
+
 /* Module API */
 int test_base64(void);
 int test_bfcp(void);
