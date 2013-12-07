@@ -23,7 +23,6 @@
 		return EINVAL;					\
 	}
 
-
 #define TEST_MEMCMP(expected, actual, n)				\
 	if (0 != memcmp((expected), (actual), (n))) {			\
 		DEBUG_WARNING("TEST_MEMCMP: %s:%u:"			\
@@ -32,6 +31,15 @@
 			      (expected), (size_t)(n),			\
 			      (actual), (size_t)(n));			\
 		return EBADMSG;						\
+	}
+
+#define TEST_ASSERT(actual)					\
+	if (!(actual)) {					\
+		DEBUG_WARNING("TEST_ASSERT: %s:%u:"		\
+			      " actual=%d\n",			\
+			      __FILE__, __LINE__,		\
+			      (actual));			\
+		return EINVAL;					\
 	}
 
 
@@ -105,6 +113,7 @@ int test_uri_encode(void);
 int test_uri_headers(void);
 int test_uri_user(void);
 int test_uri_params_headers(void);
+int test_vid(void);
 int test_vidconv(void);
 #ifdef USE_TLS
 int test_tls(void);
