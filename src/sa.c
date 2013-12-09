@@ -115,7 +115,7 @@ int test_sa_decode(void)
 		{0,      AF_INET,  "1.2.3.4:1234",  "1.2.3.4", 1234},
 		{0,      AF_INET,  "1.2.3.4:0",     "1.2.3.4", 0},
 		{EINVAL, AF_INET,  "1.2.3.4",       "",        0},
-		{EINVAL, AF_INET,  "1.2.3.4 :1234", "",        0},
+		{EINVAL, AF_INET,  "1.2.3.4.:1234", "",        0},
 #ifdef HAVE_INET6
 		{0, AF_INET6, "[::1]:1", "::1", 1},
 		{0, AF_INET6, "[fe80:c827:1507:7707:7b75:5489:feb7:2c45]:3333",
@@ -133,8 +133,9 @@ int test_sa_decode(void)
 
 		e = sa_decode(&sa, testv[i].str, strlen(testv[i].str));
 		if (testv[i].err != e) {
-			DEBUG_WARNING("%u: expected (%m) got (%m)\n", i,
-				      testv[i].err, err);
+			DEBUG_WARNING("sa_decode: test %u:"
+				      " expected (%m) got (%m) [%s]\n", i,
+				      testv[i].err, err, testv[i].str);
 			err = EINVAL;
 			break;
 		}
