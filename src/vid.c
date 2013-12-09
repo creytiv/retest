@@ -19,7 +19,7 @@ static const enum vidfmt fmtv[VID_FMT_N] = {
 	VID_FMT_YUYV422,
 	VID_FMT_UYVY422,
 	VID_FMT_RGB32,
-	/* todo VID_FMT_ARGB, */
+	VID_FMT_ARGB,
 	VID_FMT_RGB565,
 	VID_FMT_RGB555,
 	VID_FMT_NV12,
