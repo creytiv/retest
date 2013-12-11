@@ -52,6 +52,7 @@ int test_crc32(void);
 int test_dns_hdr(void);
 int test_dns_rr(void);
 int test_dns_dname(void);
+int test_fir(void);
 int test_fmt_param(void);
 int test_fmt_pl(void);
 int test_fmt_pl_u32(void);
