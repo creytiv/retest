@@ -27,10 +27,11 @@
 	if (expn != actn ||						\
 	    0 != memcmp((expected), (actual), (expn))) {		\
 		DEBUG_WARNING("TEST_MEMCMP: %s:%u:"			\
-			      " expected = '%w', actual = '%w'\n",	\
-			      __FILE__, __LINE__,			\
-			      (expected), (size_t)(expn),		\
-			      (actual), (size_t)(actn));		\
+			      " failed\n",				\
+			      __FILE__, __LINE__);			\
+		test_hexdump_dual(stderr,				\
+				  expected, expn,			\
+				  actual, actn);			\
 		return EBADMSG;						\
 	}
 
@@ -137,3 +138,8 @@ int  test_oom(const char *name);
 int  test_perf(const char *name, uint32_t n);
 int  test_fuzzy(const char *name);
 void test_listcases(void);
+
+
+void test_hexdump_dual(FILE *f,
+		       const void *ep, size_t elen,
+		       const void *ap, size_t alen);
