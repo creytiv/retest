@@ -23,13 +23,14 @@
 		return EINVAL;					\
 	}
 
-#define TEST_MEMCMP(expected, actual, n)				\
-	if (0 != memcmp((expected), (actual), (n))) {			\
+#define TEST_MEMCMP(expected, expn, actual, actn)			\
+	if (expn != actn ||						\
+	    0 != memcmp((expected), (actual), (expn))) {		\
 		DEBUG_WARNING("TEST_MEMCMP: %s:%u:"			\
 			      " expected = '%w', actual = '%w'\n",	\
 			      __FILE__, __LINE__,			\
-			      (expected), (size_t)(n),			\
-			      (actual), (size_t)(n));			\
+			      (expected), (size_t)(expn),		\
+			      (actual), (size_t)(actn));		\
 		return EBADMSG;						\
 	}
 

@@ -103,14 +103,7 @@ int test_stun_req(void)
 	if (err)
 		goto out;
 
-	if ((sizeof(req)-1) != mb->end ||
-	    0 != memcmp(mb->buf, req, mb->end)) {
-		err = EBADMSG;
-		DEBUG_WARNING("compare failed\n");
-		(void)re_printf("msg: [%02w]\n", mb->buf, mb->end);
-		(void)re_printf("ref: [%02w]\n", req, sizeof(req)-1);
-		goto out;
-	}
+	TEST_MEMCMP(req, sizeof(req)-1, mb->buf, mb->end);
 
 	/* Decode STUN message */
 	mb->pos = 0;

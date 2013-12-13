@@ -45,10 +45,11 @@ int test_fir(void)
 	/* verify FIR-filter state */
 	TEST_EQUALS(NUM_SAMPLES, fir.index);
 	TEST_ASSERT(NUM_SAMPLES <= ARRAY_SIZE(fir.history));
-	TEST_MEMCMP(samp_in, fir.history, sizeof samp_in);
+	TEST_MEMCMP(samp_in, sizeof(samp_in), fir.history, sizeof(samp_in));
 
 	/* verify output samples */
-	TEST_MEMCMP(samp_out_exp, samp_out, sizeof samp_out);
+	TEST_MEMCMP(samp_out_exp, sizeof(samp_out_exp),
+		    samp_out, sizeof(samp_out));
 
 	return 0;
 }
