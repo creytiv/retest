@@ -32,6 +32,7 @@ int test_fir(void)
 	static const int16_t samp_out_exp[NUM_SAMPLES] =
 		{ -59, -78, -9, 183, 421, 534, 391, -38};
 	int16_t samp_out[NUM_SAMPLES];
+	int err = 0;
 
 	fir_reset(&fir);
 
@@ -51,5 +52,6 @@ int test_fir(void)
 	TEST_MEMCMP(samp_out_exp, sizeof(samp_out_exp),
 		    samp_out, sizeof(samp_out));
 
-	return 0;
+ out:
+	return err;
 }

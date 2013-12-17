@@ -11,16 +11,18 @@
 			      " expected=%d, actual=%d\n",	\
 			      __FILE__, __LINE__,		\
 			      (expected), (actual));		\
-		return EINVAL;					\
+		err = EINVAL;					\
+		goto out;					\
 	}
 
-#define TEST_NOT_EQUALS(expected, actual)				\
+#define TEST_NOT_EQUALS(expected, actual)			\
 	if ((expected) == (actual)) {				\
 		DEBUG_WARNING("TEST_NOT_EQUALS: %s:%u:"		\
 			      " expected=%d != actual=%d\n",	\
 			      __FILE__, __LINE__,		\
 			      (expected), (actual));		\
-		return EINVAL;					\
+		err = EINVAL;					\
+		goto out;					\
 	}
 
 #define TEST_MEMCMP(expected, expn, actual, actn)			\
@@ -32,16 +34,18 @@
 		test_hexdump_dual(stderr,				\
 				  expected, expn,			\
 				  actual, actn);			\
-		return EBADMSG;						\
+		err = EINVAL;						\
+		goto out;						\
 	}
 
-#define TEST_ASSERT(actual)					\
-	if (!(actual)) {					\
-		DEBUG_WARNING("TEST_ASSERT: %s:%u:"		\
-			      " actual=%d\n",			\
-			      __FILE__, __LINE__,		\
-			      (actual));			\
-		return EINVAL;					\
+#define TEST_ASSERT(actual)						\
+	if (!(actual)) {						\
+		DEBUG_WARNING("TEST_ASSERT: %s:%u:"			\
+			      " actual=%d\n",				\
+			      __FILE__, __LINE__,			\
+			      (actual));				\
+		err = EINVAL;						\
+		goto out;						\
 	}
 
 

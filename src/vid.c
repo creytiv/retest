@@ -30,13 +30,15 @@ static const enum vidfmt fmtv[VID_FMT_N] = {
 static int test_vidsz_cmp(void)
 {
 	struct vidsz a = {64, 64}, b = {64, 64}, c = {32, 32};
+	int err = 0;
 
 	TEST_ASSERT(!vidsz_cmp(NULL, NULL));
 	TEST_ASSERT( vidsz_cmp(&a, &a));
 	TEST_ASSERT( vidsz_cmp(&a, &b));
 	TEST_ASSERT(!vidsz_cmp(&a, &c));
 
-	return 0;
+ out:
+	return err;
 }
 
 
@@ -46,6 +48,7 @@ static int test_vidrect_cmp(void)
 	struct vidrect b = {10, 10, 30, 30};
 	struct vidrect c = {10, 10, 40, 40};
 	struct vidrect d = {20, 20, 30, 30};
+	int err = 0;
 
 	TEST_ASSERT(!vidrect_cmp(NULL, NULL));
 	TEST_ASSERT( vidrect_cmp(&a, &a));
@@ -53,7 +56,8 @@ static int test_vidrect_cmp(void)
 	TEST_ASSERT(!vidrect_cmp(&a, &c));
 	TEST_ASSERT(!vidrect_cmp(&a, &d));
 
-	return 0;
+ out:
+	return err;
 }
 
 
@@ -99,6 +103,7 @@ static int test_vidframe_alloc(void)
 		vf = mem_deref(vf);
 	}
 
+ out:
 	return err;
 }
 
