@@ -390,12 +390,12 @@ void test_hexdump_dual(FILE *f,
 
 	len = max(elen, alen);
 
-	(void)re_fprintf(f, "\nOffset:   Expected (%u bytes):    "
-			 "   Actual (%u bytes):\n", elen, alen);
+	(void)re_fprintf(f, "\nOffset:   Expected (%zu bytes):    "
+			 "   Actual (%zu bytes):\n", elen, alen);
 
 	for (i=0; i < len; i += WIDTH) {
 
-		(void)re_fprintf(f, "0x%04x   ", i);
+		(void)re_fprintf(f, "0x%04zx   ", i);
 
 		for (j=0; j<WIDTH; j++) {
 			const size_t pos = i+j;
