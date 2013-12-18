@@ -104,6 +104,7 @@ static int test_vidframe_alloc(void)
 	}
 
  out:
+	mem_deref(vf);
 	return err;
 }
 

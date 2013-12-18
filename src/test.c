@@ -399,8 +399,15 @@ void test_hexdump_dual(FILE *f,
 
 		for (j=0; j<WIDTH; j++) {
 			const size_t pos = i+j;
-			if (pos < elen)
+			if (pos < elen) {
+				bool wrong = pos >= alen;
+
+				if (wrong)
+					(void)re_fprintf(f, "\x1b[35m");
 				(void)re_fprintf(f, " %02x", ebuf[pos]);
+				if (wrong)
+					(void)re_fprintf(f, "\x1b[;m");
+			}
 			else
 				(void)re_fprintf(f, "   ");
 		}
