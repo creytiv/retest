@@ -109,6 +109,96 @@ static int test_vidframe_alloc(void)
 }
 
 
+/*
+ * Test a RGB32 Video-frame with 2 x 2 pixels and 3 RGB pixel
+ *
+ *    .--+----
+ *    |RG|
+ *    |B |
+ *    +--+----
+ *    |
+ *    |
+ */
+static int test_vidframe_rgb32_2x2_red(void)
+{
+	struct vidframe vf;
+	struct vidsz sz = {2, 2};
+	uint8_t buf[2*4 + 2*4];
+	const uint8_t pix[2][8] = {
+		{   0, 0,0xff, 0, 0, 0xff, 0, 0},
+		{0xff, 0,   0, 0, 0,    0, 0, 0}
+	};
+	int err = 0;
+
+	vidframe_init_buf(&vf, VID_FMT_RGB32, &sz, buf);
+
+	TEST_EQUALS(buf,  vf.data[0]);
+	TEST_EQUALS(NULL, vf.data[1]);
+	TEST_EQUALS(NULL, vf.data[2]);
+	TEST_EQUALS(NULL, vf.data[3]);
+
+	TEST_EQUALS(8, vf.linesize[0]);
+	TEST_EQUALS(0, vf.linesize[1]);
+	TEST_EQUALS(0, vf.linesize[2]);
+	TEST_EQUALS(0, vf.linesize[3]);
+
+	TEST_EQUALS(2, vf.size.w);
+	TEST_EQUALS(2, vf.size.h);
+
+	TEST_EQUALS(VID_FMT_RGB32, vf.fmt);
+
+	vidframe_draw_point(&vf, 0, 0, 255,   0,   0);
+	vidframe_draw_point(&vf, 1, 0,   0, 255,   0);
+	vidframe_draw_point(&vf, 0, 1,   0,   0, 255);
+	vidframe_draw_point(&vf, 1, 1,   0,   0,   0);
+
+	TEST_MEMCMP(pix[0], sizeof(pix[0]), vf.data[0], 8);
+	TEST_MEMCMP(pix[1], sizeof(pix[1]), vf.data[0] + vf.linesize[0], 8);
+
+ out:
+	return err;
+}
+
+
+static int test_vidframe_yuv420p_2x2_white(void)
+{
+	struct vidframe *vf;
+	struct vidsz sz = {2, 2};
+	const uint8_t ypix[4] = {235, 235, 235, 235};
+	int err;
+
+	err = vidframe_alloc(&vf, VID_FMT_YUV420P, &sz);
+	if (err)
+		return err;
+
+	vidframe_fill(vf, 255, 255, 255);
+
+	TEST_NOT_EQUALS(NULL, vf->data[0]);
+	TEST_NOT_EQUALS(NULL, vf->data[1]);
+	TEST_NOT_EQUALS(NULL, vf->data[2]);
+	TEST_EQUALS(NULL, vf->data[3]);
+
+	TEST_EQUALS(2, vf->linesize[0]);
+	TEST_EQUALS(1, vf->linesize[1]);
+	TEST_EQUALS(1, vf->linesize[2]);
+	TEST_EQUALS(0, vf->linesize[3]);
+
+	TEST_EQUALS(2, vf->size.w);
+	TEST_EQUALS(2, vf->size.h);
+
+	TEST_EQUALS(VID_FMT_YUV420P, vf->fmt);
+
+	TEST_MEMCMP(ypix, sizeof(ypix), vf->data[0], 4);
+	TEST_EQUALS(128, vf->data[1][0]);
+	TEST_EQUALS(128, vf->data[2][0]);
+
+ out:
+	mem_deref(vf);
+
+	return err;
+}
+
+
 int test_vid(void)
 {
 	int err;
@@ -126,6 +216,14 @@ int test_vid(void)
 		return err;
 
 	err = test_vidframe_alloc();
+	if (err)
+		return err;
+
+	err = test_vidframe_rgb32_2x2_red();
+	if (err)
+		return err;
+
+	err = test_vidframe_yuv420p_2x2_white();
 	if (err)
 		return err;
 
