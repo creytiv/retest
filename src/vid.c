@@ -130,6 +130,7 @@ static int test_vidframe_rgb32_2x2_red(void)
 	};
 	int err = 0;
 
+	memset(buf, 0, sizeof(buf));
 	vidframe_init_buf(&vf, VID_FMT_RGB32, &sz, buf);
 
 	TEST_EQUALS(buf,  vf.data[0]);
