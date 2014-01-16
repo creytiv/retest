@@ -50,13 +50,13 @@ static void vidframe_dump(const struct vidframe *f)
 	if (!f)
 		return;
 
-	(void)re_printf("vidframe %d x %d:\n", f->size.w, f->size.h);
+	(void)re_printf("vidframe %u x %u:\n", f->size.w, f->size.h);
 
 	for (i=0; i<4; i++) {
 
 		if (f->linesize[i] && f->data[i]) {
 
-			(void)re_printf("%d: %d bytes [%02w]\n",
+			(void)re_printf("%d: %u bytes [%w]\n",
 					i, f->linesize[i], f->data[i],
 					(size_t)min(f->linesize[i], 16));
 		}
