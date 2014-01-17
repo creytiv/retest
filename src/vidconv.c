@@ -9,9 +9,104 @@
 #include "test.h"
 
 
+#define DEBUG_MODULE "vidconv"
+#define DEBUG_LEVEL 5
+#include <re_dbg.h>
+
+
 #define WIDTH 320
 #define HEIGHT 240
 #define SCALE 2
+
+
+/*
+ * http://en.wikipedia.org/wiki/YCbCr
+ *
+ * ITU-R BT.601 conversion
+ *
+ * Digital YCbCr can derived from digital R'dG'dB'd
+ * (8 bits per sample, each using the full range with
+ * zero representing black and 255 representing white)
+ * according to the following equations:
+ */
+
+
+static double rgb2y_ref(int r, int g, int b)
+{
+	return 16.0 + (65.738*r)/256 + (129.057*g)/256 + (25.064*b)/256;
+}
+
+static double rgb2u_ref(int r, int g, int b)
+{
+	return 128 - 37.945*r/256 - 74.494*g/256 + 112.439*b/256;
+}
+
+static double rgb2v_ref(int r, int g, int b)
+{
+	return 128 + 112.439*r/256 - 94.154*g/256 - 18.285*b/256;
+}
+
+
+static int testx(const char *name, int rmin, int rmax, double x, double xref)
+{
+	double diff = x - xref;
+	int err = 0;
+
+	/* the difference should be within the range (-1.0, 1.0) */
+	if (diff > 1.0 || diff < -1.0) {
+		DEBUG_WARNING("component '%s' -- diff is too large: %f\n",
+			      name, diff);
+		return EBADMSG;
+	}
+	TEST_ASSERT(x >= rmin && x <= rmax);
+
+ out:
+	return err;
+}
+
+
+static int test_vid_rgb2yuv_color(int r, int g, int b)
+{
+	int err = 0;
+
+	err |= testx("Y", 16, 235, rgb2y(r, g, b), rgb2y_ref(r, g, b));
+	err |= testx("U", 16, 240, rgb2u(r, g, b), rgb2u_ref(r, g, b));
+	err |= testx("V", 16, 240, rgb2v(r, g, b), rgb2v_ref(r, g, b));
+
+	return err;
+}
+
+
+static int test_vid_rgb2yuv(void)
+{
+	int r, g, b;
+	int err = 0;
+
+	/* full range of 1 color component only */
+	for (r=0; r<256; r++)
+		err |= test_vid_rgb2yuv_color(r, 0, 0);
+	for (g=0; g<256; g++)
+		err |= test_vid_rgb2yuv_color(0, g, 0);
+	for (b=0; b<256; b++)
+		err |= test_vid_rgb2yuv_color(0, 0, b);
+	if (err)
+		return err;
+
+	/* combine 2 color components */
+	for (r=0; r<256; r++)
+		for (g=0; g<256; g++)
+			err |= test_vid_rgb2yuv_color(r, g, 0);
+
+	for (r=0; r<256; r++)
+		for (b=0; b<256; b++)
+			err |= test_vid_rgb2yuv_color(r, 0, b);
+
+	for (g=0; g<256; g++)
+		for (b=0; b<256; b++)
+			err |= test_vid_rgb2yuv_color(0, g, b);
+
+	return err;
+}
 
 
 static bool vidframe_cmp(const struct vidframe *a, const struct vidframe *b)
@@ -68,7 +163,7 @@ static void vidframe_dump(const struct vidframe *f)
  * Test vidconv module by scaling a random image up and then down.
  * The two images should then be pixel accurate.
  */
-int test_vidconv(void)
+static int test_vidconv_scaling(void)
 {
 	struct vidframe *f0 = NULL, *f1 = NULL, *f2 = NULL;
 	const struct vidsz size0 = {WIDTH, HEIGHT};
@@ -106,6 +201,22 @@ int test_vidconv(void)
 	mem_deref(f2);
 	mem_deref(f1);
 	mem_deref(f0);
+
+	return err;
+}
+
+
+int test_vidconv(void)
+{
+	int err;
+
+	err = test_vid_rgb2yuv();
+	if (err)
+		return err;
+
+	err = test_vidconv_scaling();
+	if (err)
+		return err;
 
 	return err;
 }
