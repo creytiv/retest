@@ -38,6 +38,27 @@
 		goto out;						\
 	}
 
+#define TEST_STRCMP(expected, expn, actual, actn)			\
+	if (expn != actn ||						\
+	    0 != memcmp((expected), (actual), (expn))) {		\
+		(void)re_fprintf(stderr, "\n");				\
+		DEBUG_WARNING("TEST_STRCMP: %s:%u:"			\
+			      " failed\n",				\
+			      __FILE__, __LINE__);			\
+		(void)re_fprintf(stderr,				\
+				 "expected string: (%zu bytes)\n"	\
+				 "%b\n",				\
+				 (size_t)(expn),			\
+				 (expected), (size_t)(expn));		\
+		(void)re_fprintf(stderr,				\
+				 "actual string: (%zu bytes)\n"		\
+				 "%b\n",				\
+				 (size_t)(actn),			\
+				 (actual), (size_t)(actn));		\
+		err = EINVAL;						\
+		goto out;						\
+	}
+
 #define TEST_ASSERT(actual)						\
 	if (!(actual)) {						\
 		DEBUG_WARNING("TEST_ASSERT: %s:%u:"			\
@@ -45,6 +66,16 @@
 			      __FILE__, __LINE__,			\
 			      (actual));				\
 		err = EINVAL;						\
+		goto out;						\
+	}
+
+#define TEST_ERR(err)							\
+	if ((err)) {							\
+		(void)re_fprintf(stderr, "\n");				\
+		DEBUG_WARNING("TEST_ERR: %s:%u:"			\
+			      " (%m)\n",				\
+			      __FILE__, __LINE__,			\
+			      (err));					\
 		goto out;						\
 	}
 
