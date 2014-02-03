@@ -743,6 +743,7 @@ static int agent_start(struct agent *agent)
 
 static int agent_verify_completed(struct agent *agent)
 {
+	uint32_t validc;
 	int err = 0;
 
 	if (agent->mode == ICE_MODE_FULL) {
@@ -751,7 +752,13 @@ static int agent_verify_completed(struct agent *agent)
 	}
 
 	TEST_EQUALS(0, list_count(icem_checkl(agent->icem)));
-	TEST_EQUALS(1, list_count(icem_validl(agent->icem)));
+	validc = list_count(icem_validl(agent->icem));
+	if (agent->mode == ICE_MODE_FULL) {
+		TEST_EQUALS(1, validc);
+	}
+	else {
+		TEST_ASSERT(validc==0 || validc==1);
+	}
 
  out:
 	return err;
@@ -786,7 +793,9 @@ static void icetest_check_gatherings(struct ice_test *it)
 		goto error;
 
 	err  = agent_start(it->a);
-	err |= agent_start(it->b);
+	if (err)
+		goto out;
+	err = agent_start(it->b);
 	if (err)
 		goto out;
 
