@@ -34,12 +34,21 @@
  */
 
 
+struct attrs {
+	struct attr {
+		char name[16];
+		char value[64];
+	} attrv[16];
+	unsigned attrc;
+};
+
 struct agent {
 	struct ice *ice;
 	struct icem *icem;
 	struct udp_sock *us;
 	struct sa laddr;
-	struct mbuf *mb;
+	struct attrs attr_s;
+	struct attrs attr_m;
 	struct ice_test *it;  /* parent */
 	struct pf *pf;
 	enum ice_mode mode;
@@ -94,6 +103,53 @@ static bool find_debug_string(struct ice *ice, const char *str)
 }
 
 
+static int attr_add(struct attrs *attrs, const char *name,
+		    const char *value, ...)
+{
+	struct attr *attr = &attrs->attrv[attrs->attrc];
+	va_list ap;
+	int r, err = 0;
+
+	if (!attrs || !name)
+		return EINVAL;
+
+	TEST_ASSERT(attrs->attrc <= ARRAY_SIZE(attrs->attrv));
+
+	TEST_ASSERT(strlen(name) < sizeof(attr->name));
+	str_ncpy(attr->name, name, sizeof(attr->name));
+
+	if (value) {
+		va_start(ap, value);
+		r = re_vsnprintf(attr->value, sizeof(attr->value), value, ap);
+		va_end(ap);
+		TEST_ASSERT(r > 0);
+	}
+
+	attrs->attrc++;
+
+ out:
+	return err;
+}
+
+
+static const char *attr_find(const struct attrs *attrs, const char *name)
+{
+	unsigned i;
+
+	if (!attrs || !name)
+		return NULL;
+
+	for (i=0; i<attrs->attrc; i++) {
+		const struct attr *attr = &attrs->attrv[i];
+
+		if (0 == str_casecmp(attr->name, name))
+			return attr->value;
+	}
+
+	return NULL;
+}
+
+
 /*
  * ICE Agent
  */
@@ -107,7 +163,6 @@ static void agent_destructor(void *arg)
 	mem_deref(agent->ice);
 	mem_deref(agent->pf);
 	mem_deref(agent->us);
-	mem_deref(agent->mb);
 }
 
 
@@ -120,105 +175,82 @@ static struct agent *agent_other(struct agent *agent)
 }
 
 
-static int agent_encode_sdp(struct agent *agent)
+static int agent_encode_sdp(struct agent *ag)
 {
 	struct le *le;
 	int err = 0;
 
-	for (le = icem_lcandl(agent->icem)->head; le; le = le->next) {
+	for (le = icem_lcandl(ag->icem)->head; le; le = le->next) {
 
 		struct cand *cand = le->data;
 
-		err = mbuf_printf(agent->mb, "a=candidate:%H\r\n",
-				  ice_cand_encode, cand);
+		err = attr_add(&ag->attr_m, "candidate", "%H",
+			       ice_cand_encode, cand);
 		if (err)
 			break;
 	}
 
-	err |= mbuf_printf(agent->mb, "a=ice-ufrag:%s\r\n",
-			    ice_ufrag(agent->ice));
-	err |= mbuf_printf(agent->mb, "a=ice-pwd:%s\r\n",
-			   ice_pwd(agent->ice));
+	err |= attr_add(&ag->attr_m, "ice-ufrag", ice_ufrag(ag->ice));
+	err |= attr_add(&ag->attr_m, "ice-pwd", ice_pwd(ag->ice));
 
-	if (agent->mode == ICE_MODE_LITE) {
-		err |= mbuf_printf(agent->mb, "a=%s\r\n", ice_attr_lite);
+	if (ag->mode == ICE_MODE_LITE) {
+		err |= attr_add(&ag->attr_s, ice_attr_lite, NULL);
 	}
 
 	return err;
 }
 
 
-static int agent_verify_offer(const struct agent *agent)
+static int agent_verify_outgoing_sdp(const struct agent *agent)
 {
+	const char *cand, *ufrag, *pwd;
 	char buf[1024];
 	int err = 0;
 
 	if (re_snprintf(buf, sizeof(buf),
-			"a=candidate:7f000001 %u UDP 2113929465"
-			" 127.0.0.1 %u typ host\r\n"
-			"a=ice-ufrag:%s\r\n"
-			"a=ice-pwd:%s\r\n"
-			"%s",
-			agent->compid, sa_port(&agent->laddr),
-			ice_ufrag(agent->ice),
-			ice_pwd(agent->ice),
-			agent->mode == ICE_MODE_LITE ? "a=ice-lite\r\n" : ""
-			) < 0) {
+			"7f000001 %u UDP 2113929465 127.0.0.1 %u typ host",
+			agent->compid, sa_port(&agent->laddr)) < 0) {
 		return ENOMEM;
 	}
+	cand = attr_find(&agent->attr_m, "candidate");
+	TEST_STRCMP(buf, str_len(buf), cand, str_len(cand));
 
-	TEST_STRCMP(buf, str_len(buf), agent->mb->buf, agent->mb->end);
+	ufrag = attr_find(&agent->attr_m, "ice-ufrag");
+	pwd   = attr_find(&agent->attr_m, "ice-pwd");
+	TEST_STRCMP(ice_ufrag(agent->ice), str_len(ice_ufrag(agent->ice)),
+		    ufrag, str_len(ufrag));
+	TEST_STRCMP(ice_pwd(agent->ice), str_len(ice_pwd(agent->ice)),
+		    pwd, str_len(pwd));
+
+	if (agent->mode == ICE_MODE_FULL) {
+		TEST_ASSERT(NULL == attr_find(&agent->attr_s, "ice-lite"));
+	}
+	else {
+		TEST_ASSERT(NULL != attr_find(&agent->attr_s, "ice-lite"));
+	}
 
  out:
 	return err;
 }
 
 
-static int agent_decode_sdp(struct agent *agent, struct mbuf *sdp)
+static int agent_decode_sdp(struct agent *agent, struct agent *other)
 {
-	struct pl pl;
-	const char *pmax;
+	unsigned i;
 	int err = 0;
 
-	sdp->pos = 0;
-	pl_set_mbuf(&pl, sdp);
-	pmax = pl.p + pl.l;
-
-	while (pl.p < pmax) {
-		struct pl n = PL_INIT, v = PL_INIT;
-		char *name = NULL, *value = NULL;
-
-		err = re_regex(pl.p, pl.l, "a=[^:]+:[^\r\n]+",
-			       &n, &v);
-		if (err) {
-			v = pl_null;
-			err = re_regex(pl.p, pl.l, "a=[^\r\n]+", &n);
-			if (err)
-				break;
-		}
-
-		err |= pl_strdup(&name, &n);
-		if (pl_isset(&v))
-			err |= pl_strdup(&value, &v);
-
-		if (!err) {
-			if (0 == strcmp(name, "ice-lite"))
-				err = ice_sdp_decode(agent->ice, name, value);
-			else
-				err = icem_sdp_decode(agent->icem,
-						      name, value);
-		}
-
-		mem_deref(name);
-		mem_deref(value);
-
+	for (i=0; i<other->attr_s.attrc; i++) {
+		struct attr *attr = &other->attr_s.attrv[i];
+		err = ice_sdp_decode(agent->ice, attr->name, attr->value);
 		if (err)
-			break;
+			return err;
+	}
 
-		if (pl_isset(&v))
-			pl_advance(&pl, (v.p - pl.p) + v.l + 2);
-		else
-			pl_advance(&pl, (n.p - pl.p) + n.l + 2);
+	for (i=0; i<other->attr_m.attrc; i++) {
+		struct attr *attr = &other->attr_m.attrv[i];
+		err = icem_sdp_decode(agent->icem, attr->name, attr->value);
+		if (err)
+			return err;
 	}
 
 	return err;
@@ -254,7 +286,7 @@ static int send_sdp(struct agent *agent)
 	if (err)
 		return err;
 
-	err = agent_verify_offer(agent);
+	err = agent_verify_outgoing_sdp(agent);
 	if (err)
 		return err;
 
@@ -369,12 +401,6 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 	agent->compid = compid;
 	agent->offerer = offerer;
 	agent->mode = mode;
-
-	agent->mb = mbuf_alloc(512);
-	if (!agent->mb) {
-		err = ENOMEM;
-		goto out;
-	}
 
 	err = sa_set_str(&agent->laddr, "127.0.0.1", 0);
 	if (err)
@@ -524,7 +550,8 @@ static int agent_start(struct agent *agent)
 	if (agent->mode == ICE_MODE_FULL) {
 
 		err = ice_conncheck_start(agent->ice);
-		TEST_ERR(err);
+		if (err)
+			return err;
 
 		TEST_EQUALS(1, list_count(icem_checkl(agent->icem)));
 	}
@@ -578,10 +605,10 @@ static void icetest_check_gatherings(struct ice_test *it)
 	 * exchange SDP and start conncheck
 	 */
 
-	err = agent_decode_sdp(it->a, it->b->mb);
+	err = agent_decode_sdp(it->a, it->b);
 	if (err)
 		goto out;
-	err = agent_decode_sdp(it->b, it->a->mb);
+	err = agent_decode_sdp(it->b, it->a);
 	if (err)
 		goto out;
 
