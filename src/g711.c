@@ -4,9 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <string.h>
-#include <re_types.h>
-#include <re_fmt.h>
-#include <re_mbuf.h>
+#include <re.h>
 #include <rem_g711.h>
 #include "test.h"
 

@@ -44,3 +44,7 @@ SRCS	+= vidconv.c
 ifneq ($(USE_TLS),)
 SRCS	+= tls.c
 endif
+
+# Mock servers
+SRCS	+= mock/pf.c
+SRCS	+= mock/stunsrv.c

@@ -439,3 +439,28 @@ void test_hexdump_dual(FILE *f,
 
 	(void)re_fprintf(f, "\n");
 }
+
+
+static void oom_watchdog_timeout(void *arg)
+{
+	int *err = arg;
+
+	*err = ENOMEM;
+
+	re_cancel();
+}
+
+
+int re_main_timeout(uint32_t timeout_ms)
+{
+	struct tmr tmr;
+	int err = 0;
+
+	tmr_init(&tmr);
+
+	tmr_start(&tmr, timeout_ms, oom_watchdog_timeout, &err);
+	(void)re_main(NULL);
+
+	tmr_cancel(&tmr);
+	return err;
+}

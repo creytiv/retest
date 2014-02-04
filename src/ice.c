@@ -34,20 +34,6 @@
  */
 
 
-struct stunserver {
-	struct udp_sock *us;
-	struct sa laddr;
-	struct ice_test *it;  /* parent */
-	uint32_t nrecv;
-};
-
-/* Packet Filter */
-struct pf {
-	struct udp_helper *uh;
-	struct udp_sock *us;
-	char name[16];
-};
-
 struct agent {
 	struct ice *ice;
 	struct icem *icem;
@@ -71,7 +57,6 @@ struct ice_test {
 	struct agent *a;
 	struct agent *b;
 	struct tmr tmr;
-	struct tmr tmr_watchdog;
 	int err;
 };
 
@@ -107,182 +92,6 @@ static bool find_debug_string(struct ice *ice, const char *str)
 
 	return 0 == re_regex(buf, strlen(buf), str);
 }
-
-
-/*
- * STUN Server
- */
-
-
-static void stunserver_udp_recv(const struct sa *src, struct mbuf *mb,
-				void *arg)
-{
-	struct stunserver *stun = arg;
-	struct stun_msg *msg;
-	int err;
-
-	stun->nrecv++;
-
-	err = stun_msg_decode(&msg, mb, NULL);
-	if (err) {
-		complete_test(stun->it, err);
-		return;
-	}
-
-#if 0
-	stun_msg_dump(msg);
-#endif
-
-	TEST_EQUALS(0x0001, stun_msg_type(msg));
-	TEST_EQUALS(STUN_CLASS_REQUEST, stun_msg_class(msg));
-	TEST_EQUALS(STUN_METHOD_BINDING, stun_msg_method(msg));
-
-	err = stun_reply(IPPROTO_UDP, stun->us, src,
-			 0, msg, NULL, 0, false, 1,
-			 STUN_ATTR_XOR_MAPPED_ADDR, src);
-
-
- out:
-	mem_deref(msg);
-
-	if (err) {
-		complete_test(stun->it, err);
-	}
-}
-
-
-static void stunserver_destructor(void *arg)
-{
-	struct stunserver *stun = arg;
-
-	mem_deref(stun->us);
-}
-
-
-static int stunserver_alloc(struct stunserver **stunp, struct ice_test *it)
-{
-	struct stunserver *stun;
-	int err;
-
-	stun = mem_zalloc(sizeof(*stun), stunserver_destructor);
-	if (!stun)
-		return ENOMEM;
-
-	stun->it = it;
-
-	err = sa_set_str(&stun->laddr, "127.0.0.1", 0);
-	if (err)
-		goto out;
-
-	err = udp_listen(&stun->us, &stun->laddr, stunserver_udp_recv, stun);
-	if (err)
-		goto out;
-
-	err = udp_local_get(stun->us, &stun->laddr);
-	if (err)
-		goto out;
-
- out:
-	if (err)
-		mem_deref(stun);
-	else
-		*stunp = stun;
-
-	return err;
-}
-
-
-#if 0
-/*
- * Packet filter
- */
-
-static bool stun_attr_handler(const struct stun_attr *attr, void *arg)
-{
-	re_printf(" %s", stun_attr_name(attr->type));
-	return false;
-}
-
-
-static void sniff_stun(struct mbuf *mb)
-{
-	struct stun_msg *msg;
-	size_t pos;
-	int err;
-
-	pos = mb->pos;
-	err = stun_msg_decode(&msg, mb, NULL);
-	if (err) {
-		DEBUG_WARNING("could not decode STUN packet (%m)\n", err);
-		return;
-	}
-
-	stun_msg_attr_apply(msg, stun_attr_handler, 0);
-	re_printf("\n");
-
-	mem_deref(msg);
-
-	mb->pos = pos;
-}
-
-
-/* egress */
-static bool pf_send_handler(int *err, struct sa *dst,
-			    struct mbuf *mb, void *arg)
-{
-	struct pf *pf = arg;
-
-	re_printf("[%s] send -- ", pf->name);
-	sniff_stun(mb);
-
-	return false;
-}
-
-/* ingress */
-static bool pf_recv_handler(struct sa *src, struct mbuf *mb, void *arg)
-{
-	struct pf *pf = arg;
-
-	re_printf("[%s] recv  --", pf->name);
-	sniff_stun(mb);
-
-	return false;
-}
-
-
-static void pf_destructor(void *arg)
-{
-	struct pf *pf = arg;
-
-	mem_deref(pf->uh);
-	mem_deref(pf->us);
-}
-
-
-static int pf_create(struct pf **pfp, struct udp_sock *us, const char *name)
-{
-	struct pf *pf;
-	int err;
-
-	pf = mem_zalloc(sizeof(*pf), pf_destructor);
-	if (!pf)
-		return ENOMEM;
-
-	pf->us = mem_ref(us);
-	str_ncpy(pf->name, name, sizeof(pf->name));
-
-	err = udp_register_helper(&pf->uh, us,
-				  -1000, /* very low layer */
-				  pf_send_handler, pf_recv_handler, pf);
-
-	if (err)
-		mem_deref(pf);
-	else
-		*pfp = pf;
-
-	return err;
-}
-#endif
 
 
 /*
@@ -662,15 +471,6 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
  */
 
 
-static void icetest_timeout(void *arg)
-{
-	struct ice_test *it = arg;
-	(void)it;
-
-	complete_test(it, ENOMEM);
-}
-
-
 static int verify_after_sdp_exchange(struct agent *agent)
 {
 	struct agent *other = agent_other(agent);
@@ -837,7 +637,6 @@ static void icetest_destructor(void *arg)
 	struct ice_test *it = arg;
 
 	tmr_cancel(&it->tmr);
-	tmr_cancel(&it->tmr_watchdog);
 	mem_deref(it->b);
 	mem_deref(it->a);
 	mem_deref(it->stun);
@@ -854,7 +653,7 @@ static int icetest_alloc(struct ice_test **itp,
 	if (!it)
 		return ENOMEM;
 
-	err = stunserver_alloc(&it->stun, it);
+	err = stunserver_alloc(&it->stun);
 	if (err)
 		goto out;
 
@@ -865,8 +664,6 @@ static int icetest_alloc(struct ice_test **itp,
 	err = agent_alloc(&it->b, it, it->stun, mode_b, "B", 7, false);
 	if (err)
 		goto out;
-
-	tmr_start(&it->tmr_watchdog, 500, icetest_timeout, it);
 
  out:
 	if (err)
@@ -887,7 +684,9 @@ static int test_ice_loop(enum ice_mode mode_a, enum ice_mode mode_b)
 	if (err)
 		goto out;
 
-	(void)re_main(NULL);
+	err = re_main_timeout(300);
+	if (err)
+		goto out;
 
 	/* read back global errorcode */
 	if (it->err) {

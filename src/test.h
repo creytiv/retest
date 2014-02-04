@@ -178,3 +178,27 @@ void test_listcases(void);
 void test_hexdump_dual(FILE *f,
 		       const void *ep, size_t elen,
 		       const void *ap, size_t alen);
+int re_main_timeout(uint32_t timeout_ms);
+
+
+/*
+ * Mock objects
+ */
+
+
+struct pf {
+	struct udp_helper *uh;
+	struct udp_sock *us;
+	char name[16];
+};
+
+int pf_create(struct pf **pfp, struct udp_sock *us, const char *name);
+
+
+struct stunserver {
+	struct udp_sock *us;
+	struct sa laddr;
+	uint32_t nrecv;
+};
+
+int stunserver_alloc(struct stunserver **stunp);

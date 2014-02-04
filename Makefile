@@ -29,10 +29,11 @@ else
 PREFIX  := /usr
 endif
 BINDIR	:= $(PREFIX)/bin
-CFLAGS	+= -I$(LIBRE_INC)
+CFLAGS	+= -Isrc -I$(LIBRE_INC)
 CFLAGS  += -I$(LIBREM_PATH)/include -I$(SYSROOT)/local/include/rem
 BIN	:= $(PROJECT)$(BIN_SUFFIX)
 
+SPLINT_OPTIONS += -Isrc
 ifneq ($(LIBREM_PATH),)
 SPLINT_OPTIONS += -I$(LIBREM_PATH)/include
 endif
@@ -66,7 +67,7 @@ $(BUILD)/%.o: %.c $(BUILD) Makefile src/srcs.mk
 	@$(CC) $(CFLAGS) -o $@ -c $< $(DFLAGS)
 
 $(BUILD): Makefile
-	@mkdir -p $(BUILD)/src
+	@mkdir -p $(BUILD)/src/mock
 	@touch $@
 
 clean:
