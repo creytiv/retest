@@ -9,6 +9,7 @@ SRCS	+= bfcp.c
 SRCS	+= conf.c
 SRCS	+= crc32.c
 SRCS	+= dns.c
+SRCS	+= dsp.c
 SRCS	+= fir.c
 SRCS	+= fmt.c
 SRCS	+= g711.c
