@@ -462,14 +462,14 @@ int test_sip_param(void)
 
 		pl_set_str(&pl, testv[i].str);
 
-		err = sip_param_exists(&pl, testv[i].exist, &foo);
+		err = msg_param_exists(&pl, testv[i].exist, &foo);
 		if (err) {
 			DEBUG_WARNING("%u: expected param not exist (%s)\n", i,
 				      testv[i].exist);
 			goto out;
 		}
 
-		if (0 == sip_param_exists(&pl, testv[i].nexist, &foo)) {
+		if (0 == msg_param_exists(&pl, testv[i].nexist, &foo)) {
 			DEBUG_WARNING("%u: unexpected param (%s)\n", i,
 				      testv[i].nexist);
 			err = EINVAL;
@@ -479,7 +479,7 @@ int test_sip_param(void)
 		if (testv[i].val) {
 			struct pl val;
 
-			err = sip_param_decode(&pl, testv[i].exist, &val);
+			err = msg_param_decode(&pl, testv[i].exist, &val);
 			if (err) {
 				DEBUG_WARNING("%u: could not get param (%r)\n",
 					      i, &testv[i].exist);
@@ -580,9 +580,10 @@ int test_sip_parse(void)
 	}
 
 	/* Content-Type */
-	err = pl_strcmp(&msg->ctype, "application/sdp");
-	if (err) {
-		DEBUG_WARNING("content type mismatch (%r)\n", &msg->ctype);
+	if (!msg_ctype_cmp(&msg->ctyp, "application", "sdp")) {
+		DEBUG_WARNING("content type mismatch (%r/%r)\n",
+			      &msg->ctyp.type, &msg->ctyp.subtype);
+		err = EBADMSG;
 		goto out;
 	}
 
