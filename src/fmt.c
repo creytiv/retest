@@ -260,7 +260,7 @@ int test_fmt_regex(void)
 	const struct pl pla = PL("a");
 	const struct pl plb = PL("b \"1123\"");
 	const struct pl plc = PL("c");
-	struct pl pln, pls, foo, a, b, c;
+	struct pl pln, pls, foo, a, b, c, d, e;
 	int err = 0;
 
 	/* Successful case */
@@ -329,8 +329,14 @@ int test_fmt_regex(void)
 	if (err)
 		goto out;
 
-
-	DEBUG_INFO("regex ok\n");
+	/* verify that optional matching sets the PL to zero
+	   if there is no match */
+	e.p = "x";
+	e.l = 42;
+	err = re_regex(pl4.p, pl4.l, "[a-z]+;[0-9]*", &d, &e);
+	if (err)
+		goto out;
+	TEST_ASSERT(!pl_isset(&e));
 
 	return 0;
 
