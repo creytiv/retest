@@ -3,8 +3,14 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#include <string.h>
 #include <re.h>
 #include "test.h"
+
+
+#define DEBUG_MODULE "test_http"
+#define DEBUG_LEVEL 5
+#include <re_dbg.h>
 
 
 int test_http(void)
@@ -67,6 +73,137 @@ int test_http(void)
  out:
 	mem_deref(msg);
 	mem_deref(mb);
+
+	return err;
+}
+
+
+struct test {
+	uint32_t n_request;
+	uint32_t n_response;
+	int err;
+};
+
+
+static void abort_test(struct test *t, int err)
+{
+	t->err = err;
+	re_cancel();
+}
+
+
+static void http_req_handler(struct http_conn *conn,
+			     const struct http_msg *msg, void *arg)
+{
+	struct test *t = arg;
+	int err = 0;
+
+	++t->n_request;
+
+	/* verify HTTP request */
+	TEST_STRCMP("1.1", 3, msg->ver.p, msg->ver.l);
+	TEST_STRCMP("GET", 3, msg->met.p, msg->met.l);
+	TEST_STRCMP("/index.html", 11, msg->path.p, msg->path.l);
+	TEST_STRCMP("", 0, msg->prm.p, msg->prm.l);
+	TEST_EQUALS(0, msg->clen);
+
+	err = http_reply(conn, 200, "OK", NULL);
+
+ out:
+	if (err)
+		abort_test(t, err);
+}
+
+
+static void http_resp_handler(int err, const struct http_msg *msg, void *arg)
+{
+	struct test *t = arg;
+
+	if (err) {
+		if (err == ECONNRESET)
+			err = ENOMEM;
+		goto out;
+	}
+
+	++t->n_response;
+
+	/* verify HTTP response */
+	TEST_STRCMP("1.1", 3, msg->ver.p, msg->ver.l);
+	TEST_STRCMP("", 0, msg->met.p, msg->met.l);
+	TEST_STRCMP("", 0, msg->path.p, msg->path.l);
+	TEST_STRCMP("", 0, msg->prm.p, msg->prm.l);
+	TEST_EQUALS(200, msg->scode);
+	TEST_STRCMP("OK", 2, msg->reason.p, msg->reason.l);
+	TEST_EQUALS(0, msg->clen);
+
+	re_cancel();
+
+ out:
+	if (err)
+		abort_test(t, err);
+}
+
+
+int test_http_loop(void)
+{
+	struct http_sock *sock = NULL;
+	struct http_cli *cli = NULL;
+	struct http_req *req = NULL;
+	struct dnsc *dnsc = NULL;
+	struct sa srv, dns;
+	struct test t;
+	char url[256];
+	int err = 0;
+
+	memset(&t, 0, sizeof(t));
+
+	err |= sa_set_str(&srv, "127.0.0.1", 0);
+	err |= sa_set_str(&dns, "127.0.0.1", 53);    /* note: unused */
+	if (err)
+		goto out;
+
+	err = http_listen(&sock, &srv, http_req_handler, &t);
+	if (err)
+		goto out;
+
+	err = tcp_sock_local_get(http_sock_tcp(sock), &srv);
+	if (err)
+		goto out;
+
+	err = dnsc_alloc(&dnsc, NULL, &dns, 1);
+	if (err)
+		goto out;
+
+	err = http_client_alloc(&cli, dnsc);
+	if (err)
+		goto out;
+
+	(void)re_snprintf(url, sizeof(url),
+			  "http://127.0.0.1:%u/index.html", sa_port(&srv));
+	err = http_request(&req, cli, "GET", url,
+			   http_resp_handler, NULL, &t,
+			   NULL);
+	if (err)
+		goto out;
+
+	err = re_main_timeout(1000);
+	if (err)
+		goto out;
+
+	if (t.err) {
+		err = t.err;
+		goto out;
+	}
+
+	/* verify results after HTTP traffic */
+	TEST_EQUALS(1, t.n_request);
+	TEST_EQUALS(1, t.n_response);
+
+ out:
+	mem_deref(req);
+	mem_deref(cli);
+	mem_deref(dnsc);
+	mem_deref(sock);
 
 	return err;
 }

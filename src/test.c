@@ -47,6 +47,7 @@ static const struct test tests[] = {
 	TEST(test_hash),
 	TEST(test_hmac_sha1),
 	TEST(test_http),
+	TEST(test_http_loop),
 	TEST(test_httpauth_chall),
 	TEST(test_httpauth_resp),
 	TEST(test_ice),
