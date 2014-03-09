@@ -120,8 +120,8 @@ static void http_resp_handler(int err, const struct http_msg *msg, void *arg)
 	struct test *t = arg;
 
 	if (err) {
-		if (err == ECONNRESET)
-			err = ENOMEM;
+		/* translate error code */
+		err = ENOMEM;
 		goto out;
 	}
 
