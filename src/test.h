@@ -7,9 +7,10 @@
 
 #define TEST_EQUALS(expected, actual)				\
 	if ((expected) != (actual)) {				\
-		DEBUG_WARNING("TEST_EQUALS: %s:%u:"		\
+		(void)re_fprintf(stderr, "\n");			\
+		DEBUG_WARNING("TEST_EQUALS: %s:%u: %s():"	\
 			      " expected=%d, actual=%d\n",	\
-			      __FILE__, __LINE__,		\
+			      __FILE__, __LINE__, __func__,	\
 			      (expected), (actual));		\
 		err = EINVAL;					\
 		goto out;					\
@@ -17,6 +18,7 @@
 
 #define TEST_NOT_EQUALS(expected, actual)			\
 	if ((expected) == (actual)) {				\
+		(void)re_fprintf(stderr, "\n");			\
 		DEBUG_WARNING("TEST_NOT_EQUALS: %s:%u:"		\
 			      " expected=%d != actual=%d\n",	\
 			      __FILE__, __LINE__,		\
@@ -28,9 +30,10 @@
 #define TEST_MEMCMP(expected, expn, actual, actn)			\
 	if (expn != actn ||						\
 	    0 != memcmp((expected), (actual), (expn))) {		\
+		(void)re_fprintf(stderr, "\n");				\
 		DEBUG_WARNING("TEST_MEMCMP: %s:%u:"			\
-			      " failed\n",				\
-			      __FILE__, __LINE__);			\
+			      " %s(): failed\n",			\
+			      __FILE__, __LINE__, __func__);		\
 		test_hexdump_dual(stderr,				\
 				  expected, expn,			\
 				  actual, actn);			\
@@ -61,6 +64,7 @@
 
 #define TEST_ASSERT(actual)						\
 	if (!(actual)) {						\
+		(void)re_fprintf(stderr, "\n");				\
 		DEBUG_WARNING("TEST_ASSERT: %s:%u:"			\
 			      " actual=%d\n",				\
 			      __FILE__, __LINE__,			\
