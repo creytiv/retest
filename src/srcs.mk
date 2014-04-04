@@ -4,6 +4,7 @@
 # Copyright (C) 2010 Creytiv.com
 #
 
+SRCS	+= aes.c
 SRCS	+= base64.c
 SRCS	+= bfcp.c
 SRCS	+= conf.c

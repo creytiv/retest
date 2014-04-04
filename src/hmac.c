@@ -6,7 +6,6 @@
 #include <string.h>
 #include <re.h>
 #include <re_sha.h>
-#include <re_hmac.h>
 #include "test.h"
 
 
@@ -82,7 +81,7 @@ int test_hmac_sha1(void)
 		/*
 		 * This part is testing the Stateful API
 		 */
-		err = hmac_create(&hmac, HMAC_SHA1,
+		err = hmac_create(&hmac, HMAC_HASH_SHA1,
 				  testv[i].key, testv[i].key_len);
 		if (err)
 			break;
