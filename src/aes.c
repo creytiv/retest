@@ -96,9 +96,28 @@ static int test_aes_ctr_loop(void)
 }
 
 
+static bool have_aes(void)
+{
+	const uint8_t key[AES_BLOCK_SIZE] = {0};
+	struct aes *aes = NULL;
+	int err;
+
+	err = aes_alloc(&aes, AES_MODE_CTR, key, 128, NULL);
+
+	mem_deref(aes);
+
+	return err != ENOSYS;
+}
+
+
 int test_aes(void)
 {
 	int err;
+
+	if (!have_aes()) {
+		re_printf("skipping aes test\n");
+		return 0;
+	}
 
 	err = test_aes_ctr_loop();
 	if (err)
