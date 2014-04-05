@@ -8,12 +8,20 @@
 #include "test.h"
 
 
-static struct sip *sip = NULL;
-static struct sipsess_sock *sock = NULL;
-static struct sipsess *sess_a = NULL;
-static struct sipsess *sess_b = NULL;
-static struct tmr tmr;
-static int gerr;
+#define DEBUG_MODULE "test_sipsess"
+#define DEBUG_LEVEL 5
+#include <re_dbg.h>
+
+
+struct test {
+	struct sip *sip;
+	struct sipsess_sock *sock;
+	struct sipsess *a;
+	struct sipsess *b;
+	bool estab_a;
+	bool estab_b;
+	int err;
+};
 
 
 static void stop_test(void)
@@ -22,9 +30,9 @@ static void stop_test(void)
 }
 
 
-static void abort_test(int err)
+static void abort_test(struct test *test, int err)
 {
-	gerr = err;
+	test->err = err;
 	re_cancel();
 }
 
@@ -33,14 +41,6 @@ static void exit_handler(void *arg)
 {
 	(void)arg;
 	re_cancel();
-}
-
-
-static void signal_handler(int ret)
-{
-	(void)re_printf("signal %d\n", ret);
-
-	abort_test(ECONNABORTED);
 }
 
 
@@ -62,115 +62,133 @@ static int answer_handler(const struct sip_msg *msg, void *arg)
 }
 
 
-static void estab_handler(const struct sip_msg *msg, void *arg)
+static void estab_handler_a(const struct sip_msg *msg, void *arg)
 {
-	const char *user = arg;
+	struct test *test = arg;
 
 	(void)msg;
 
-	if (str_casecmp(user, "A"))
-		sess_a = mem_deref(sess_a);
-	else
-		sess_b = mem_deref(sess_b);
+	test->estab_a = true;
+
+	if (test->estab_b)
+		stop_test();
+}
+
+
+static void estab_handler_b(const struct sip_msg *msg, void *arg)
+{
+	struct test *test = arg;
+
+	(void)msg;
+
+	test->estab_b = true;
+
+	if (test->estab_a)
+		stop_test();
 }
 
 
 static void close_handler(int err, const struct sip_msg *msg, void *arg)
 {
+	struct test *test = arg;
+
 	(void)err;
 	(void)msg;
 	(void)arg;
 
-	stop_test();
+	abort_test(test, err ? err : ENOMEM);
 }
 
 
 static void conn_handler(const struct sip_msg *msg, void *arg)
 {
+	struct test *test = arg;
 	int err;
 
 	(void)arg;
 
-	err = sipsess_accept(&sess_b, sock, msg, 200, "OK",
+	err = sipsess_accept(&test->b, test->sock, msg, 200, "OK",
 			     "b", "application/sdp", NULL, NULL, NULL, false,
-			     offer_handler, answer_handler, estab_handler,
-			     NULL, NULL, close_handler, (void *)"B", NULL);
+			     offer_handler, answer_handler, estab_handler_b,
+			     NULL, NULL, close_handler, test, NULL);
 	if (err) {
-		abort_test(err);
+		abort_test(test, err);
 	}
-}
-
-
-static void timeout_handler(void *arg)
-{
-	(void)arg;
-	abort_test(ENOMEM);
 }
 
 
 int test_sipsess(void)
 {
+	struct test test;
 	struct sa laddr;
 	char to_uri[256];
 	int i, err;
 	uint16_t port;
 
-	gerr = 0;
+	memset(&test, 0, sizeof(test));
 
+#ifndef WIN32
 	/* slurp warnings from SIP (todo: temp) */
 	(void)freopen("/dev/null", "w", stderr);
+#endif
 
-	err = sip_alloc(&sip, NULL, 32, 32, 32, "retest", exit_handler, NULL);
+	err = sip_alloc(&test.sip, NULL, 32, 32, 32,
+			"retest", exit_handler, NULL);
 	if (err)
 		goto out;
 
 	for (i=0; i<64; i++) {
 		port = 1024 + rand_u16() % 64512;
 		(void)sa_set_str(&laddr, "127.0.0.1", port);
-		err = sip_transp_add(sip, SIP_TRANSP_UDP, &laddr);
+		err = sip_transp_add(test.sip, SIP_TRANSP_UDP, &laddr);
 		if (!err)
 			break;
 	}
 	if (err)
 		goto out;
 
-	err = sipsess_listen(&sock, sip, 32, conn_handler, NULL);
+	err = sipsess_listen(&test.sock, test.sip, 32, conn_handler, &test);
 	if (err)
 		goto out;
 
 	/* Connect to "b" */
 	(void)re_snprintf(to_uri, sizeof(to_uri), "sip:b@127.0.0.1:%u", port);
-	err = sipsess_connect(&sess_a, sock, to_uri, NULL,
+	err = sipsess_connect(&test.a, test.sock, to_uri, NULL,
 			      "sip:a@127.0.0.1", "a", NULL, 0,
 			      "application/sdp", NULL, NULL, NULL, false,
 			      offer_handler, answer_handler, NULL,
-			      estab_handler, NULL, NULL,
-			      close_handler, (void *)"A", NULL);
+			      estab_handler_a, NULL, NULL,
+			      close_handler, &test, NULL);
 	if (err)
 		goto out;
 
-	/* OOM helper */
-	tmr_start(&tmr, 100, timeout_handler, NULL);
+	err = re_main_timeout(100);
+	if (err)
+		goto out;
 
-	(void)re_main(signal_handler);
+	if (test.err) {
+		err = test.err;
+		goto out;
+	}
 
-	if (gerr)
-		err = gerr;
+	/* okay here -- verify */
+	TEST_ASSERT(test.estab_a);
+	TEST_ASSERT(test.estab_b);
 
  out:
-	tmr_cancel(&tmr);
+	test.a = mem_deref(test.a);
+	test.b = mem_deref(test.b);
 
-	sess_a = mem_deref(sess_a);
-	sess_b = mem_deref(sess_b);
+	sipsess_close_all(test.sock);
+	test.sock = mem_deref(test.sock);
 
-	sipsess_close_all(sock);
-	sock = mem_deref(sock);
+	sip_close(test.sip, false);
+	test.sip = mem_deref(test.sip);
 
-	sip_close(sip, false);
-	sip = mem_deref(sip);
-
+#ifndef WIN32
 	/* Restore stderr */
 	freopen("/dev/tty", "w", stderr);
+#endif
 
 	return err;
 }
