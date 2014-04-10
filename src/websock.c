@@ -65,8 +65,6 @@ static void srv_websock_close_handler(int err, void *arg)
 	struct test *test = arg;
 	(void)test;
 	(void)err;
-
-	re_printf("server: connection closed\n");
 }
 
 
