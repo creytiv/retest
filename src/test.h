@@ -160,6 +160,7 @@ int test_uri_user(void);
 int test_uri_params_headers(void);
 int test_vid(void);
 int test_vidconv(void);
+int test_websock(void);
 #ifdef USE_TLS
 int test_tls(void);
 #endif

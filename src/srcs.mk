@@ -42,6 +42,7 @@ SRCS	+= udp.c
 SRCS	+= uri.c
 SRCS	+= vid.c
 SRCS	+= vidconv.c
+SRCS	+= websock.c
 
 ifneq ($(USE_TLS),)
 SRCS	+= tls.c

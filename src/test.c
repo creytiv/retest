@@ -100,6 +100,7 @@ static const struct test tests[] = {
 	TEST(test_uri_params_headers),
 	TEST(test_vid),
 	TEST(test_vidconv),
+	TEST(test_websock),
 };
 
 
