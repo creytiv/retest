@@ -79,6 +79,7 @@ static const struct test tests[] = {
 	TEST(test_sip_parse),
 	TEST(test_sip_via),
 	TEST(test_sipsess),
+	TEST(test_srtp),
 	TEST(test_stun_req),
 	TEST(test_stun_resp),
 	TEST(test_stun_reqltc),

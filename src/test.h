@@ -142,6 +142,7 @@ int test_sip_param(void);
 int test_sip_parse(void);
 int test_sip_via(void);
 int test_sipsess(void);
+int test_srtp(void);
 int test_stun_req(void);
 int test_stun_resp(void);
 int test_stun_reqltc(void);

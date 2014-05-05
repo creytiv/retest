@@ -31,6 +31,7 @@ SRCS	+= sdp.c
 SRCS	+= sha.c
 SRCS	+= sip.c
 SRCS	+= sipsess.c
+SRCS	+= srtp.c
 SRCS	+= stun.c
 SRCS	+= sys.c
 SRCS	+= tcp.c
