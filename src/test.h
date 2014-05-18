@@ -50,12 +50,12 @@
 			      __FILE__, __LINE__);			\
 		(void)re_fprintf(stderr,				\
 				 "expected string: (%zu bytes)\n"	\
-				 "%b\n",				\
+				 "\"%b\"\n",				\
 				 (size_t)(expn),			\
 				 (expected), (size_t)(expn));		\
 		(void)re_fprintf(stderr,				\
 				 "actual string: (%zu bytes)\n"		\
-				 "%b\n",				\
+				 "\"%b\"\n",				\
 				 (size_t)(actn),			\
 				 (actual), (size_t)(actn));		\
 		err = EINVAL;						\
@@ -96,6 +96,7 @@ int test_dns_rr(void);
 int test_dns_dname(void);
 int test_dsp(void);
 int test_fir(void);
+int test_fmt_human_time(void);
 int test_fmt_param(void);
 int test_fmt_pl(void);
 int test_fmt_pl_u32(void);
@@ -118,7 +119,6 @@ int test_jbuf(void);
 int test_list(void);
 int test_list_ref(void);
 int test_mbuf(void);
-int test_mbuf_human_time(void);
 int test_md5(void);
 int test_mem(void);
 int test_rtp(void);
