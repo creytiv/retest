@@ -86,6 +86,7 @@
 
 /* Module API */
 int test_aes(void);
+int test_aubuf(void);
 int test_base64(void);
 int test_bfcp(void);
 int test_bfcp_bin(void);
