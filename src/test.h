@@ -122,6 +122,7 @@ int test_list_ref(void);
 int test_mbuf(void);
 int test_md5(void);
 int test_mem(void);
+int test_remain(void);
 int test_rtp(void);
 int test_rtcp_encode(void);
 int test_rtcp_encode_afb(void);
