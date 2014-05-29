@@ -950,12 +950,32 @@ static int test_unencrypted_srtcp(void)
 }
 
 
+static bool have_srtp(void)
+{
+	static const uint8_t nullkey[30];
+	struct srtp *srtp = NULL;
+	int err;
+
+	err = srtp_alloc(&srtp, SRTP_AES_CM_128_HMAC_SHA1_32,
+			 nullkey, sizeof(nullkey), 0);
+
+	mem_deref(srtp);
+
+	return err != ENOSYS;
+}
+
+
 /*
  * test low-level code first, then high-level at the end
  */
 int test_srtp(void)
 {
 	int err;
+
+	if (!have_srtp()) {
+		(void)re_printf("skipping SRTP test\n");
+		return 0;
+	}
 
 	err  = test_srtp_aescm128();
 	err |= test_srtp_aescm256();
