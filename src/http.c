@@ -13,6 +13,41 @@
 #include <re_dbg.h>
 
 
+static int test_http_response_no_reasonphrase(void)
+{
+	struct http_msg *msg = NULL;
+	struct mbuf *mb;
+	int err;
+
+	mb = mbuf_alloc(512);
+	if (!mb)
+		return ENOMEM;
+
+	err = mbuf_write_str(mb, /*       _---- no space here! */
+			     "HTTP/1.1 429\r\n"
+			     "Server: nginx\r\n"
+			     "Content-Length: 0\r\n"
+			     "\r\n");
+	if (err)
+		goto out;
+
+	mb->pos = 0;
+
+	err = http_msg_decode(&msg, mb, false);
+	if (err)
+		goto out;
+
+	TEST_STRCMP("1.1", 3, msg->ver.p, msg->ver.l);
+	TEST_EQUALS(429, msg->scode);
+	TEST_STRCMP("", 0, msg->reason.p, msg->reason.l);
+
+ out:
+	mem_deref(msg);
+	mem_deref(mb);
+	return err;
+}
+
+
 int test_http(void)
 {
 	static const char req[] =
@@ -63,6 +98,10 @@ int test_http(void)
 		goto badmsg;
 	if (3 != http_msg_hdr_count(msg, HTTP_HDR_ALLOW))
 		goto badmsg;
+
+	err = test_http_response_no_reasonphrase();
+	if (err)
+		goto out;
 
 	goto out;
 
