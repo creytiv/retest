@@ -22,9 +22,6 @@ const struct pl martin = PL("Martin"),
 	alfred = PL("Alfred"),
 	atle = PL("Atle");
 
-static struct my_elem elems[3];
-static const size_t nelems = ARRAY_SIZE(elems);
-
 
 static bool hash_cmp_handler(struct le *le, void *arg)
 {
@@ -37,14 +34,14 @@ static bool hash_cmp_handler(struct le *le, void *arg)
 
 int test_hash(void)
 {
+	struct my_elem elems[3];
 	struct hash *h;
 	struct my_elem *elem;
-	uint32_t i;
 	int err;
 
 	/* Clear hash elements */
-	for (i=0; i<nelems; i++)
-		memset(&elems[i].he, 0, sizeof(elems[i].he));
+	memset(elems, 0, sizeof(elems));
+
 	elems[0].name = &martin;
 	elems[1].name = &alfred;
 	elems[2].name = &atle;
@@ -117,20 +114,6 @@ int test_hash(void)
 		err = EINVAL;
 		goto out;
 	}
-
-#if 0
-	/* Hashtable with many elements */
-	for (i=0; i<1024; i++) {
-		struct my_elem *myelem = &elems[i%nelems];
-		hash_append(h, hash_joaat_pl(myelem->name),
-			    &myelem->he, myelem);
-	}
-
-	for (i=0; i<1024; i++) {
-		struct my_elem *myelem = &elems[i%nelems];
-		hash_unlink(&myelem->he);
-	}
-#endif
 
 	hash_unlink(&elems[0].he);
 	hash_unlink(&elems[1].he);
