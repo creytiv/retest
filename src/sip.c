@@ -278,29 +278,32 @@ int test_sip_via(void)
 }
 
 
-static int apply_err = 0;
-static uint32_t apply_n;
+struct apply {
+	uint32_t n;
+	int err;
+};
 
 
 static bool apply_handler(const struct sip_hdr *hdr, const struct sip_msg *msg,
 			  void *arg)
 {
 	const char *ref = "SIP/2.0/UDP 123.45.67.89:12345;branch=z9hG4bK123";
+	struct apply *apply = arg;
 
 	(void)msg;
 	(void)arg;
 
 	if (hdr->id != SIP_HDR_VIA) {
-		apply_err = EINVAL;
+		apply->err = EINVAL;
 		return true;
 	}
 
-	apply_err = pl_strcmp(&hdr->val, ref);
-	if (apply_err) {
+	apply->err = pl_strcmp(&hdr->val, ref);
+	if (apply->err) {
 		return true;
 	}
 
-	++apply_n;
+	++apply->n;
 
 	return false;
 }
@@ -367,6 +370,10 @@ int test_sip_apply(void)
 
 	for (i=0; i<ARRAY_SIZE(testv); i++) {
 
+		struct apply apply;
+
+		memset(&apply, 0, sizeof(apply));
+
 		mbuf_rewind(mb);
 		err = mbuf_printf(mb, "OPTIONS sip:213.175.63.232:56102"
 				  ";transport=TCP;dstip=212.13.202.25"
@@ -381,17 +388,17 @@ int test_sip_apply(void)
 			goto out;
 		}
 
-		apply_n = 0;
+		apply.n = 0;
 		if (sip_msg_hdr_apply(msg, true, SIP_HDR_VIA,
-				      apply_handler, NULL)) {
-			err = apply_err;
+				      apply_handler, &apply)) {
+			err = apply.err;
 			goto out;
 		}
 
-		if (apply_n != testv[i].n) {
+		if (apply.n != testv[i].n) {
 			DEBUG_WARNING("%u: apply: expected"
 				      " %u headers, got %u\n",
-				      i, testv[i].n, apply_n);
+				      i, testv[i].n, apply.n);
 			err = EINVAL;
 			goto out;
 		}
