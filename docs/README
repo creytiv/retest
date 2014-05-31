@@ -1,0 +1,25 @@
+README
+------
+
+retest -- Testprogram for libre and librem
+Copyright (C) 2010 - 2014 Creytiv.com
+
+Distributed under BSD license
+
+
+
+
+Testcase guidelines
+
+- Each testcase should be small and test one thing
+- Each testcase should match the corresponding module in libre/librem
+  (i.e. test/rtp for testing the RTP-module)
+- Each testcase must be re-entrant and not use any global data
+- The testcase must return 0 for success, or errorcode for failure
+- It must be possible to run all testcases in parallel from different threads
+
+
+
+Feedback:
+
+- Please send feedback to <libre@creytiv.com>
