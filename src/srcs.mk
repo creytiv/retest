@@ -26,6 +26,7 @@ SRCS	+= main.c
 SRCS	+= mbuf.c
 SRCS	+= md5.c
 SRCS	+= mem.c
+SRCS	+= mqueue.c
 SRCS	+= remain.c
 SRCS	+= rtp.c
 SRCS	+= sa.c
