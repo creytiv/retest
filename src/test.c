@@ -91,6 +91,7 @@ static const struct test tests[] = {
 	TEST(test_stun_reqltc),
 	TEST(test_sys_div),
 	TEST(test_sys_endian),
+	TEST(test_sys_rand),
 	TEST(test_tcp),
 	TEST(test_telev),
 #ifdef USE_TLS

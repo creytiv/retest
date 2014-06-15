@@ -100,3 +100,25 @@ int test_sys_endian(void)
 
 	return 0;
 }
+
+
+int test_sys_rand(void)
+{
+	char str[64];
+	uint8_t buf[64];
+
+	volatile uint16_t u16 = rand_u16();
+	volatile uint32_t u32 = rand_u32();
+	volatile uint64_t u64 = rand_u64();
+	volatile char ch      = rand_char();
+
+	(void)u16;
+	(void)u32;
+	(void)u64;
+	(void)ch;
+
+	rand_str(str, sizeof(str));
+	rand_bytes(buf, sizeof(buf));
+
+	return 0;
+}

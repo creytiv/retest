@@ -151,6 +151,7 @@ int test_stun_resp(void);
 int test_stun_reqltc(void);
 int test_sys_div(void);
 int test_sys_endian(void);
+int test_sys_rand(void);
 int test_tcp(void);
 int test_telev(void);
 int test_tmr(void);
