@@ -37,6 +37,7 @@ static const struct test tests[] = {
 	TEST(test_dns_rr),
 	TEST(test_dns_dname),
 	TEST(test_dsp),
+	TEST(test_dtls),
 	TEST(test_fir),
 	TEST(test_fmt_human_time),
 	TEST(test_fmt_param),
