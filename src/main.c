@@ -53,6 +53,7 @@ static void usage(void)
 	(void)re_fprintf(stderr, "\t-r        Regular tests\n");
 	(void)re_fprintf(stderr, "\t-o        OOM tests\n");
 	(void)re_fprintf(stderr, "\t-p n      Performance tests\n");
+	(void)re_fprintf(stderr, "\t-t        Run tests in multi-threads\n");
 	(void)re_fprintf(stderr, "\t-a        All tests (default)\n");
 	(void)re_fprintf(stderr, "\t-f        Fuzzy testing\n");
 	(void)re_fprintf(stderr, "\t-l        List all testcases\n");
@@ -77,6 +78,7 @@ int main(int argc, char *argv[])
 	bool do_fuzzy = false;
 	bool do_all = false;
 	bool do_list = false;
+	bool do_thread = false;
 	bool ansi = true;
 	const char *name = NULL;
 	uint32_t n = 10;
@@ -91,7 +93,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "hrop:afl");
+		const int c = getopt(argc, argv, "hrop:aflt");
 		if (0 > c)
 			break;
 
@@ -125,6 +127,10 @@ int main(int argc, char *argv[])
 
 		case 'l':
 			do_list = true;
+			break;
+
+		case 't':
+			do_thread = true;
 			break;
 		}
 	}
@@ -180,7 +186,7 @@ int main(int argc, char *argv[])
 	if (do_all) {
 		do_reg = true;
 		do_oom = true;
-		do_perf = true;
+		do_thread = true;
 	}
 
 	if (do_list) {
@@ -204,6 +210,14 @@ int main(int argc, char *argv[])
 		if (err)
 			(void)re_fprintf(stderr, "Failed (%m)\n", err);
 	}
+
+#ifdef HAVE_PTHREAD
+	if (do_thread) {
+		err = test_multithread();
+		if (err)
+			(void)re_fprintf(stderr, "Failed (%m)\n", err);
+	}
+#endif
 
 	if (do_fuzzy) {
 		running = true;

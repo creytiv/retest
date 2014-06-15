@@ -4,6 +4,9 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <string.h>
+#ifdef HAVE_PTHREAD
+#include <pthread.h>
+#endif
 #include <re.h>
 #include "test.h"
 
@@ -314,6 +317,99 @@ int test_reg(const char *name)
 
 	return err;
 }
+
+
+#ifdef HAVE_PTHREAD
+struct thread {
+	const struct test *test;
+	pthread_t tid;
+	int err;
+};
+
+
+static void *thread_handler(void *arg)
+{
+	struct thread *thr = arg;
+	int err;
+
+	err = re_thread_init();
+	if (err) {
+		DEBUG_WARNING("thread: re_thread_init failed %m\n", err);
+		thr->err = err;
+		return NULL;
+	}
+
+	err = thr->test->exec();
+	if (err) {
+		DEBUG_WARNING("%s: test failed (%m)\n", thr->test->name, err);
+	}
+
+	re_thread_close();
+
+	/* safe to write it, main thread is waiting for us */
+	thr->err = err;
+
+	return NULL;
+}
+
+
+/* Run all test-cases in multiple threads */
+int test_multithread(void)
+{
+#define NUM_REPEAT 2
+#define NUM_TOTAL  (NUM_REPEAT * ARRAY_SIZE(tests))
+
+	struct thread threadv[NUM_TOTAL];
+	unsigned n=0;
+	unsigned test_index=0;
+	size_t i;
+	int err = 0;
+
+	memset(threadv, 0, sizeof(threadv));
+
+	(void)re_fprintf(stderr, "multithread test: %u testcases in parallel"
+			 " with %d repeats (total %u threads): ",
+			 ARRAY_SIZE(tests), NUM_REPEAT, NUM_TOTAL);
+
+	for (i=0; i<ARRAY_SIZE(threadv); i++) {
+
+		unsigned ti = (test_index++ % ARRAY_SIZE(tests));
+
+		threadv[i].test = &tests[ti];
+		threadv[i].err = -1;           /* error not set */
+
+		err = pthread_create(&threadv[i].tid, NULL,
+				     thread_handler, (void *)&threadv[i]);
+		if (err) {
+			DEBUG_WARNING("pthread_create failed (%m)\n", err);
+			break;
+		}
+
+		++n;
+	}
+
+	for (i=0; i<ARRAY_SIZE(threadv); i++) {
+
+		pthread_join(threadv[i].tid, NULL);
+	}
+
+	for (i=0; i<ARRAY_SIZE(threadv); i++) {
+
+		if (threadv[i].err != 0) {
+			re_printf("%u failed: %-30s  [%d] [%m]\n", i,
+				  threadv[i].test->name,
+				  threadv[i].err, threadv[i].err);
+			err = threadv[i].err;
+		}
+	}
+
+	if (err)
+		return err;
+	(void)re_fprintf(stderr, "\x1b[32mOK\x1b[;m\n");
+
+	return err;
+}
+#endif
 
 
 int test_fuzzy(const char *name)
