@@ -377,7 +377,7 @@ int test_multithread(void)
 
 	for (i=0; i<ARRAY_SIZE(threadv); i++) {
 
-		unsigned ti = (test_index++ % ARRAY_SIZE(tests));
+		size_t ti = (test_index++ % ARRAY_SIZE(tests));
 
 		threadv[i].test = &tests[ti];
 		threadv[i].err = -1;           /* error not set */
