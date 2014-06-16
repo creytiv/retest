@@ -12,7 +12,6 @@ SRCS	+= conf.c
 SRCS	+= crc32.c
 SRCS	+= dns.c
 SRCS	+= dsp.c
-SRCS	+= dtls.c
 SRCS	+= fir.c
 SRCS	+= fmt.c
 SRCS	+= g711.c
@@ -51,6 +50,7 @@ SRCS	+= websock.c
 
 ifneq ($(USE_TLS),)
 SRCS	+= tls.c
+SRCS	+= dtls.c
 endif
 
 # Mock servers

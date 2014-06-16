@@ -14,9 +14,6 @@
 #include <re_dbg.h>
 
 
-#ifdef USE_OPENSSL
-
-
 struct dtls_test {
 	bool dtls_srtp;
 	struct dtls_sock *sock_cli, *sock_srv;
@@ -286,7 +283,6 @@ static int test_dtls_srtp(bool dtls_srtp)
 
 	return err;
 }
-#endif
 
 
 static bool have_dtls_support(void)
