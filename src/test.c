@@ -365,7 +365,7 @@ int test_multithread(void)
 
 	struct thread threadv[NUM_TOTAL];
 	unsigned n=0;
-	unsigned test_index=0;
+	size_t test_index=0;
 	size_t i;
 	int err = 0;
 
