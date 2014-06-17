@@ -8,32 +8,27 @@
 #include "test.h"
 
 
+#define DEBUG_MODULE "tlstest"
+#define DEBUG_LEVEL 5
+#include <re_dbg.h>
+
+
 struct tls_test {
 	struct tls *tls;
-	struct tls_conn *sc;
+	struct tls_conn *sc_cli;
+	struct tls_conn *sc_srv;
 	struct tcp_sock *ts;
 	struct tcp_conn *tc_cli;
 	struct tcp_conn *tc_srv;
-	struct mbuf *mb;
-	struct tmr tmr;
 	bool estab_cli;
 	bool estab_srv;
-	bool recv_srv;
+	size_t recv_cli;
+	size_t recv_srv;
 	int err;
 };
 
 
-enum {
-	HANDSHAKE_LEN = 6,
-	CLIENT_HELLO = 0x01,
-};
-
-
-static void signal_handler(int sig)
-{
-	(void)sig;
-	re_cancel();
-}
+static const char *payload = "0123456789";
 
 
 static void check(struct tls_test *tt, int err)
@@ -46,16 +41,46 @@ static void check(struct tls_test *tt, int err)
 }
 
 
+static void can_send(struct tls_test *tt)
+{
+	struct mbuf *mb;
+	int err = 0;
+
+	if (!tt->estab_cli || !tt->estab_srv)
+		return;
+
+	mb = mbuf_alloc(256);
+	if (!mb) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	err = mbuf_write_str(mb, payload);
+	if (err)
+		goto out;
+
+	mb->pos = 0;
+	err = tcp_send(tt->tc_cli, mb);
+
+ out:
+	mem_deref(mb);
+
+	check(tt, err);
+}
+
+
 static void client_estab_handler(void *arg)
 {
 	struct tls_test *tt = arg;
 	tt->estab_cli = true;
+	can_send(tt);
 }
 
 
 static void client_recv_handler(struct mbuf *mb, void *arg)
 {
 	struct tls_test *tt = arg;
+	int err = 0;
 
 	if (!tt->estab_cli) {
 		(void)re_fprintf(stderr, "unexpected data received"
@@ -63,13 +88,26 @@ static void client_recv_handler(struct mbuf *mb, void *arg)
 				 mbuf_buf(mb), mbuf_get_left(mb));
 		check(tt, EPROTO);
 	}
+
+	++tt->recv_cli;
+
+	TEST_MEMCMP(payload, strlen(payload),
+		    mbuf_buf(mb), mbuf_get_left(mb));
+
+ out:
+	check(tt, err);
+
+	/* We are done */
+	re_cancel();
 }
 
 
 static void client_close_handler(int err, void *arg)
 {
 	struct tls_test *tt = arg;
-	check(tt, err);
+
+	if (!tt->estab_cli)
+		check(tt, err);
 }
 
 
@@ -77,95 +115,57 @@ static void server_estab_handler(void *arg)
 {
 	struct tls_test *tt = arg;
 	tt->estab_srv = true;
+	can_send(tt);
 }
 
 
 static void server_recv_handler(struct mbuf *mb, void *arg)
 {
 	struct tls_test *tt = arg;
-	const size_t n = HANDSHAKE_LEN;
-	const uint8_t *b;
-	uint16_t len;
-	uint8_t type;
-	int err;
+	int err = 0;
 
 	if (!tt->estab_srv) {
 		check(tt, EPROTO);
 		return;
 	}
 
-	err = mbuf_write_mem(tt->mb, mbuf_buf(mb), mbuf_get_left(mb));
+	++tt->recv_srv;
+
+	TEST_MEMCMP(payload, strlen(payload),
+		    mbuf_buf(mb), mbuf_get_left(mb));
+
+	/* echo */
+	err = tcp_send(tt->tc_srv, mb);
 	if (err) {
-		check(tt, err);
-		return;
+		DEBUG_WARNING("server: tcp_send error (%m)\n", err);
 	}
 
-	if (tt->mb->end < n)
-		return;
-
-	/* Decode SSL-header */
-	b = tt->mb->buf;
-	if ((b[0] & 0x80) == 0x80) {
-
-		/* SSL 2.0 */
-		len = (b[0] & 0x7f) << 8 | b[1];
-		type = b[2];
-	}
-	else if (b[0] == 0x16) {
-
-		/* SSL 3.0 or TLS 1.0 */
-		len = b[3] << 8 | b[4];
-		type = b[5];
-	}
-	else {
-		(void)re_fprintf(stderr, "tls: unknown SSL header (%w)\n",
-				 b, n);
-		check(tt, EBADMSG);
-		return;
-	}
-
-	if (tt->mb->end < len) {
-		(void)re_fprintf(stderr, "tls: short length: %u < %u\n",
-				 tt->mb->end, len);
-		check(tt, EPROTO);
-		return;
-	}
-	if (type != CLIENT_HELLO) {
-		(void)re_fprintf(stderr, "tls: unexpected record type %02x\n",
-				 type);
-		check(tt, EPROTO);
-		return;
-	}
-
-	tt->recv_srv = true;
-
-	/* We are done */
-	re_cancel();
+ out:
+	check(tt, err);
 }
 
 
 static void server_close_handler(int err, void *arg)
 {
 	struct tls_test *tt = arg;
-	check(tt, err);
+
+	if (!tt->estab_cli)
+		check(tt, err);
 }
 
 
 static void server_conn_handler(const struct sa *peer, void *arg)
 {
 	struct tls_test *tt = arg;
+	int err;
 	(void)peer;
 
-	tt->err = tcp_accept(&tt->tc_srv, tt->ts, server_estab_handler,
-			     server_recv_handler, server_close_handler, tt);
-	check(tt, tt->err);
-}
+	err = tcp_accept(&tt->tc_srv, tt->ts, server_estab_handler,
+			 server_recv_handler, server_close_handler, tt);
+	check(tt, err);
 
-
-static void tmr_handler(void *arg)
-{
-	struct tls_test *tt = arg;
-	check(tt, ENOMEM);
+	err = tls_start_tcp(&tt->sc_srv, tt->tls, tt->tc_srv, 0);
+	check(tt, err);
 }
 
 
@@ -177,17 +177,15 @@ int test_tls(void)
 
 	memset(&tt, 0, sizeof(tt));
 
-	tt.mb = mbuf_alloc(512);
-	if (!tt.mb) {
-		err = ENOMEM;
-		goto out;
-	}
-
 	err = sa_set_str(&srv, "127.0.0.1", 0);
 	if (err)
 		goto out;
 
 	err = tls_alloc(&tt.tls, TLS_METHOD_SSLV23, NULL, NULL);
+	if (err)
+		goto out;
+
+	err = tls_set_selfsigned(tt.tls, "re@test");
 	if (err)
 		goto out;
 
@@ -204,28 +202,31 @@ int test_tls(void)
 	if (err)
 		goto out;
 
-	err = tls_start_tcp(&tt.sc, tt.tls, tt.tc_cli, 0);
+	err = tls_start_tcp(&tt.sc_cli, tt.tls, tt.tc_cli, 0);
 	if (err)
 		goto out;
 
-	tmr_start(&tt.tmr, 100, tmr_handler, &tt);
-
-	(void)re_main(signal_handler);
-
-	if (tt.err)
+	err = re_main_timeout(100);
+	if (err)
 		goto out;
 
-	if (!tt.estab_srv || !tt.recv_srv)
-		err = EPROTO;
+	if (tt.err) {
+		err = tt.err;
+		goto out;
+	}
+
+	TEST_EQUALS(true, tt.estab_cli);
+	TEST_EQUALS(true, tt.estab_srv);
+	TEST_EQUALS(1, tt.recv_cli);
+	TEST_EQUALS(1, tt.recv_srv);
 
  out:
-	tmr_cancel(&tt.tmr);
-	mem_deref(tt.sc);
+	mem_deref(tt.sc_cli);
+	mem_deref(tt.sc_srv);
 	mem_deref(tt.tc_cli);
 	mem_deref(tt.tc_srv);
 	mem_deref(tt.ts);
 	mem_deref(tt.tls);
-	mem_deref(tt.mb);
 
-	return err | tt.err;
+	return err;
 }
