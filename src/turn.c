@@ -14,13 +14,17 @@
 
 
 struct turntest {
-	struct udp_sock *us1;
-	struct udp_sock *us2;
+	struct udp_sock *us_cli;
+	struct udp_sock *us_srv;
 	struct turnc *turnc;
 	struct sa cli;
+	struct sa srv;
 	struct tmr tmr;
 	int err;
 };
+
+
+static const char *payload = "guten tag Herr TURN server";
 
 
 static void destructor(void *arg)
@@ -29,8 +33,8 @@ static void destructor(void *arg)
 
 	tmr_cancel(&tt->tmr);
 
-	mem_deref(tt->us2);
-	mem_deref(tt->us1);
+	mem_deref(tt->us_srv);
+	mem_deref(tt->us_cli);
 	mem_deref(tt->turnc);
 }
 
@@ -49,7 +53,7 @@ static void timeout_handler(void *arg)
 
 
 /* Simulated TURN server */
-static void udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
+static void srv_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 {
 	struct turntest *tt = arg;
 	struct stun_msg *msg = NULL;
@@ -61,14 +65,38 @@ static void udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 		return;
 	}
 
-	if (STUN_METHOD_ALLOCATE != stun_msg_method(msg)) {
+	switch (stun_msg_method(msg)) {
+
+	case STUN_METHOD_ALLOCATE:
+		err = stun_reply(IPPROTO_UDP, tt->us_srv, src, 0,
+				 msg, NULL, 0, false,
+				 2,
+				 STUN_ATTR_XOR_MAPPED_ADDR, src,
+				 STUN_ATTR_XOR_RELAY_ADDR, src);
+
+		break;
+
+	case STUN_METHOD_SEND: {
+		struct stun_attr *attr;
+
+		attr = stun_msg_attr(msg, STUN_ATTR_DATA);
+		TEST_ASSERT(attr != NULL);
+
+		TEST_MEMCMP(payload, strlen(payload),
+			    mbuf_buf(&attr->v.data),
+			    mbuf_get_left(&attr->v.data));
+
+		/* Stop the test now */
+		complete_test(tt, 0);
+	}
+		break;
+
+	default:
+		DEBUG_WARNING("unknown method %d\n", stun_msg_method(msg));
 		err = EPROTO;
-		goto out;
+		break;
 	}
 
-	err = stun_reply(IPPROTO_UDP, tt->us2, src, 0, msg, NULL, 0, false, 2,
-			 STUN_ATTR_XOR_MAPPED_ADDR, src,
-			 STUN_ATTR_XOR_RELAY_ADDR, src);
 	if (err)
 		goto out;
 
@@ -77,6 +105,26 @@ static void udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 
 	if (err)
 		complete_test(tt, err);
+}
+
+
+static int send_payload(struct turntest *tt, const char *str)
+{
+	struct mbuf *mb = mbuf_alloc(512);
+	int err;
+
+	mb->pos = 36;
+
+	err = mbuf_write_str(mb, str);
+
+	mb->pos = 36;
+
+	if (!err)
+		err = udp_send(tt->us_cli, &tt->srv, mb);
+
+	mem_deref(mb);
+
+	return err;
 }
 
 
@@ -106,33 +154,43 @@ static void turnc_handler(int err, uint16_t scode, const char *reason,
 	if (!sa_cmp(mapped_addr, &tt->cli, SA_ALL))
 		err = EPROTO;
 
-	complete_test(tt, err);
+	if (err) {
+		complete_test(tt, err);
+		return;
+	}
+
+	err = send_payload(tt, payload);
+	if (err) {
+		DEBUG_WARNING("failed to send payload (%m)\n", err);
+		complete_test(tt, err);
+	}
 }
 
 
 static int turntest_alloc(struct turntest **ttp)
 {
 	struct turntest *tt;
-	struct sa srv;
+	struct sa laddr;
 	int err;
 
 	tt = mem_zalloc(sizeof(*tt), destructor);
 	if (!tt)
 		return ENOMEM;
 
-	err = sa_set_str(&srv, "127.0.0.1", 0);
+	err = sa_set_str(&laddr, "127.0.0.1", 0);
 
-	err |= udp_listen(&tt->us1, &srv, NULL, NULL);
-	err |= udp_listen(&tt->us2, &srv, udp_recv, tt);
+	err |= udp_listen(&tt->us_cli, &laddr, NULL, NULL);
+	err |= udp_listen(&tt->us_srv, &laddr, srv_udp_recv, tt);
 	if (err)
 		goto out;
 
-	err  = udp_local_get(tt->us1, &tt->cli);
-	err |= udp_local_get(tt->us2, &srv);
+	err  = udp_local_get(tt->us_cli, &tt->cli);
+	err |= udp_local_get(tt->us_srv, &tt->srv);
 	if (err)
 		goto out;
 
-	err = turnc_alloc(&tt->turnc, NULL, IPPROTO_UDP, tt->us1, 0, &srv,
+	err = turnc_alloc(&tt->turnc, NULL, IPPROTO_UDP, tt->us_cli,
+			  0, &tt->srv,
 			  "username", "password", 600, turnc_handler, tt);
 	if (err)
 		goto out;

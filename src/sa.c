@@ -230,6 +230,11 @@ int test_sa_class(void)
 		}
 	}
 
+	{
+		struct sa sax;
+		TEST_ASSERT(sizeof(sax.u) <= sizeof(sax.u.padding));
+	}
+
  out:
 	return err;
 }
@@ -294,3 +299,4 @@ int test_sa_ntop(void)
 
 	return err;
 }
+
