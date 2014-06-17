@@ -728,10 +728,10 @@ static int test_ice_loop(enum ice_mode mode_a, enum ice_mode mode_b)
 		goto out;
 
 	if (mode_a == ICE_MODE_FULL && mode_b == ICE_MODE_FULL) {
-		TEST_EQUALS(2, it->stun->nrecv);
+		TEST_ASSERT(it->stun->nrecv >= 2);
 	}
 	else {
-		TEST_EQUALS(1, it->stun->nrecv);
+		TEST_ASSERT(it->stun->nrecv >= 1);
 	}
 
  out:
