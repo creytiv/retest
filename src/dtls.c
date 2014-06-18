@@ -220,7 +220,7 @@ static int test_dtls_srtp(bool dtls_srtp)
 			goto out;
 		}
 
-		TEST_EQUALS(0, err);
+		TEST_ERR(err);
 	}
 
 	err = tls_fingerprint(test.tls, TLS_FINGERPRINT_SHA1, fp, sizeof(fp));
