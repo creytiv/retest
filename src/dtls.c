@@ -213,6 +213,13 @@ static int test_dtls_srtp(bool dtls_srtp)
 
 	if (dtls_srtp) {
 		err = tls_set_srtp(test.tls, srtp_suites);
+
+		/* SRTP not supported */
+		if (err == ENOSYS) {
+			err = 0;
+			goto out;
+		}
+
 		TEST_EQUALS(0, err);
 	}
 
