@@ -371,7 +371,7 @@ int test_multithread(void)
 
 	memset(threadv, 0, sizeof(threadv));
 
-	(void)re_fprintf(stderr, "multithread test: %u testcases in parallel"
+	(void)re_fprintf(stderr, "multithread: %u tests"
 			 " with %d repeats (total %u threads): ",
 			 ARRAY_SIZE(tests), NUM_REPEAT, NUM_TOTAL);
 
