@@ -726,11 +726,11 @@ int test_fmt_human_time(void)
 	int err = 0;
 
 	sec = 1*24*60*60 + 2*60*60 + 3*60 + 4;
-	re_snprintf(buf, sizeof(buf), "%H", fmt_human_time, &sec);
+	(void)re_snprintf(buf, sizeof(buf), "%H", fmt_human_time, &sec);
 	TEST_STRCMP(ref1, strlen(ref1), buf, strlen(buf));
 
 	sec = 0*24*60*60 + 0*60*60 + 1*60 + 2;
-	re_snprintf(buf, sizeof(buf), "%H", fmt_human_time, &sec);
+	(void)re_snprintf(buf, sizeof(buf), "%H", fmt_human_time, &sec);
 	TEST_STRCMP(ref2, strlen(ref2), buf, strlen(buf));
 
  out:

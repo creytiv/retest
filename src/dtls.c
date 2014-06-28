@@ -310,7 +310,7 @@ int test_dtls(void)
 	int err = 0;
 
 	if (!have_dtls_support()) {
-		re_printf("skip DTLS tests\n");
+		(void)re_printf("skip DTLS tests\n");
 		return 0;
 	}
 

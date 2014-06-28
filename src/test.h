@@ -83,6 +83,19 @@
 		goto out;						\
 	}
 
+#define TEST_SACMP(expect, actual, flags)				\
+	if (!sa_cmp((expect), (actual), (flags))) {			\
+									\
+		(void)re_fprintf(stderr, "\n");				\
+		DEBUG_WARNING("TEST_SACMP: %s:%u:"			\
+			      " %s(): failed\n",			\
+			      __FILE__, __LINE__, __func__);		\
+		DEBUG_WARNING("expected: %J\n", (expect));		\
+		DEBUG_WARNING("actual:   %J\n", (actual));		\
+		err = EADDRNOTAVAIL;					\
+		goto out;						\
+	}
+
 
 /* Module API */
 int test_aes(void);
@@ -116,6 +129,7 @@ int test_http_loop(void);
 int test_httpauth_chall(void);
 int test_httpauth_resp(void);
 int test_ice(void);
+int test_ice_lite(void);
 int test_jbuf(void);
 int test_list(void);
 int test_list_ref(void);
@@ -217,3 +231,25 @@ struct stunserver {
 };
 
 int stunserver_alloc(struct stunserver **stunp);
+
+
+struct turnserver {
+	struct udp_sock *us;
+	struct sa laddr;
+	struct udp_sock *us_relay;
+	struct sa cli;
+	struct sa relay;
+
+	struct channel {
+		uint16_t nr;
+		struct sa peer;
+	} chanv[4];
+	size_t chanc;
+
+	size_t n_allocate;
+	size_t n_chanbind;
+	size_t n_send;
+	size_t n_raw;
+};
+
+int turnserver_alloc(struct turnserver **turnp);

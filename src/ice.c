@@ -37,7 +37,7 @@
 struct attrs {
 	struct attr {
 		char name[16];
-		char value[64];
+		char value[128];
 	} attrv[16];
 	unsigned attrc;
 };
@@ -50,11 +50,14 @@ struct agent {
 	struct attrs attr_s;
 	struct attrs attr_m;
 	struct ice_test *it;  /* parent */
-	struct pf *pf;
+	struct stunserver *stun;
+	struct turnserver *turn;
 	enum ice_mode mode;
 	char name[16];
 	uint8_t compid;
 	bool offerer;
+	bool use_turn;
+	size_t n_cand;
 
 	/* results: */
 	bool gathering_ok;
@@ -62,7 +65,6 @@ struct agent {
 };
 
 struct ice_test {
-	struct stunserver *stun;
 	struct agent *a;
 	struct agent *b;
 	struct tmr tmr;
@@ -161,8 +163,9 @@ static void agent_destructor(void *arg)
 
 	mem_deref(agent->icem);
 	mem_deref(agent->ice);
-	mem_deref(agent->pf);
 	mem_deref(agent->us);
+	mem_deref(agent->stun);
+	mem_deref(agent->turn);
 }
 
 
@@ -269,15 +272,23 @@ static int send_sdp(struct agent *agent)
 	 *   0 remote candidates
 	 *   checklist and validlist is empty
 	 */
-	TEST_EQUALS(1, list_count(icem_lcandl(agent->icem)));
+	TEST_EQUALS(agent->n_cand, list_count(icem_lcandl(agent->icem)));
 	TEST_EQUALS(0, list_count(icem_rcandl(agent->icem)));
 	TEST_EQUALS(0, list_count(icem_checkl(agent->icem)));
 	TEST_EQUALS(0, list_count(icem_validl(agent->icem)));
 
-	/* verify that default candidate is our local address */
-	TEST_ASSERT(sa_cmp(&agent->laddr,
+	if (agent->use_turn) {
+		/* verify that default candidate is the relayed address */
+		TEST_SACMP(&agent->turn->relay,
 			   icem_cand_default(agent->icem, agent->compid),
-			   SA_ALL));
+			   SA_ALL);
+	}
+	else {
+		/* verify that default candidate is our local address */
+		TEST_SACMP(&agent->laddr,
+			   icem_cand_default(agent->icem, agent->compid),
+			   SA_ALL);
+	}
 
 	/* we should not have selected candidate-pairs yet */
 	TEST_ASSERT(!icem_selected_laddr(agent->icem, agent->compid));
@@ -326,6 +337,7 @@ static void agent_gather_handler(int err, uint16_t scode, const char *reason,
 static void agent_connchk_handler(int err, bool update, void *arg)
 {
 	struct agent *agent = arg;
+	struct agent *other = agent_other(agent);
 	const struct sa *laddr, *raddr;
 
 	if (err) {
@@ -353,10 +365,11 @@ static void agent_connchk_handler(int err, bool update, void *arg)
 	 *   1 local candidate
 	 *   1 remote candidates
 	 */
-	TEST_EQUALS(1, list_count(icem_lcandl(agent->icem)));
-	TEST_EQUALS(1, list_count(icem_rcandl(agent->icem)));
+	TEST_EQUALS(agent->n_cand, list_count(icem_lcandl(agent->icem)));
+	TEST_EQUALS(other->n_cand, list_count(icem_rcandl(agent->icem)));
 	TEST_EQUALS(0, list_count(icem_checkl(agent->icem)));
-	TEST_EQUALS(1, list_count(icem_validl(agent->icem)));
+	TEST_EQUALS(agent->n_cand * other->n_cand,
+		    list_count(icem_validl(agent->icem)));
 
 	laddr = icem_selected_laddr(agent->icem, agent->compid);
 	raddr = &agent_other(agent)->laddr;
@@ -386,7 +399,7 @@ static void agent_connchk_handler(int err, bool update, void *arg)
 
 
 static int agent_alloc(struct agent **agentp, struct ice_test *it,
-		       struct stunserver *stun, enum ice_mode mode,
+		       enum ice_mode mode, bool use_turn,
 		       const char *name, uint8_t compid, bool offerer)
 {
 	struct agent *agent;
@@ -396,11 +409,29 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 	if (!agent)
 		return ENOMEM;
 
+	agent->use_turn = use_turn;
 	agent->it = it;
 	strcpy(agent->name, name);
 	agent->compid = compid;
 	agent->offerer = offerer;
 	agent->mode = mode;
+
+	if (mode == ICE_MODE_FULL) {
+
+		if (agent->use_turn) {
+			err = turnserver_alloc(&agent->turn);
+			if (err)
+				goto out;
+		}
+		else {
+			err = stunserver_alloc(&agent->stun);
+			if (err)
+				goto out;
+		}
+	}
+	else {
+		TEST_ASSERT(use_turn == false);
+	}
 
 	err = sa_set_str(&agent->laddr, "127.0.0.1", 0);
 	if (err)
@@ -409,12 +440,6 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 	err = udp_listen(&agent->us, &agent->laddr, 0, 0);
 	if (err)
 		goto out;
-
-#if 0
-	err = pf_create(&agent->pf, agent->us, name);
-	if (err)
-		goto out;
-#endif
 
 	err = udp_local_get(agent->us, &agent->laddr);
 	if (err)
@@ -460,6 +485,8 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 	if (err)
 		goto out;
 
+	++agent->n_cand;
+
 	/* Start gathering now -- full mode only
 	 *
 	 * A lite implementation doesn't gather candidates;
@@ -467,7 +494,18 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 	 */
 	if (mode == ICE_MODE_FULL) {
 
-		err = icem_gather_srflx(agent->icem, &stun->laddr);
+		if (agent->use_turn) {
+
+			err = icem_gather_relay(agent->icem,
+						&agent->turn->laddr,
+						"username", "password");
+			++agent->n_cand;
+		}
+		else {
+			err = icem_gather_srflx(agent->icem,
+						&agent->stun->laddr);
+		}
+
 		if (err)
 			goto out;
 	}
@@ -518,15 +556,23 @@ static int verify_after_sdp_exchange(struct agent *agent)
 	 *   1 remote candidates
 	 *   checklist and validlist is empty
 	 */
-	TEST_EQUALS(1, list_count(icem_lcandl(agent->icem)));
-	TEST_EQUALS(1, list_count(icem_rcandl(agent->icem)));
+	TEST_EQUALS(agent->n_cand, list_count(icem_lcandl(agent->icem)));
+	TEST_EQUALS(other->n_cand, list_count(icem_rcandl(agent->icem)));
 	TEST_EQUALS(0, list_count(icem_checkl(agent->icem)));
 	TEST_EQUALS(0, list_count(icem_validl(agent->icem)));
 
-	/* verify that default candidate is our local address */
-	TEST_ASSERT(sa_cmp(&agent->laddr,
+	if (agent->use_turn) {
+		/* verify that default candidate is the relayed address */
+		TEST_SACMP(&agent->turn->relay,
 			   icem_cand_default(agent->icem, agent->compid),
-			   SA_ALL));
+			   SA_ALL);
+	}
+	else {
+		/* verify that default candidate is our local address */
+		TEST_SACMP(&agent->laddr,
+			   icem_cand_default(agent->icem, agent->compid),
+			   SA_ALL);
+	}
 
 	/* we should not have selected candidate-pairs yet */
 	TEST_ASSERT(!icem_selected_laddr(agent->icem, agent->compid));
@@ -541,6 +587,7 @@ static int verify_after_sdp_exchange(struct agent *agent)
 
 static int agent_start(struct agent *agent)
 {
+	struct agent *other = agent_other(agent);
 	int err = 0;
 
 	/* verify that check-list is empty before we start */
@@ -553,7 +600,8 @@ static int agent_start(struct agent *agent)
 		if (err)
 			return err;
 
-		TEST_EQUALS(1, list_count(icem_checkl(agent->icem)));
+		TEST_EQUALS(agent->n_cand * other->n_cand,
+			    list_count(icem_checkl(agent->icem)));
 	}
 	else {
 		/* Formation of check lists is performed
@@ -570,6 +618,7 @@ static int agent_start(struct agent *agent)
 
 static int agent_verify_completed(struct agent *agent)
 {
+	struct agent *other = agent_other(agent);
 	uint32_t validc;
 	int err = 0;
 
@@ -581,10 +630,21 @@ static int agent_verify_completed(struct agent *agent)
 	TEST_EQUALS(0, list_count(icem_checkl(agent->icem)));
 	validc = list_count(icem_validl(agent->icem));
 	if (agent->mode == ICE_MODE_FULL) {
-		TEST_EQUALS(1, validc);
+		TEST_EQUALS(agent->n_cand * other->n_cand, validc);
 	}
 	else {
 		TEST_ASSERT(validc==0 || validc==1);
+	}
+
+	/* verify state of STUN/TURN server */
+	if (agent->mode == ICE_MODE_FULL) {
+		if (agent->use_turn) {
+			TEST_EQUALS(1, agent->turn->n_allocate);
+			TEST_ASSERT(agent->turn->n_chanbind >= 1);
+		}
+		else {
+			TEST_ASSERT(agent->stun->nrecv >= 1);
+		}
 	}
 
  out:
@@ -666,12 +726,12 @@ static void icetest_destructor(void *arg)
 	tmr_cancel(&it->tmr);
 	mem_deref(it->b);
 	mem_deref(it->a);
-	mem_deref(it->stun);
 }
 
 
 static int icetest_alloc(struct ice_test **itp,
-			 enum ice_mode mode_a, enum ice_mode mode_b)
+			 enum ice_mode mode_a, bool turn_a,
+			 enum ice_mode mode_b, bool turn_b)
 {
 	struct ice_test *it;
 	int err;
@@ -680,15 +740,11 @@ static int icetest_alloc(struct ice_test **itp,
 	if (!it)
 		return ENOMEM;
 
-	err = stunserver_alloc(&it->stun);
+	err = agent_alloc(&it->a, it, mode_a, turn_a, "A", 7, true);
 	if (err)
 		goto out;
 
-	err = agent_alloc(&it->a, it, it->stun, mode_a, "A", 7, true);
-	if (err)
-		goto out;
-
-	err = agent_alloc(&it->b, it, it->stun, mode_b, "B", 7, false);
+	err = agent_alloc(&it->b, it, mode_b, turn_b, "B", 7, false);
 	if (err)
 		goto out;
 
@@ -702,12 +758,13 @@ static int icetest_alloc(struct ice_test **itp,
 }
 
 
-static int test_ice_loop(enum ice_mode mode_a, enum ice_mode mode_b)
+static int test_ice_loop(enum ice_mode mode_a, bool turn_a,
+			 enum ice_mode mode_b, bool turn_b)
 {
 	struct ice_test *it = NULL;
 	int err;
 
-	err = icetest_alloc(&it, mode_a, mode_b);
+	err = icetest_alloc(&it, mode_a, turn_a, mode_b, turn_b);
 	if (err)
 		goto out;
 
@@ -727,13 +784,6 @@ static int test_ice_loop(enum ice_mode mode_a, enum ice_mode mode_b)
 	if (err)
 		goto out;
 
-	if (mode_a == ICE_MODE_FULL && mode_b == ICE_MODE_FULL) {
-		TEST_ASSERT(it->stun->nrecv >= 2);
-	}
-	else {
-		TEST_ASSERT(it->stun->nrecv >= 1);
-	}
-
  out:
 	mem_deref(it);
 
@@ -745,8 +795,18 @@ int test_ice(void)
 {
 	int err = 0;
 
-	err |= test_ice_loop(ICE_MODE_FULL, ICE_MODE_FULL);
-	err |= test_ice_loop(ICE_MODE_FULL, ICE_MODE_LITE);
+	err |= test_ice_loop(ICE_MODE_FULL, false, ICE_MODE_FULL, false);
+	err |= test_ice_loop(ICE_MODE_FULL, true,  ICE_MODE_FULL, true);
+
+	return err;
+}
+
+
+int test_ice_lite(void)
+{
+	int err = 0;
+
+	err |= test_ice_loop(ICE_MODE_FULL, true, ICE_MODE_LITE, false);
 
 	return err;
 }

@@ -56,3 +56,4 @@ endif
 # Mock servers
 SRCS	+= mock/pf.c
 SRCS	+= mock/stunsrv.c
+SRCS	+= mock/turnsrv.c

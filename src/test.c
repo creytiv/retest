@@ -60,6 +60,7 @@ static const struct test tests[] = {
 	TEST(test_httpauth_chall),
 	TEST(test_httpauth_resp),
 	TEST(test_ice),
+	TEST(test_ice_lite),
 	TEST(test_jbuf),
 	TEST(test_list),
 	TEST(test_list_ref),
@@ -183,8 +184,8 @@ static int testcase_oom(const struct test *test, int levels, int *max_alloc)
 			if (!oom) {
 				(void)re_fprintf(stderr, "oom max %d\n", j);
 				if (j >= (int)levels) {
-					DEBUG_WARNING("levels=%u\n",
-						      levels);
+					DEBUG_WARNING("levels: %d >= %d\n",
+						      j, levels);
 				}
 			}
 			oom = true;
@@ -213,7 +214,7 @@ int test_oom(const char *name)
 {
 	size_t i;
 	int max_alloc = 0;
-	const int levels = 100;
+	const int levels = 105;
 	int err = 0;
 
 	(void)re_fprintf(stderr, "oom tests %u levels: \n", levels);
