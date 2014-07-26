@@ -17,7 +17,6 @@ struct udp_test {
 	struct udp_sock *usc;
 	struct udp_sock *uss;
 	struct udp_helper *uh;
-	struct tmr tmr;
 	struct sa cli;
 	struct sa srv;
 	int tindex;
@@ -31,7 +30,6 @@ static const char *data0 = "data from client to server";
 static void destructor(void *arg)
 {
 	struct udp_test *ut = arg;
-	tmr_cancel(&ut->tmr);
 	mem_deref(ut->uh);
 	mem_deref(ut->usc);
 	mem_deref(ut->uss);
@@ -150,14 +148,6 @@ static bool udp_helper_recv(struct sa *src, struct mbuf *mb, void *arg)
 }
 
 
-static void timeout_handler(void *arg)
-{
-	struct udp_test *ut = arg;
-	ut->err = ENOMEM;
-	re_cancel();
-}
-
-
 int test_udp(void)
 {
 	struct udp_sock *uss2;
@@ -167,8 +157,6 @@ int test_udp(void)
 	ut = mem_zalloc(sizeof(*ut), destructor);
 	if (!ut)
 		return ENOMEM;
-
-	tmr_init(&ut->tmr);
 
 	err  = sa_set_str(&ut->cli, "127.0.0.1", 0);
 	err |= sa_set_str(&ut->srv, "127.0.0.1", 0);
@@ -208,9 +196,7 @@ int test_udp(void)
 	if (err)
 		goto out;
 
-	tmr_start(&ut->tmr, 100, timeout_handler, ut);
-
-	err = re_main(NULL);
+	err = re_main_timeout(100);
 	if (err)
 		goto out;
 

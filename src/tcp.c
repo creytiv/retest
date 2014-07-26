@@ -38,7 +38,6 @@ struct tcp_test {
 	struct tcp_sock *ts;
 	struct tcp_conn *tc;
 	struct tcp_conn *tc2;
-	struct tmr tmr;
 	int err;
 };
 
@@ -51,7 +50,6 @@ static void destructor(void *arg)
 {
 	struct tcp_test *tt = arg;
 
-	tmr_cancel(&tt->tmr);
 	mem_deref(tt->tc2);
 	mem_deref(tt->tc);
 	mem_deref(tt->ts);
@@ -64,7 +62,6 @@ static void abort_test(struct tcp_test *tt, int err)
 		tt->err = err;
 	}
 
-	tmr_cancel(&tt->tmr);
 	re_cancel();
 }
 
@@ -190,13 +187,6 @@ static void tcp_client_close_handler(int err, void *arg)
 }
 
 
-static void timeout_handler(void *arg)
-{
-	struct tcp_test *tt = arg;
-	abort_test(tt, ENOMEM);
-}
-
-
 int test_tcp(void)
 {
 	struct tcp_test *tt;
@@ -210,8 +200,6 @@ int test_tcp(void)
 	err = sa_set_str(&srv, "127.0.0.1", 0);
 	if (err)
 		goto out;
-
-	tmr_start(&tt->tmr, 1000, timeout_handler, tt);
 
 	err = tcp_listen(&tt->ts, &srv, tcp_server_conn_handler, tt);
 	if (err)
@@ -227,7 +215,7 @@ int test_tcp(void)
 	if (err)
 		goto out;
 
-	err = re_main(NULL);
+	err = re_main_timeout(1000);
 	if (err)
 		goto out;
 
