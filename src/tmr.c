@@ -13,7 +13,7 @@
 #include <re_dbg.h>
 
 
-enum {N_TIMERS=64};
+enum {N_TIMERS=32};
 
 struct tmr_test {
 	struct tmr tmrv[N_TIMERS];
@@ -60,7 +60,7 @@ int test_tmr(void)
 		prev = tmr->jfs;
 	}
 
-	err = re_main(NULL);
+	err = re_main_timeout(1000);
 
 	if (!err && tt.timers_ok != N_TIMERS)
 		err = EINVAL;
