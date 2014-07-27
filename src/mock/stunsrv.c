@@ -25,12 +25,17 @@ static void stunserver_udp_recv(const struct sa *src, struct mbuf *mb,
 	if (err)
 		return;
 
+#if 0
+	stun_msg_dump(msg);
+#endif
+
 	TEST_EQUALS(0x0001, stun_msg_type(msg));
 	TEST_EQUALS(STUN_CLASS_REQUEST, stun_msg_class(msg));
 	TEST_EQUALS(STUN_METHOD_BINDING, stun_msg_method(msg));
 
 	err = stun_reply(IPPROTO_UDP, stun->us, src,
-			 0, msg, NULL, 0, false, 1,
+			 0, msg, NULL, 0, false, 2,
+			 STUN_ATTR_MAPPED_ADDR, src,
 			 STUN_ATTR_XOR_MAPPED_ADDR, src);
 
  out:
