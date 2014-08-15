@@ -82,6 +82,7 @@ static const struct test tests[] = {
 	TEST(test_sdp_bfcp),
 	TEST(test_sdp_parse),
 	TEST(test_sdp_oa),
+	TEST(test_sdp_extmap),
 	TEST(test_sha1),
 	TEST(test_sip_addr),
 	TEST(test_sip_apply),

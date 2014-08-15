@@ -788,3 +788,52 @@ int fuzzy_sdpsess(struct mbuf *mb)
 	mem_deref(sess);
 	return err;
 }
+
+
+int test_sdp_extmap(void)
+{
+	static const char *extmapv[3] = {
+		"extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level",
+		"extmap:2/sendrecv http://example.com/ext.htm#xmeta short",
+		"extmap:4096/recvonly URI-gps-string"
+	};
+	struct sdp_extmap ext;
+	int err = 0;
+
+	/* extmap 1 */
+	err = sdp_extmap_decode(&ext, extmapv[0]);
+	TEST_EQUALS(0, err);
+	TEST_STRCMP("urn:ietf:params:rtp-hdrext:ssrc-audio-level",
+		    strlen("urn:ietf:params:rtp-hdrext:ssrc-audio-level"),
+		    ext.name.p, ext.name.l);
+	TEST_ASSERT(!pl_isset(&ext.attrs));
+	TEST_EQUALS(SDP_SENDRECV, ext.dir);
+	TEST_ASSERT(!ext.dir_set);
+	TEST_EQUALS(1, ext.id);
+
+	/* extmap 2 */
+	err = sdp_extmap_decode(&ext, extmapv[1]);
+	TEST_EQUALS(0, err);
+	TEST_STRCMP("http://example.com/ext.htm#xmeta",
+		    strlen("http://example.com/ext.htm#xmeta"),
+		    ext.name.p, ext.name.l);
+	TEST_STRCMP("short", strlen("short"),
+		    ext.attrs.p, ext.attrs.l);
+	TEST_EQUALS(SDP_SENDRECV, ext.dir);
+	TEST_ASSERT(ext.dir_set);
+	TEST_EQUALS(2, ext.id);
+
+	/* extmap 3 */
+	err = sdp_extmap_decode(&ext, extmapv[2]);
+	TEST_EQUALS(0, err);
+	TEST_STRCMP("URI-gps-string",
+		    strlen("URI-gps-string"),
+		    ext.name.p, ext.name.l);
+	TEST_ASSERT(!pl_isset(&ext.attrs));
+	TEST_EQUALS(SDP_RECVONLY, ext.dir);
+	TEST_ASSERT(ext.dir_set);
+	TEST_EQUALS(4096, ext.id);
+
+ out:
+	return err;
+}

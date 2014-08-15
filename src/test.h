@@ -151,6 +151,7 @@ int test_sdp_all(void);
 int test_sdp_bfcp(void);
 int test_sdp_parse(void);
 int test_sdp_oa(void);
+int test_sdp_extmap(void);
 int test_sha1(void);
 int test_sip_addr(void);
 int test_sip_apply(void);
