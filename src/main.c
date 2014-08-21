@@ -211,13 +211,17 @@ int main(int argc, char *argv[])
 			(void)re_fprintf(stderr, "Failed (%m)\n", err);
 	}
 
-#ifdef HAVE_PTHREAD
 	if (do_thread) {
+#ifdef HAVE_PTHREAD
 		err = test_multithread();
 		if (err)
 			(void)re_fprintf(stderr, "Failed (%m)\n", err);
-	}
+#else
+		(void)re_fprintf(stderr, "no support for threads\n");
+		err = ENOSYS;
+		goto out;
 #endif
+	}
 
 	if (do_fuzzy) {
 		running = true;
