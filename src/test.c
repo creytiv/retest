@@ -95,6 +95,7 @@ static const struct test tests[] = {
 	TEST(test_stun_req),
 	TEST(test_stun_resp),
 	TEST(test_stun_reqltc),
+	TEST(test_stun),
 	TEST(test_sys_div),
 	TEST(test_sys_endian),
 	TEST(test_sys_rand),

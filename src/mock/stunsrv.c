@@ -17,6 +17,7 @@ static void stunserver_udp_recv(const struct sa *src, struct mbuf *mb,
 {
 	struct stunserver *stun = arg;
 	struct stun_msg *msg;
+	bool fp = false;
 	int err;
 
 	stun->nrecv++;
@@ -33,15 +34,21 @@ static void stunserver_udp_recv(const struct sa *src, struct mbuf *mb,
 	TEST_EQUALS(STUN_CLASS_REQUEST, stun_msg_class(msg));
 	TEST_EQUALS(STUN_METHOD_BINDING, stun_msg_method(msg));
 
+	/* mirror FINGERPRINT attribute back in response */
+	fp = NULL != stun_msg_attr(msg, STUN_ATTR_FINGERPRINT);
+	if (fp) {
+		TEST_EQUALS(0, stun_msg_chk_fingerprint(msg));
+	}
+
 	err = stun_reply(IPPROTO_UDP, stun->us, src,
-			 0, msg, NULL, 0, false, 2,
+			 0, msg, NULL, 0, fp, 2,
 			 STUN_ATTR_MAPPED_ADDR, src,
 			 STUN_ATTR_XOR_MAPPED_ADDR, src);
 
  out:
 	if (err) {
 		(void)stun_ereply(IPPROTO_UDP, stun->us, src, 0, msg, 400,
-				  "Bad Request", NULL, 0, false, 0);
+				  "Bad Request", NULL, 0, fp, 0);
 	}
 
 	mem_deref(msg);

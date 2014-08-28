@@ -377,3 +377,87 @@ int fuzzy_stunmsg(struct mbuf *mb)
 	mem_deref(msg);
 	return err;
 }
+
+
+struct test {
+	size_t n_resp;
+	int err;
+};
+
+
+static void stun_resp_handler(int err, uint16_t scode, const char *reason,
+			      const struct stun_msg *msg, void *arg)
+{
+	struct test *test = arg;
+	(void)reason;
+
+	if (err)
+		goto out;
+
+	++test->n_resp;
+
+	/* verify STUN response */
+	TEST_EQUALS(0, scode);
+	TEST_EQUALS(0x0101, stun_msg_type(msg));
+	TEST_EQUALS(STUN_CLASS_SUCCESS_RESP, stun_msg_class(msg));
+	TEST_EQUALS(STUN_METHOD_BINDING, stun_msg_method(msg));
+	TEST_EQUALS(0, stun_msg_chk_fingerprint(msg));
+
+ out:
+	if (err)
+		test->err = err;
+
+	/* done */
+	re_cancel();
+}
+
+
+/*
+ * Send a STUN Binding Request to the mock STUN-Server,
+ * and expect a STUN Binding Response.
+ */
+int test_stun(void)
+{
+	struct stunserver *srv = NULL;
+	struct stun_ctrans *ct = NULL;
+	struct stun *stun = NULL;
+	struct test test;
+	int err;
+
+	memset(&test, 0, sizeof(test));
+
+	err = stunserver_alloc(&srv);
+	if (err)
+		goto out;
+
+	err = stun_alloc(&stun, NULL, NULL, NULL);
+	if (err)
+		goto out;
+
+	err = stun_request(&ct, stun, IPPROTO_UDP, NULL, &srv->laddr, 0,
+			   STUN_METHOD_BINDING, NULL, 0, true,
+			   stun_resp_handler, &test, 0);
+	if (err)
+		goto out;
+
+	TEST_ASSERT(ct != NULL);
+
+	err = re_main_timeout(100);
+	if (err)
+		goto out;
+
+	if (test.err) {
+		err = test.err;
+		goto out;
+	}
+
+	/* verify results */
+	TEST_ASSERT(srv->nrecv >= 1);
+	TEST_EQUALS(1, test.n_resp);
+
+ out:
+	mem_deref(stun);
+	mem_deref(srv);
+
+	return err;
+}

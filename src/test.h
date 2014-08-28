@@ -165,6 +165,7 @@ int test_srtp(void);
 int test_stun_req(void);
 int test_stun_resp(void);
 int test_stun_reqltc(void);
+int test_stun(void);
 int test_sys_div(void);
 int test_sys_endian(void);
 int test_sys_rand(void);
