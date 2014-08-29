@@ -13,7 +13,7 @@
 #include <re_dbg.h>
 
 
-int test_mbuf(void)
+static int test_mbuf_basic(void)
 {
 	struct mbuf mb;
 	struct pl pl, hei = PL("hei"), foo = PL("foo");
@@ -86,4 +86,62 @@ int test_mbuf(void)
 	mem_deref(str);
 
 	return err;
+}
+
+
+static int test_mbuf_shift(void)
+{
+	static const uint8_t payload[10] = {0,1,2,3,4,5,6,7,8,9};
+	struct mbuf *mb;
+	int err;
+
+	mb = mbuf_alloc(sizeof(payload));
+	if (!mb)
+		return ENOMEM;
+
+	err = mbuf_write_mem(mb, payload, sizeof(payload));
+	if (err)
+		goto out;
+	mb->pos = 0;
+
+	/* inject a header in the front */
+	err = mbuf_shift(mb, 64);
+	if (err)
+		goto out;
+
+	TEST_EQUALS(64, mb->pos);
+	TEST_EQUALS(64+10, mb->end);
+	TEST_MEMCMP(payload, sizeof(payload),
+		    mbuf_buf(mb), mbuf_get_left(mb));
+
+	/* remove a header in the front */
+	err = mbuf_shift(mb, -1);
+	if (err)
+		goto out;
+
+	TEST_EQUALS(63, mb->pos);
+	TEST_EQUALS(63+10, mb->end);
+	TEST_MEMCMP(payload, sizeof(payload),
+		    mbuf_buf(mb), mbuf_get_left(mb));
+
+ out:
+	mem_deref(mb);
+
+	return err;
+}
+
+
+int test_mbuf(void)
+{
+	int err;
+
+	err = test_mbuf_basic();
+	if (err)
+		return err;
+
+	err = test_mbuf_shift();
+	if (err)
+		return err;
+
+	return 0;
 }
