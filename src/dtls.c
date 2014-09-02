@@ -179,8 +179,11 @@ static void conn_handler(const struct sa *src, void *arg)
 	err = dtls_accept(&t->conn_srv, t->tls, t->sock_srv,
 			  srv_estab_handler, srv_recv_handler,
 			  srv_close_handler, t);
-	if (err)
+	if (err) {
+		if (err == EPROTO)
+			err = ENOMEM;
 		goto out;
+	}
 
  out:
 	if (err)
@@ -248,8 +251,11 @@ static int test_dtls_srtp(bool dtls_srtp)
 	err = dtls_connect(&test.conn_cli, test.tls, test.sock_cli,
 			   &srv, cli_estab_handler,
 			   cli_recv_handler, cli_close_handler, &test);
-	if (err)
+	if (err) {
+		if (err == EPROTO)
+			err = ENOMEM;
 		goto out;
+	}
 
 	err = re_main_timeout(100);
 	if (err)
