@@ -155,6 +155,8 @@ static void srv_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 		break;
 
 	case STUN_METHOD_CREATEPERM:
+		++turn->n_createperm;
+
 		/* todo: install permissions and check them */
 		err = stun_reply(IPPROTO_UDP, turn->us, src, 0,
 				 msg, NULL, 0, false,

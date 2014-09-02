@@ -188,6 +188,8 @@ int test_dtls(void);
 int test_tls(void);
 #endif
 
+int test_dtls_turn(void);
+
 
 struct mbuf;
 int fuzzy_bfcp(struct mbuf *mb);
@@ -250,6 +252,7 @@ struct turnserver {
 	size_t chanc;
 
 	size_t n_allocate;
+	size_t n_createperm;
 	size_t n_chanbind;
 	size_t n_send;
 	size_t n_raw;

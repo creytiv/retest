@@ -116,6 +116,9 @@ static const struct test tests[] = {
 	TEST(test_vid),
 	TEST(test_vidconv),
 	TEST(test_websock),
+
+	/* combination tests: */
+	TEST(test_dtls_turn),
 };
 
 

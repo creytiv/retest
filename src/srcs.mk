@@ -54,6 +54,8 @@ SRCS	+= tls.c
 SRCS	+= dtls.c
 endif
 
+SRCS	+= combo/dtls_turn.c
+
 # Mock servers
 SRCS	+= mock/pf.c
 SRCS	+= mock/stunsrv.c

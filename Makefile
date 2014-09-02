@@ -68,6 +68,7 @@ $(BUILD)/%.o: %.c $(BUILD) Makefile src/srcs.mk
 
 $(BUILD): Makefile
 	@mkdir -p $(BUILD)/src/mock
+	@mkdir -p $(BUILD)/src/combo
 	@touch $@
 
 clean:
