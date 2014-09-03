@@ -367,7 +367,7 @@ static int agent_verify(struct agent *ag)
 
 		TEST_EQUALS(1, ag->turn_n_alloc_resp);
 		TEST_EQUALS(ag->turn_channels ? 0 : 1, ag->turn_n_perm_resp);
-		TEST_EQUALS(ag->turn_channels ? 1 : 0, ag->turn_n_chan_resp);
+		TEST_EQUALS(ag->turn_channels ? 1u : 0, ag->turn_n_chan_resp);
 
 		TEST_ASSERT(ag->turnsrv->n_allocate >= 1);
 		if (ag->turn_channels) {
