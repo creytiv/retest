@@ -32,7 +32,7 @@ static bool hash_cmp_handler(struct le *le, void *arg)
 }
 
 
-int test_hash(void)
+static int test_hash_basic(void)
 {
 	struct my_elem elems[3];
 	struct hash *h;
@@ -51,17 +51,6 @@ int test_hash(void)
 		return err;
 
 	/* API test */
-	if (EINVAL != hash_alloc(NULL, 4)) {
-		err = EINVAL;
-		goto out;
-	}
-	if (EINVAL != hash_alloc(&h, 0)) {
-		err = EINVAL;
-		goto out;
-	}
-	hash_append(h, 0, NULL, NULL);
-	hash_append(NULL, 0, &elems[0].he, NULL);
-	hash_unlink(NULL);
 	if (hash_lookup(NULL, hash_joaat_pl(elems[0].name),
 			hash_cmp_handler, (void *)elems[0].name)) {
 		err = EINVAL;
@@ -122,4 +111,39 @@ int test_hash(void)
  out:
 	h = mem_deref(h);
 	return err;
+}
+
+
+static int test_hash_robustapi(void)
+{
+	struct hash *h = NULL;
+	struct le he;
+	int err = 0;
+
+	TEST_EQUALS(EINVAL, hash_alloc(NULL, 4));
+	TEST_EQUALS(EINVAL, hash_alloc(&h, 0));
+
+	hash_append(h, 0, NULL, NULL);
+	hash_append(NULL, 0, &he, NULL);
+
+	hash_unlink(NULL);
+
+ out:
+	return err;
+}
+
+
+int test_hash(void)
+{
+	int err;
+
+	err = test_hash_basic();
+	if (err)
+		return err;
+
+	err = test_hash_robustapi();
+	if (err)
+		return err;
+
+	return 0;
 }
