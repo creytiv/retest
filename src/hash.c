@@ -34,6 +34,7 @@ static bool hash_cmp_handler(struct le *le, void *arg)
 
 static int test_hash_basic(void)
 {
+#define BUCKET_SIZE 4
 	struct my_elem elems[3];
 	struct hash *h;
 	struct my_elem *elem;
@@ -46,9 +47,11 @@ static int test_hash_basic(void)
 	elems[1].name = &alfred;
 	elems[2].name = &atle;
 
-	err = hash_alloc(&h, 4);
+	err = hash_alloc(&h, BUCKET_SIZE);
 	if (err)
 		return err;
+
+	TEST_EQUALS(BUCKET_SIZE, hash_bsize(h));
 
 	/* API test */
 	if (hash_lookup(NULL, hash_joaat_pl(elems[0].name),
@@ -133,6 +136,85 @@ static int test_hash_robustapi(void)
 }
 
 
+#define MAGIC1 0x7fbb0001
+#define MAGIC2 0x7fbb0002
+struct object {
+	uint32_t magic1;
+	struct le he;
+	uint32_t magic2;
+	char buffer[32];
+	uint32_t key;
+};
+
+
+static void obj_destructor(void *arg)
+{
+	struct object *obj = arg;
+
+	list_unlink(&obj->he);
+}
+
+
+static bool cmp_handler(struct le *le, void *arg)
+{
+	struct object *obj = le->data;
+
+	return obj->key == *(uint32_t *)arg;
+}
+
+
+static int test_hash_large(void)
+{
+#define SZ 8
+#define NUM_ENTRIES SZ*SZ
+	struct hash *ht = NULL;
+	unsigned i;
+	int err = 0;
+
+	err = hash_alloc(&ht, SZ);
+	if (err)
+		goto out;
+
+	/* add a lot of objects to hash-table */
+	for (i=0; i<NUM_ENTRIES; i++) {
+
+		struct object *obj;
+		uint32_t key = i;
+
+		obj = mem_zalloc(sizeof(*obj), obj_destructor);
+		if (!obj) {
+			err = ENOMEM;
+			goto out;
+		}
+		obj->magic1 = MAGIC1;
+		obj->magic2 = MAGIC2;
+		obj->key = key;
+
+		/* ownership of 'obj' transferred to the hash-table */
+		hash_append(ht, key, &obj->he, obj);
+	}
+
+	/* verify that all objects can be found */
+	for (i=0; i<NUM_ENTRIES; i++) {
+
+		struct object *obj;
+
+		obj = list_ledata(hash_lookup(ht, i, cmp_handler, &i));
+		TEST_ASSERT(obj != NULL);
+
+		TEST_EQUALS(MAGIC1, obj->magic1);
+		TEST_EQUALS(MAGIC2, obj->magic2);
+		TEST_EQUALS(i, obj->key);
+	}
+
+ out:
+	hash_flush(ht);  /* destroys all the objects */
+	mem_deref(ht);
+
+	return err;
+}
+
+
 int test_hash(void)
 {
 	int err;
@@ -142,6 +224,10 @@ int test_hash(void)
 		return err;
 
 	err = test_hash_robustapi();
+	if (err)
+		return err;
+
+	err = test_hash_large();
 	if (err)
 		return err;
 
