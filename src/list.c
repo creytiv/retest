@@ -28,55 +28,30 @@ int test_list(void)
 	memset(&node1, 0, sizeof(node1));
 	memset(&node2, 0, sizeof(node2));
 
-	DEBUG_INFO("test_list\n");
-
 	/* Test empty list */
-	if (0 != list_count(&list)) {
-		DEBUG_WARNING("test_list: failed line %u\n", __LINE__);
-		goto out;
-	}
+	TEST_EQUALS(0, list_count(&list));
 
 	/* Test with one node */
 	list_append(&list, &node1.le, &node1);
-	if (1 != list_count(&list)) {
-		DEBUG_WARNING("test_list: failed line %u\n", __LINE__);
-		goto out;
-	}
+	TEST_EQUALS(1, list_count(&list));
 
 	list_unlink(&node1.le);
 
-	if (0 != list_count(&list)) {
-		DEBUG_WARNING("test_list: failed line %u\n", __LINE__);
-		goto out;
-	}
+	TEST_EQUALS(0, list_count(&list));
 
 	/* Test with two nodes */
 	list_append(&list, &node1.le, &node1);
-	if (1 != list_count(&list)) {
-		DEBUG_WARNING("test_list: failed line %u\n", __LINE__);
-		goto out;
-	}
-
 	list_append(&list, &node2.le, &node2);
-	if (2 != list_count(&list)) {
-		DEBUG_WARNING("test_list: failed line %u\n", __LINE__);
-		goto out;
-	}
+	TEST_EQUALS(2, list_count(&list));
 
 	list_unlink(&node1.le);
 
-	if (1 != list_count(&list)) {
-		DEBUG_WARNING("test_list: failed line %u\n", __LINE__);
-		goto out;
-	}
+	TEST_EQUALS(1, list_count(&list));
 
 	list_unlink(&node2.le);
 
 	/* Test empty list */
-	if (0 != list_count(&list)) {
-		DEBUG_WARNING("test_list: failed line %u\n", __LINE__);
-		goto out;
-	}
+	TEST_EQUALS(0, list_count(&list));
 
 	err = 0;
 
