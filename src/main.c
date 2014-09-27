@@ -47,15 +47,19 @@ static void signal_handler(int signum)
 #ifdef HAVE_GETOPT
 static void usage(void)
 {
-	(void)re_fprintf(stderr, "Usage: retest [-h] [-roa] [-p n] <case>\n");
-	(void)re_fprintf(stderr, "options:\n");
-	(void)re_fprintf(stderr, "\t-h        Help\n");
-	(void)re_fprintf(stderr, "\t-r        Regular tests\n");
-	(void)re_fprintf(stderr, "\t-o        OOM tests\n");
-	(void)re_fprintf(stderr, "\t-p n      Performance tests\n");
+	(void)re_fprintf(stderr, "Usage: retest [-rotal] [-p n] [-hv]"
+			 " <testcase>\n");
+
+	(void)re_fprintf(stderr, "\ntest group options:\n");
+	(void)re_fprintf(stderr, "\t-r        Run regular tests\n");
+	(void)re_fprintf(stderr, "\t-o        Run OOM memory tests\n");
+	(void)re_fprintf(stderr, "\t-p n      Run performance tests\n");
 	(void)re_fprintf(stderr, "\t-t        Run tests in multi-threads\n");
-	(void)re_fprintf(stderr, "\t-a        All tests (default)\n");
-	(void)re_fprintf(stderr, "\t-l        List all testcases\n");
+	(void)re_fprintf(stderr, "\t-a        Run all tests (default)\n");
+	(void)re_fprintf(stderr, "\t-l        List all testcases and exit\n");
+
+	(void)re_fprintf(stderr, "\ncommon options:\n");
+	(void)re_fprintf(stderr, "\t-h        Help\n");
 	(void)re_fprintf(stderr, "\t-v        Verbose output\n");
 }
 #endif
