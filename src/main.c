@@ -160,16 +160,10 @@ int main(int argc, char *argv[])
 #endif
 
 	/* Initialise debugging */
-#ifdef __SYMBIAN32__
-	ansi = false;
-#elif defined(WIN32) && !defined(CYGWIN)
+#if defined(WIN32) && !defined(CYGWIN)
 	ansi = false;
 #endif
 	dbg_init(DBG_INFO, ansi ? DBG_ANSI : 0);
-
-#ifdef __SYMBIAN32__
-	(void)dbg_logfile_set("c:\\retest.log");
-#endif
 
 	/* Initialise library */
 	err = libre_init();
