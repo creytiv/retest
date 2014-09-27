@@ -201,9 +201,9 @@ int fuzzy_sdpsess(struct mbuf *mb);
 
 
 /* High-level API */
-int  test_reg(const char *name);
+int  test_reg(const char *name, bool verbose);
 int  test_oom(const char *name);
-int  test_perf(const char *name, uint32_t n);
+int  test_perf(const char *name, uint32_t n, bool verbose);
 int  test_multithread(void);
 int  test_fuzzy(const char *name);
 void test_listcases(void);

@@ -57,6 +57,7 @@ static void usage(void)
 	(void)re_fprintf(stderr, "\t-a        All tests (default)\n");
 	(void)re_fprintf(stderr, "\t-f        Fuzzy testing\n");
 	(void)re_fprintf(stderr, "\t-l        List all testcases\n");
+	(void)re_fprintf(stderr, "\t-v        Verbose output\n");
 }
 #endif
 
@@ -80,6 +81,7 @@ int main(int argc, char *argv[])
 	bool do_list = false;
 	bool do_thread = false;
 	bool ansi = true;
+	bool verbose = false;
 	const char *name = NULL;
 	uint32_t n = 10;
 	int err = 0;
@@ -93,7 +95,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "hrop:aflt");
+		const int c = getopt(argc, argv, "hrop:afltv");
 		if (0 > c)
 			break;
 
@@ -131,6 +133,10 @@ int main(int argc, char *argv[])
 
 		case 't':
 			do_thread = true;
+			break;
+
+		case 'v':
+			verbose = true;
 			break;
 		}
 	}
@@ -188,7 +194,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (do_reg) {
-		err = test_reg(name);
+		err = test_reg(name, verbose);
 		if (err)
 			(void)re_fprintf(stderr, "Failed (%m)\n", err);
 	}
@@ -200,7 +206,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (do_perf) {
-		err = test_perf(name, n);
+		err = test_perf(name, n, verbose);
 		if (err)
 			(void)re_fprintf(stderr, "Failed (%m)\n", err);
 	}

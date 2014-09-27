@@ -255,7 +255,7 @@ int test_oom(const char *name)
 }
 
 
-static int test_unit(const char *name)
+static int test_unit(const char *name, bool verbose)
 {
 	size_t i;
 	int err = 0;
@@ -275,6 +275,12 @@ static int test_unit(const char *name)
 	}
 	else {
 		for (i=0; i<ARRAY_SIZE(tests); i++) {
+
+			if (verbose) {
+				re_printf("test %u -- %s\n",
+					  i, tests[i].name);
+			}
+
 			err = tests[i].exec();
 			if (err) {
 				DEBUG_WARNING("%s: test failed (%m)\n",
@@ -288,7 +294,7 @@ static int test_unit(const char *name)
 }
 
 
-int test_perf(const char *name, uint32_t n)
+int test_perf(const char *name, uint32_t n, bool verbose)
 {
 	uint64_t tick, tock;
 	uint32_t i;
@@ -300,7 +306,7 @@ int test_perf(const char *name, uint32_t n)
 	for (i=0; i<n; i++) {
 		int err;
 
-		err = test_unit(name);
+		err = test_unit(name, verbose);
 		if (err)
 			return err;
 	}
@@ -316,12 +322,12 @@ int test_perf(const char *name, uint32_t n)
 }
 
 
-int test_reg(const char *name)
+int test_reg(const char *name, bool verbose)
 {
 	int err;
 
 	(void)re_fprintf(stderr, "regular tests:       ");
-	err = test_unit(name);
+	err = test_unit(name, verbose);
 	if (err)
 		return err;
 	(void)re_fprintf(stderr, "\x1b[32mOK\x1b[;m\n");
