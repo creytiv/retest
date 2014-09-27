@@ -136,58 +136,71 @@ static const struct test *find_test(const char *name)
 }
 
 
-static int testcase_oom(const struct test *test, int levels, int *max_alloc)
+/**
+ * Run a single testcase in OOM (Out-of-memory) mode.
+ *
+ * Start with 0 blocks free, and increment by 1 until the test passes.
+ *
+ *
+ *  Blocks
+ *  Free
+ *
+ *    /'\
+ *     |
+ *   5 |           #
+ *     |         # #
+ *     |       # # #
+ *     |     # # # #
+ *   1 |   # # # # #
+ *     '--------------> time
+ */
+static int testcase_oom(const struct test *test, int levels, bool verbose)
 {
-	int j;
+	int i;
 	int err = 0;
-	bool oom = false;
 
-	(void)re_fprintf(stderr, "  %-24s: ", test->name);
+	if (verbose)
+		(void)re_fprintf(stderr, "  %-24s: ", test->name);
 
 	/* All memory levels */
-	for (j=levels; j>=0; j--) {
-		mem_threshold_set(j);
+	for (i=0; i<levels; i++) {
+
+		mem_threshold_set(i);
 
 		err = test->exec();
-		if (!err)
-			continue;
-
-		if (ENOMEM == err) {
-			*max_alloc = max(j, *max_alloc);
-			if (!oom) {
-				(void)re_fprintf(stderr, "oom max %d\n", j);
-				if (j >= (int)levels) {
-					DEBUG_WARNING("levels: %d >= %d\n",
-						      j, levels);
-				}
-			}
-			oom = true;
-			continue;
+		if (err == 0) {
+			/* success, stop now */
+			break;
 		}
-
-		DEBUG_WARNING("%s: oom threshold=%u: %m\n",
-			      test->name, j, err);
-		break;
+		else if (err == ENOMEM) {
+			/* OOM, as expected */
+			err = 0;
+		}
+		else if (err == ETIMEDOUT) {
+			/* test timed out, stop now */
+			err = 0;
+			goto out;
+		}
+		else {
+			DEBUG_WARNING("%s: unexpected error code at"
+				      " %d blocks free (%m)\n",
+				      test->name, i, err);
+			goto out;
+		}
 	}
 
-	if (err && ENOMEM != err) {
-		DEBUG_WARNING("%s: oom test failed (%m)\n", test->name,
-			      err);
-		return err;
-	}
-	else if (0 == err) {
-		(void)re_fprintf(stderr, "no allocs\n");
-	}
+ out:
+	if (verbose)
+		(void)re_fprintf(stderr, "oom max %d\n", i);
 
-	return 0;
+	return err;
 }
 
 
-int test_oom(const char *name)
+int test_oom(const char *name, bool verbose)
 {
 	size_t i;
-	int max_alloc = 0;
-	const int levels = 105;
+	const int levels = 64;
 	int err = 0;
 
 	(void)re_fprintf(stderr, "oom tests %u levels: \n", levels);
@@ -199,12 +212,14 @@ int test_oom(const char *name)
 			return ENOENT;
 		}
 
-		err = testcase_oom(test, levels, &max_alloc);
+		err = testcase_oom(test, levels, verbose);
 	}
 	else {
 		/* All test cases */
-		for (i=0; i<ARRAY_SIZE(tests) && !err; i++) {
-			err = testcase_oom(&tests[i], levels, &max_alloc);
+		for (i=0; i<ARRAY_SIZE(tests); i++) {
+			err = testcase_oom(&tests[i], levels, verbose);
+			if (err)
+				break;
 		}
 	}
 
@@ -214,8 +229,7 @@ int test_oom(const char *name)
 		DEBUG_WARNING("oom: %m\n", err);
 	}
 	else {
-		(void)re_fprintf(stderr, "\x1b[32mOK\x1b[;m\t"
-				 "(max alloc %d)\n", max_alloc);
+		(void)re_fprintf(stderr, "\x1b[32mOK\x1b[;m\t\n");
 	}
 
 	return err;
@@ -484,8 +498,15 @@ static void oom_watchdog_timeout(void *arg)
 {
 	int *err = arg;
 
-	*err = ENOMEM;
+	*err = ETIMEDOUT;
 
+	re_cancel();
+}
+
+
+static void signal_handler(int sig)
+{
+	re_fprintf(stderr, "test interrupted by signal %d\n", sig);
 	re_cancel();
 }
 
@@ -498,7 +519,7 @@ int re_main_timeout(uint32_t timeout_ms)
 	tmr_init(&tmr);
 
 	tmr_start(&tmr, timeout_ms, oom_watchdog_timeout, &err);
-	(void)re_main(NULL);
+	(void)re_main(signal_handler);
 
 	tmr_cancel(&tmr);
 	return err;

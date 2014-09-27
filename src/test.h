@@ -193,7 +193,7 @@ int test_dtls_turn(void);
 
 /* High-level API */
 int  test_reg(const char *name, bool verbose);
-int  test_oom(const char *name);
+int  test_oom(const char *name, bool verbose);
 int  test_perf(const char *name, uint32_t n, bool verbose);
 int  test_multithread(void);
 void test_listcases(void);

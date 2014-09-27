@@ -60,7 +60,7 @@ int test_tmr(void)
 		prev = tmr->jfs;
 	}
 
-	err = re_main_timeout(1000);
+	err = re_main_timeout(500);
 
 	if (!err && tt.timers_ok != N_TIMERS)
 		err = EINVAL;

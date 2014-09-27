@@ -187,7 +187,7 @@ static int test_websock_loop(void)
 	if (err)
 		goto out;
 
-	err = re_main_timeout(1000);
+	err = re_main_timeout(500);
 	if (err)
 		goto out;
 

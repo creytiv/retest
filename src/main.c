@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (do_oom) {
-		err = test_oom(name);
+		err = test_oom(name, verbose);
 		if (err)
 			(void)re_fprintf(stderr, "Failed (%m)\n", err);
 	}
