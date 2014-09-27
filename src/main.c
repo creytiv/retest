@@ -55,7 +55,6 @@ static void usage(void)
 	(void)re_fprintf(stderr, "\t-p n      Performance tests\n");
 	(void)re_fprintf(stderr, "\t-t        Run tests in multi-threads\n");
 	(void)re_fprintf(stderr, "\t-a        All tests (default)\n");
-	(void)re_fprintf(stderr, "\t-f        Fuzzy testing\n");
 	(void)re_fprintf(stderr, "\t-l        List all testcases\n");
 	(void)re_fprintf(stderr, "\t-v        Verbose output\n");
 }
@@ -76,7 +75,6 @@ int main(int argc, char *argv[])
 	bool do_reg = false;
 	bool do_oom = false;
 	bool do_perf = false;
-	bool do_fuzzy = false;
 	bool do_all = false;
 	bool do_list = false;
 	bool do_thread = false;
@@ -95,7 +93,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "hrop:afltv");
+		const int c = getopt(argc, argv, "hrop:altv");
 		if (0 > c)
 			break;
 
@@ -117,10 +115,6 @@ int main(int argc, char *argv[])
 		case 'p':
 			do_perf = true;
 			n = atoi(optarg);
-			break;
-
-		case 'f':
-			do_fuzzy = true;
 			break;
 
 		case 'a':
@@ -221,18 +215,6 @@ int main(int argc, char *argv[])
 		err = ENOSYS;
 		goto out;
 #endif
-	}
-
-	if (do_fuzzy) {
-		running = true;
-		while (running && (err==0 || err==EBADMSG || err==ENOSYS)) {
-			err = test_fuzzy(name);
-		}
-		if (err) {
-			DEBUG_WARNING("fuzzy testing stopped: %m\n", err);
-		}
-
-		(void)re_printf("\n");
 	}
 
  out:

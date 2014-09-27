@@ -692,15 +692,3 @@ int test_sip_hdr(void)
 
 	return err;
 }
-
-
-int fuzzy_sipmsg(struct mbuf *mb)
-{
-	struct sip_msg *msg = NULL;
-	int err;
-
-	err = sip_msg_decode(&msg, mb);
-
-	mem_deref(msg);
-	return err;
-}

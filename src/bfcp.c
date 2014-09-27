@@ -232,17 +232,3 @@ int test_bfcp_bin(void)
 
 	return err;
 }
-
-
-int fuzzy_bfcp(struct mbuf *mb)
-{
-	struct bfcp_msg *msg = NULL;
-	int err;
-
-	err = bfcp_msg_decode(&msg, mb);
-	if (err == EBADMSG)
-		err = 0;
-
-	mem_deref(msg);
-	return err;
-}

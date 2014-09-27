@@ -389,40 +389,6 @@ int test_rtcp_decode(void)
 }
 
 
-int fuzzy_rtp(struct mbuf *mb)
-{
-	struct rtp_sock *rtp = NULL;
-	struct rtp_header hdr;
-	int err;
-
-	err = rtp_alloc(&rtp);
-	if (err)
-		goto out;
-
-	err = rtp_decode(rtp, mb, &hdr);
-	if (err)
-		goto out;
-
- out:
-	mem_deref(rtp);
-	return err;
-}
-
-
-int fuzzy_rtcp(struct mbuf *mb)
-{
-	struct rtcp_msg *msg = NULL;
-	int err;
-
-	err = rtcp_decode(&msg, mb);
-	if (err == EBADMSG)
-		err = 0;
-
-	mem_deref(msg);
-	return err;
-}
-
-
 static int afb_encode_handler(struct mbuf *mb, void *arg)
 {
 	return mbuf_write_str(mb, arg);

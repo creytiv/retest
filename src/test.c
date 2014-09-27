@@ -122,25 +122,6 @@ static const struct test tests[] = {
 };
 
 
-typedef int (ftest_exec_h)(struct mbuf *mb);
-
-struct ftest {
-	ftest_exec_h *exec;
-	const char *name;
-};
-
-#define FTEST(a) {a, #a}
-
-static const struct ftest fuztests[] = {
-	FTEST(fuzzy_bfcp),
-	FTEST(fuzzy_rtp),
-	FTEST(fuzzy_rtcp),
-	FTEST(fuzzy_sipmsg),
-	FTEST(fuzzy_stunmsg),
-	FTEST(fuzzy_sdpsess),
-};
-
-
 static const struct test *find_test(const char *name)
 {
 	size_t i;
@@ -149,20 +130,6 @@ static const struct test *find_test(const char *name)
 
 		if (0 == str_casecmp(name, tests[i].name))
 			return &tests[i];
-	}
-
-	return NULL;
-}
-
-
-static const struct ftest *find_ftest(const char *name)
-{
-	size_t i;
-
-	for (i=0; i<ARRAY_SIZE(fuztests); i++) {
-
-		if (0 == str_casecmp(name, fuztests[i].name))
-			return &fuztests[i];
 	}
 
 	return NULL;
@@ -429,48 +396,6 @@ int test_multithread(void)
 #endif
 
 
-int test_fuzzy(const char *name)
-{
-	struct mbuf *mb;
-	uint16_t len;
-	size_t i;
-	int err = 0;
-	static size_t n = 0;
-
-	len = rand_u16();
-
-	(void)re_fprintf(stderr, "\r%u: %u bytes    ", n++, len);
-
-	mb = mbuf_alloc(len);
-	if (!mb)
-		return ENOMEM;
-
-	rand_bytes(mb->buf, len);
-	mb->end = len;
-
-	if (name) {
-		const struct ftest *test = find_ftest(name);
-		if (!test) {
-			(void)re_fprintf(stderr, "no such test: %s\n", name);
-			err = ENOENT;
-			goto out;
-		}
-
-		err = test->exec(mb);
-	}
-	else {
-		for (i=0; i<ARRAY_SIZE(fuztests) && !err; i++) {
-			mb->pos = 0;
-			err = fuztests[i].exec(mb);
-		}
-	}
-
- out:
-	mem_deref(mb);
-	return err;
-}
-
-
 void test_listcases(void)
 {
 	size_t i, n;
@@ -484,13 +409,6 @@ void test_listcases(void)
 		(void)re_printf("    %-32s    %s\n",
 				tests[i].name,
 				(i+(n+1)/2) < n ? tests[i+(n+1)/2].name : "");
-	}
-
-	(void)re_printf("\n%u fuzzy test cases:\n", ARRAY_SIZE(fuztests));
-
-	for (i=0; i<ARRAY_SIZE(fuztests); i++) {
-
-		(void)re_printf("    %s\n", fuztests[i].name);
 	}
 
 	(void)re_printf("\n");

@@ -367,18 +367,6 @@ int test_stun_reqltc(void)
 }
 
 
-int fuzzy_stunmsg(struct mbuf *mb)
-{
-	struct stun_msg *msg = NULL;
-	int err;
-
-	err = stun_msg_decode(&msg, mb, NULL);
-
-	mem_deref(msg);
-	return err;
-}
-
-
 struct test {
 	size_t n_resp;
 	int err;

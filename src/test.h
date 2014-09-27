@@ -191,21 +191,11 @@ int test_tls(void);
 int test_dtls_turn(void);
 
 
-struct mbuf;
-int fuzzy_bfcp(struct mbuf *mb);
-int fuzzy_rtp(struct mbuf *mb);
-int fuzzy_rtcp(struct mbuf *mb);
-int fuzzy_sipmsg(struct mbuf *mb);
-int fuzzy_stunmsg(struct mbuf *mb);
-int fuzzy_sdpsess(struct mbuf *mb);
-
-
 /* High-level API */
 int  test_reg(const char *name, bool verbose);
 int  test_oom(const char *name);
 int  test_perf(const char *name, uint32_t n, bool verbose);
 int  test_multithread(void);
-int  test_fuzzy(const char *name);
 void test_listcases(void);
 
 

@@ -771,25 +771,6 @@ int test_sdp_bfcp(void)
 }
 
 
-int fuzzy_sdpsess(struct mbuf *mb)
-{
-	struct sdp_session *sess = NULL;
-	struct sa laddr;
-	int err;
-
-	sa_init(&laddr, AF_INET);
-	err = sdp_session_alloc(&sess, &laddr);
-	if (err)
-		goto out;
-
-	err = sdp_decode(sess, mb, true);
-
- out:
-	mem_deref(sess);
-	return err;
-}
-
-
 int test_sdp_extmap(void)
 {
 	static const char *extmapv[3] = {
