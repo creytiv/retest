@@ -4,6 +4,8 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <string.h>
+#include <stdlib.h>
+#include <sys/time.h>
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
 #endif
@@ -276,29 +278,172 @@ static int test_unit(const char *name, bool verbose)
 }
 
 
-int test_perf(const char *name, uint32_t n, bool verbose)
+static uint64_t tmr_microseconds(void)
 {
-	uint64_t tick, tock;
-	uint32_t i;
+	struct timeval now;
+	uint64_t usec;
 
-	(void)re_fprintf(stderr, "performance tests:   ");
+	if (0 != gettimeofday(&now, NULL)) {
+		DEBUG_WARNING("jiffies: gettimeofday() failed (%m)\n", errno);
+		return 0;
+	}
 
-	tick = tmr_jiffies();
+	usec  = (uint64_t)now.tv_sec * (uint64_t)1000000;
+	usec += now.tv_usec;
 
+	return usec;
+}
+
+
+/* baseunits here is [usec] (micro-seconds) */
+static int testcase_perf(const struct test *test, double *usec_avgp)
+{
+#define DRYRUN_MIN        2
+#define DRYRUN_MAX      100
+#define DRYRUN_USEC 10*1000
+
+#define REPEATS_MIN         3
+#define REPEATS_MAX      1000
+#define REPEATS_USEC 100*1000
+
+	uint64_t usec_start, usec_stop;
+	double usec_avg;
+	unsigned i, n;
+	int err = 0;
+
+	/* dry run */
+	usec_start = tmr_microseconds();
+	for (i=0; i<DRYRUN_MAX; i++) {
+
+		err = test->exec();
+		if (err)
+			return err;
+
+		usec_stop = tmr_microseconds();
+
+		if ((usec_stop - usec_start) > DRYRUN_USEC)
+			break;
+	}
+
+	usec_avg = 1.0 * (usec_stop - usec_start) / i;
+
+	n = usec_avg ? (REPEATS_USEC / usec_avg) : 0;
+	n = min(REPEATS_MAX, max(n, REPEATS_MIN));
+
+	/* now for the real measurement */
+	usec_start = tmr_microseconds();
 	for (i=0; i<n; i++) {
-		int err;
-
-		err = test_unit(name, verbose);
+		err = test->exec();
 		if (err)
 			return err;
 	}
+	usec_stop = tmr_microseconds();
 
-	tock = tmr_jiffies();
+	if (usec_stop <= usec_start) {
+		DEBUG_WARNING("perf: cannot measure, test is too fast\n");
+		return EINVAL;
+	}
 
-	(void)re_fprintf(stderr, "\x1b[32mOK\x1b[;m");
+	usec_avg = (1.0 * (usec_stop - usec_start)) / i;
 
-	(void)re_fprintf(stderr, "\t(%u tests took %lu ms)\n",
-			 n, (uint32_t)(tock - tick));
+	if (usec_avgp)
+		*usec_avgp = usec_avg;
+
+	re_printf("%-32s:  %10.2f usec  [%6u repeats]\n",
+		  test->name, usec_avg, i);
+
+	return 0;
+}
+
+
+struct timing {
+	const struct test *test;
+	uint64_t nsec_avg;
+};
+
+
+/*
+ * The comparison function must return an integer less than, equal to,
+ * or greater than zero if the first argument  is  considered to  be
+ * respectively  less  than,  equal  to, or greater than the second.
+ *
+ * If two members compare as equal, their order in the sorted array
+ * is undefined.
+ */
+static int timing_cmp(const void *p1, const void *p2)
+{
+	const struct timing *v1 = p1;
+	const struct timing *v2 = p2;
+
+	if (v1->nsec_avg < v2->nsec_avg)
+		return 1;
+	else if (v1->nsec_avg > v2->nsec_avg)
+		return -1;
+	else
+		return 0;
+}
+
+
+int test_perf(const char *name, bool verbose)
+{
+	int err = 0;
+	unsigned i;
+	(void)verbose;
+
+	if (name) {
+		const struct test *test;
+
+		test = find_test(name);
+		if (!test) {
+			(void)re_fprintf(stderr, "no such test: %s\n", name);
+			return ENOENT;
+		}
+
+		err = testcase_perf(test, NULL);
+		if (err)
+			return err;
+	}
+	else {
+		struct timing timingv[ARRAY_SIZE(tests)];
+
+		memset(&timingv, 0, sizeof(timingv));
+
+		/* All test cases */
+		for (i=0; i<ARRAY_SIZE(tests); i++) {
+
+			struct timing *tim = &timingv[i];
+			double usec_avg;
+
+			tim->test = &tests[i];
+
+			err = testcase_perf(&tests[i],
+					    &usec_avg);
+			if (err) {
+				DEBUG_WARNING("perf: %s failed (%m)\n",
+					      tests[i].name, err);
+				return err;
+			}
+
+			tim->nsec_avg = 1000.0 * usec_avg;
+		}
+
+		/* sort the timing table by average time */
+		qsort(timingv, ARRAY_SIZE(timingv), sizeof(timingv[0]),
+		      timing_cmp);
+
+		re_fprintf(stderr,
+			   "\nsorted by average timing (slowest on top):\n");
+
+		for (i=0; i<ARRAY_SIZE(timingv); i++) {
+
+			struct timing *tim = &timingv[i];
+			double usec_avg = tim->nsec_avg / 1000.0;
+
+			re_fprintf(stderr, "%-32s: %10.2f usec\n",
+				   tim->test->name, usec_avg);
+		}
+		re_fprintf(stderr, "\n");
+	}
 
 	return 0;
 }

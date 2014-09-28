@@ -47,13 +47,13 @@ static void signal_handler(int signum)
 #ifdef HAVE_GETOPT
 static void usage(void)
 {
-	(void)re_fprintf(stderr, "Usage: retest [-rotal] [-p n] [-hv]"
+	(void)re_fprintf(stderr, "Usage: retest [-rotalp] [-hv]"
 			 " <testcase>\n");
 
 	(void)re_fprintf(stderr, "\ntest group options:\n");
 	(void)re_fprintf(stderr, "\t-r        Run regular tests\n");
 	(void)re_fprintf(stderr, "\t-o        Run OOM memory tests\n");
-	(void)re_fprintf(stderr, "\t-p n      Run performance tests\n");
+	(void)re_fprintf(stderr, "\t-p        Run performance tests\n");
 	(void)re_fprintf(stderr, "\t-t        Run tests in multi-threads\n");
 	(void)re_fprintf(stderr, "\t-a        Run all tests (default)\n");
 	(void)re_fprintf(stderr, "\t-l        List all testcases and exit\n");
@@ -85,7 +85,6 @@ int main(int argc, char *argv[])
 	bool ansi = true;
 	bool verbose = false;
 	const char *name = NULL;
-	uint32_t n = 10;
 	int err = 0;
 
 #ifdef HAVE_SIGNAL
@@ -97,7 +96,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "hrop:altv");
+		const int c = getopt(argc, argv, "hropaltv");
 		if (0 > c)
 			break;
 
@@ -118,7 +117,6 @@ int main(int argc, char *argv[])
 
 		case 'p':
 			do_perf = true;
-			n = atoi(optarg);
 			break;
 
 		case 'a':
@@ -204,7 +202,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (do_perf) {
-		err = test_perf(name, n, verbose);
+		err = test_perf(name, verbose);
 		if (err)
 			(void)re_fprintf(stderr, "Failed (%m)\n", err);
 	}
