@@ -185,6 +185,7 @@ int test_vidconv(void);
 int test_websock(void);
 #ifdef USE_TLS
 int test_dtls(void);
+int test_dtls_srtp(void);
 int test_tls(void);
 int test_tls_selfsigned(void);
 #endif

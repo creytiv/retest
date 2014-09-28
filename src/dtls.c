@@ -191,7 +191,7 @@ static void conn_handler(const struct sa *src, void *arg)
 }
 
 
-static int test_dtls_srtp(bool dtls_srtp)
+static int test_dtls_srtp_base(bool dtls_srtp)
 {
 	static const char *srtp_suites =
 		"SRTP_AES128_CM_SHA1_80:"
@@ -320,13 +320,26 @@ int test_dtls(void)
 		return 0;
 	}
 
-	err = test_dtls_srtp(false);
+	err = test_dtls_srtp_base(false);
 	if (err)
 		return err;
 
-	err = test_dtls_srtp(true);
+	return 0;
+}
+
+
+int test_dtls_srtp(void)
+{
+	int err = 0;
+
+	if (!have_dtls_support()) {
+		(void)re_printf("skip DTLS tests\n");
+		return 0;
+	}
+
+	err = test_dtls_srtp_base(true);
 	if (err)
 		return err;
 
-	return err;
+	return 0;
 }
