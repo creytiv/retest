@@ -230,3 +230,26 @@ int test_tls(void)
 
 	return err;
 }
+
+
+int test_tls_selfsigned(void)
+{
+	struct tls *tls = NULL;
+	uint8_t fp[20];
+	int err;
+
+	err = tls_alloc(&tls, TLS_METHOD_SSLV23, NULL, NULL);
+	if (err)
+		goto out;
+
+	err = tls_set_selfsigned(tls, "re@test");
+	TEST_ERR(err);
+
+	/* verify fingerprint of the self-signed certificate */
+	err = tls_fingerprint(tls, TLS_FINGERPRINT_SHA1, fp, sizeof(fp));
+	TEST_ERR(err);
+
+ out:
+	mem_deref(tls);
+	return err;
+}

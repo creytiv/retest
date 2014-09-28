@@ -186,6 +186,7 @@ int test_websock(void);
 #ifdef USE_TLS
 int test_dtls(void);
 int test_tls(void);
+int test_tls_selfsigned(void);
 #endif
 
 int test_dtls_turn(void);
