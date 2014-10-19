@@ -311,7 +311,7 @@ static int testcase_perf(const struct test *test, double *usec_avgp)
 
 	uint64_t usec_start, usec_stop;
 	double usec_avg;
-	unsigned i, n;
+	size_t i, n;
 	int err = 0;
 
 	/* dry run */
