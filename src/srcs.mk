@@ -52,9 +52,9 @@ SRCS	+= websock.c
 ifneq ($(USE_TLS),)
 SRCS	+= tls.c
 SRCS	+= dtls.c
-endif
 
 SRCS	+= combo/dtls_turn.c
+endif
 
 # Mock servers
 SRCS	+= mock/pf.c

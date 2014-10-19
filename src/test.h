@@ -190,7 +190,9 @@ int test_tls(void);
 int test_tls_selfsigned(void);
 #endif
 
+#ifdef USE_TLS
 int test_dtls_turn(void);
+#endif
 
 
 /* High-level API */

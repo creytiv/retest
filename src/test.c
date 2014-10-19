@@ -121,8 +121,10 @@ static const struct test tests[] = {
 	TEST(test_vidconv),
 	TEST(test_websock),
 
+#ifdef USE_TLS
 	/* combination tests: */
 	TEST(test_dtls_turn),
+#endif
 };
 
 
