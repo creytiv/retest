@@ -22,18 +22,10 @@
 #include <re_dbg.h>
 
 
-static bool running;
-
-
 #ifdef HAVE_SIGNAL
 static void signal_handler(int signum)
 {
 	(void)signum;
-
-	if (running) {
-		running = false;
-		return;
-	}
 
 	/* Check for memory leaks */
 	tmr_debug();
