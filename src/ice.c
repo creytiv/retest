@@ -411,7 +411,7 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 
 	agent->use_turn = use_turn;
 	agent->it = it;
-	strcpy(agent->name, name);
+	str_ncpy(agent->name, name, sizeof(agent->name));
 	agent->compid = compid;
 	agent->offerer = offerer;
 	agent->mode = mode;
