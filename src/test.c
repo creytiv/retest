@@ -54,6 +54,7 @@ static const struct test tests[] = {
 	TEST(test_fmt_regex),
 	TEST(test_fmt_snprintf),
 	TEST(test_fmt_str),
+	TEST(test_fmt_str_error),
 	TEST(test_g711_alaw),
 	TEST(test_g711_ulaw),
 	TEST(test_hash),

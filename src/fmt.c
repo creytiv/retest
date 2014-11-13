@@ -736,3 +736,14 @@ int test_fmt_human_time(void)
  out:
 	return err;
 }
+
+
+int test_fmt_str_error(void)
+{
+	char buf[256];
+	int err = 0;
+
+	TEST_ASSERT(str_isset(str_error(EINVAL, buf, sizeof(buf))));
+ out:
+	return err;
+}
