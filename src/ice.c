@@ -639,7 +639,7 @@ static int agent_verify_completed(struct agent *agent)
 	/* verify state of STUN/TURN server */
 	if (agent->mode == ICE_MODE_FULL) {
 		if (agent->use_turn) {
-			TEST_EQUALS(1, agent->turn->n_allocate);
+			TEST_ASSERT(agent->turn->n_allocate >= 1);
 			TEST_ASSERT(agent->turn->n_chanbind >= 1);
 		}
 		else {

@@ -162,7 +162,7 @@ int test_sipsess(void)
 	if (err)
 		goto out;
 
-	err = re_main_timeout(100);
+	err = re_main_timeout(200);
 	if (err)
 		goto out;
 

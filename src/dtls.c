@@ -257,7 +257,7 @@ static int test_dtls_srtp_base(bool dtls_srtp)
 		goto out;
 	}
 
-	err = re_main_timeout(100);
+	err = re_main_timeout(200);
 	if (err)
 		goto out;
 
