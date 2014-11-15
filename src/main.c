@@ -23,13 +23,9 @@
 
 
 #ifdef HAVE_SIGNAL
-static void signal_handler(int signum)
+static void signal_handler(int num)
 {
-	(void)signum;
-
-	/* Check for memory leaks */
-	tmr_debug();
-	mem_debug();
+	re_fprintf(stderr, "forced exit by signal %d -- test aborted\n", num);
 
 	exit(0);
 }
@@ -39,7 +35,7 @@ static void signal_handler(int signum)
 #ifdef HAVE_GETOPT
 static void usage(void)
 {
-	(void)re_fprintf(stderr, "Usage: retest [-rotalp] [-hv]"
+	(void)re_fprintf(stderr, "Usage: retest [-rotalp] [-hmv]"
 			 " <testcase>\n");
 
 	(void)re_fprintf(stderr, "\ntest group options:\n");
@@ -52,6 +48,7 @@ static void usage(void)
 
 	(void)re_fprintf(stderr, "\ncommon options:\n");
 	(void)re_fprintf(stderr, "\t-h        Help\n");
+	(void)re_fprintf(stderr, "\t-m <met>  Async polling method to use\n");
 	(void)re_fprintf(stderr, "\t-v        Verbose output\n");
 }
 #endif
@@ -71,12 +68,13 @@ int main(int argc, char *argv[])
 	bool do_reg = false;
 	bool do_oom = false;
 	bool do_perf = false;
-	bool do_all = false;
+	bool do_all = true;    /* run all tests is default */
 	bool do_list = false;
 	bool do_thread = false;
 	bool ansi = true;
 	bool verbose = false;
 	const char *name = NULL;
+	enum poll_method method = poll_method_best();
 	int err = 0;
 
 #ifdef HAVE_SIGNAL
@@ -88,7 +86,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "hropaltv");
+		const int c = getopt(argc, argv, "hropaltvm:");
 		if (0 > c)
 			break;
 
@@ -101,14 +99,17 @@ int main(int argc, char *argv[])
 
 		case 'r':
 			do_reg = true;
+			do_all = false;
 			break;
 
 		case 'o':
 			do_oom = true;
+			do_all = false;
 			break;
 
 		case 'p':
 			do_perf = true;
+			do_all = false;
 			break;
 
 		case 'a':
@@ -117,14 +118,29 @@ int main(int argc, char *argv[])
 
 		case 'l':
 			do_list = true;
+			do_all = false;
 			break;
 
 		case 't':
 			do_thread = true;
+			do_all = false;
 			break;
 
 		case 'v':
 			verbose = true;
+			break;
+
+		case 'm': {
+			struct pl pollname;
+			pl_set_str(&pollname, optarg);
+			err = poll_method_type(&method, &pollname);
+			if (err) {
+				re_fprintf(stderr,
+					   "could not resolve async polling"
+					   " method '%r'\n", &pollname);
+				return err;
+			}
+		}
 			break;
 		}
 	}
@@ -135,10 +151,6 @@ int main(int argc, char *argv[])
 		usage();
 		return -2;
 	}
-
-	/* no arguments - run all tests */
-	if (optind == 1)
-		do_all = true;
 
 	if (argc >= 1) {
 		name = argv[optind];
@@ -164,6 +176,13 @@ int main(int argc, char *argv[])
 	if (err)
 		goto out;
 
+	err = poll_method_set(method);
+	if (err) {
+		DEBUG_WARNING("could not set polling method '%s' (%m)\n",
+			      poll_method_name(method), err);
+		goto out;
+	}
+
 	dbg_handler_set(dbg_handler, 0);
 
 	DEBUG_NOTICE("libre version %s (%s/%s)\n", sys_libre_version_get(),
@@ -179,7 +198,15 @@ int main(int argc, char *argv[])
 
 	if (do_list) {
 		test_listcases();
+		goto out;
 	}
+
+	/*
+	 * Different test-groups specified below:
+	 */
+
+	re_printf("using async polling method '%s'\n",
+		  poll_method_name(method));
 
 	if (do_reg) {
 		err = test_reg(name, verbose);
