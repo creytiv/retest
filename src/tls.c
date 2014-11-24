@@ -185,7 +185,8 @@ int test_tls(void)
 	if (err)
 		goto out;
 
-	err = tls_set_selfsigned(tt.tls, "re@test");
+	err = tls_set_certificate(tt.tls, test_certificate,
+				  strlen(test_certificate));
 	if (err)
 		goto out;
 
@@ -248,6 +249,36 @@ int test_tls_selfsigned(void)
 	/* verify fingerprint of the self-signed certificate */
 	err = tls_fingerprint(tls, TLS_FINGERPRINT_SHA1, fp, sizeof(fp));
 	TEST_ERR(err);
+
+ out:
+	mem_deref(tls);
+	return err;
+}
+
+
+int test_tls_certificate(void)
+{
+	struct tls *tls = NULL;
+	static const uint8_t test_fingerprint[20] =
+		"\x49\xA4\xE9\xF4\x80\x3A\xD4\x38\x84\xF1"
+		"\x64\xC3\xB9\x4B\xF9\xBB\x80\xF7\x07\x76";
+	uint8_t fp[20];
+	int err;
+
+	err = tls_alloc(&tls, TLS_METHOD_SSLV23, NULL, NULL);
+	if (err)
+		goto out;
+
+	err = tls_set_certificate(tls, test_certificate,
+				  strlen(test_certificate));
+	TEST_EQUALS(0, err);
+
+	/* verify fingerprint of the certificate */
+	err = tls_fingerprint(tls, TLS_FINGERPRINT_SHA1, fp, sizeof(fp));
+	TEST_ERR(err);
+
+	TEST_MEMCMP(test_fingerprint, sizeof(test_fingerprint),
+		    fp, sizeof(fp));
 
  out:
 	mem_deref(tls);

@@ -36,7 +36,7 @@ struct dtls_test {
 	unsigned n_conn;
 };
 
-static const char *common_name = "Snakeoil Inc.";
+static const char *common_name = "Mr Retest";
 static const char *payload_str = "hello from a cute DTLS client";
 
 
@@ -210,7 +210,8 @@ static int test_dtls_srtp_base(bool dtls_srtp)
 	if (err)
 		goto out;
 
-	err = tls_set_selfsigned(test.tls, common_name);
+	err = tls_set_certificate(test.tls, test_certificate,
+				  strlen(test_certificate));
 	if (err)
 		goto out;
 

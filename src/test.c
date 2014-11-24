@@ -108,6 +108,7 @@ static const struct test tests[] = {
 #ifdef USE_TLS
 	TEST(test_tls),
 	TEST(test_tls_selfsigned),
+	TEST(test_tls_certificate),
 #endif
 	TEST(test_tmr),
 	TEST(test_turn),

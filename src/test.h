@@ -189,10 +189,16 @@ int test_dtls(void);
 int test_dtls_srtp(void);
 int test_tls(void);
 int test_tls_selfsigned(void);
+int test_tls_certificate(void);
 #endif
 
 #ifdef USE_TLS
 int test_dtls_turn(void);
+#endif
+
+
+#ifdef USE_TLS
+extern const char test_certificate[];
 #endif
 
 

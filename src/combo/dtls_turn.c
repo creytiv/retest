@@ -314,7 +314,8 @@ static int agent_alloc(struct agent **agp, uint16_t lport,
 	if (err)
 		goto out;
 
-	err = tls_set_selfsigned(ag->tls, "Snakeoil Inc.");
+	err = tls_set_certificate(ag->tls, test_certificate,
+				  strlen(test_certificate));
 	if (err)
 		goto out;
 
