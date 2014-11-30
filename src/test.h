@@ -232,11 +232,17 @@ int pf_create(struct pf **pfp, struct udp_sock *us, const char *name);
 
 struct stunserver {
 	struct udp_sock *us;
+	struct tcp_sock *ts;
+	struct tcp_conn *tc;
+	struct mbuf *mb;
 	struct sa laddr;
+	struct sa laddr_tcp;
+	struct sa paddr;
 	uint32_t nrecv;
 };
 
 int stunserver_alloc(struct stunserver **stunp);
+const struct sa *stunserver_addr(const struct stunserver *stun, int proto);
 
 
 struct turnserver {

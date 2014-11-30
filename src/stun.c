@@ -400,11 +400,7 @@ static void stun_resp_handler(int err, uint16_t scode, const char *reason,
 }
 
 
-/*
- * Send a STUN Binding Request to the mock STUN-Server,
- * and expect a STUN Binding Response.
- */
-int test_stun(void)
+static int test_stun_request(int proto)
 {
 	struct stunserver *srv = NULL;
 	struct stun_ctrans *ct = NULL;
@@ -422,7 +418,8 @@ int test_stun(void)
 	if (err)
 		goto out;
 
-	err = stun_request(&ct, stun, IPPROTO_UDP, NULL, &srv->laddr, 0,
+	err = stun_request(&ct, stun, proto, NULL,
+			   stunserver_addr(srv, proto), 0,
 			   STUN_METHOD_BINDING, NULL, 0, true,
 			   stun_resp_handler, &test, 0);
 	if (err)
@@ -446,6 +443,21 @@ int test_stun(void)
  out:
 	mem_deref(stun);
 	mem_deref(srv);
+
+	return err;
+}
+
+
+/*
+ * Send a STUN Binding Request to the mock STUN-Server,
+ * and expect a STUN Binding Response.
+ */
+int test_stun(void)
+{
+	int err = 0;
+
+	err |= test_stun_request(IPPROTO_UDP);
+	err |= test_stun_request(IPPROTO_TCP);
 
 	return err;
 }
