@@ -190,7 +190,7 @@ static int testcase_oom(const struct test *test, int levels, bool verbose)
 			goto out;
 		}
 		else {
-			DEBUG_WARNING("%s: unexpected error code at"
+			DEBUG_WARNING("oom: %s: unexpected error code at"
 				      " %d blocks free (%m)\n",
 				      test->name, i, err);
 			goto out;

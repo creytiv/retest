@@ -239,6 +239,7 @@ struct stunserver {
 	struct sa laddr_tcp;
 	struct sa paddr;
 	uint32_t nrecv;
+	int err;
 };
 
 int stunserver_alloc(struct stunserver **stunp);

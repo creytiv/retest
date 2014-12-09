@@ -431,6 +431,10 @@ static int test_stun_request(int proto)
 	if (err)
 		goto out;
 
+	if (srv->err) {
+		err = srv->err;
+		goto out;
+	}
 	if (test.err) {
 		err = test.err;
 		goto out;
@@ -456,8 +460,13 @@ int test_stun(void)
 {
 	int err = 0;
 
-	err |= test_stun_request(IPPROTO_UDP);
-	err |= test_stun_request(IPPROTO_TCP);
+	err = test_stun_request(IPPROTO_UDP);
+	if (err)
+		return err;
+
+	err = test_stun_request(IPPROTO_TCP);
+	if (err)
+		return err;
 
 	return err;
 }

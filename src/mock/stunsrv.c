@@ -178,6 +178,9 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 
  out:
 	if (err) {
+		/* save the error code */
+		stun->err = err;
+
 		tcp_reject(stun->ts);
 	}
 }
