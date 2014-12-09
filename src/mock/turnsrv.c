@@ -60,6 +60,11 @@ static void relay_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 		uint16_t len = mbuf_get_left(mb);
 		size_t start;
 
+		if (mb->pos < 4) {
+			DEBUG_WARNING("relay_udp_recv: mb pos < 4\n");
+			return;
+		}
+
 		mb->pos -= 4;
 		start = mb->pos;
 
