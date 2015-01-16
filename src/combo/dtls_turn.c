@@ -375,7 +375,7 @@ static int agent_verify(struct agent *ag)
 			TEST_ASSERT(ag->turnsrv->n_chanbind >= 1);
 			TEST_ASSERT(ag->turnsrv->n_createperm == 0);
 			TEST_EQUALS(0, ag->turnsrv->n_send);
-			TEST_EQUALS(2, ag->turnsrv->n_raw);
+			TEST_ASSERT(ag->turnsrv->n_raw >= 2);
 		}
 		else {
 			TEST_ASSERT(ag->turnsrv->n_chanbind == 0);
