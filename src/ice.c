@@ -791,9 +791,116 @@ static int test_ice_loop(enum ice_mode mode_a, bool turn_a,
 }
 
 
+/* also verify that these symbols are exported */
+static int test_ice_basic_candidate(void)
+{
+	static const enum ice_cand_type typev[4] = {
+		ICE_CAND_TYPE_HOST,
+		ICE_CAND_TYPE_SRFLX,
+		ICE_CAND_TYPE_PRFLX,
+		ICE_CAND_TYPE_RELAY
+	};
+	unsigned i;
+	int err = 0;
+
+	for (i=0; i<ARRAY_SIZE(typev); i++) {
+
+		const char *name;
+		enum ice_cand_type type;
+
+		name = ice_cand_type2name(typev[i]);
+		TEST_ASSERT(str_isset(name));
+
+		type = ice_cand_name2type(name);
+		TEST_EQUALS(typev[i], type);
+	}
+
+ out:
+	return err;
+}
+
+
+static int test_ice_cand_prio(void)
+{
+	int err = 0;
+
+	TEST_EQUALS(0x7e0000ff, ice_cand_calc_prio(ICE_CAND_TYPE_HOST,  0, 1));
+	TEST_EQUALS(0x640004ff, ice_cand_calc_prio(ICE_CAND_TYPE_SRFLX, 4, 1));
+	TEST_EQUALS(0x6e0000fe, ice_cand_calc_prio(ICE_CAND_TYPE_PRFLX, 0, 2));
+	TEST_EQUALS(0x000004fe, ice_cand_calc_prio(ICE_CAND_TYPE_RELAY, 4, 2));
+ out:
+	return err;
+}
+
+
+static const char *testv[] = {
+"1 1 UDP 2130706431 10.0.1.1 5000 typ host",
+"1 2 UDP 2130706431 10.0.1.1 5001 typ host",
+"2 1 UDP 1694498815 192.0.2.3 5000 typ srflx raddr 10.0.1.1 rport 8998",
+"2 2 UDP 1694498815 192.0.2.3 5001 typ srflx raddr 10.0.1.1 rport 8998",
+
+"1 1 TCP 2128609279 10.0.1.1 9 typ host tcptype active",
+"2 1 TCP 2124414975 10.0.1.1 8998 typ host tcptype passive",
+"3 1 TCP 2120220671 10.0.1.1 8999 typ host tcptype so",
+"4 1 TCP 1688207359 192.0.2.3 9 typ srflx raddr"
+  " 10.0.1.1 rport 9 tcptype active",
+"5 1 TCP 1684013055 192.0.2.3 45664 typ srflx raddr"
+  " 10.0.1.1 rport 8998 tcptype passive",
+"6 1 TCP 1692401663 192.0.2.3 45687 typ srflx raddr"
+  " 10.0.1.1 rport 8999 tcptype so",
+
+"H76f0ae12 1 UDP 2130706431 fda8:de2d:e95f:4811::1 6054 typ host",
+
+"3113280040 1 UDP 2122255103 2001::5ef5:79fb:1847:2c0d:a230:23ab 53329"
+  " typ host",
+
+};
+
+
+static int test_ice_cand_attribute(void)
+{
+	unsigned i;
+	int err = 0;
+
+	for (i=0; i<ARRAY_SIZE(testv); i++) {
+
+		struct ice_cand_attr cand;
+		char buf[256];
+		int n;
+
+		err = ice_cand_attr_decode(&cand, testv[i]);
+		TEST_ERR(err);
+
+		/* sanity-check of decoded attribute */
+		TEST_ASSERT(str_isset(cand.foundation));
+		TEST_ASSERT(1 <= cand.compid && cand.compid <= 2);
+		TEST_ASSERT(cand.proto == IPPROTO_UDP ||
+			    cand.proto == IPPROTO_TCP);
+		TEST_ASSERT(cand.prio > 0);
+		TEST_ASSERT(sa_isset(&cand.addr, SA_ALL));
+
+		n = re_snprintf(buf, sizeof(buf), "%H",
+				ice_cand_attr_encode, &cand);
+		if (n < 0)
+			return ENOMEM;
+
+		TEST_STRCMP(testv[i], strlen(testv[i]), buf, (unsigned)n);
+	}
+
+ out:
+	return err;
+}
+
+
 int test_ice(void)
 {
 	int err = 0;
+
+	err |= test_ice_basic_candidate();
+	err |= test_ice_cand_prio();
+	err |= test_ice_cand_attribute();
+	if (err)
+		return err;
 
 	err |= test_ice_loop(ICE_MODE_FULL, false, ICE_MODE_FULL, false);
 	err |= test_ice_loop(ICE_MODE_FULL, true,  ICE_MODE_FULL, true);
