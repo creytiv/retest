@@ -851,7 +851,7 @@ static const char *testv[] = {
 
 "H76f0ae12 1 UDP 2130706431 fda8:de2d:e95f:4811::1 6054 typ host",
 
-"3113280040 1 UDP 2122255103 2001:0:5ef5:79fb:1847:2c0d:a230:23ab 53329"
+"3113280040 1 UDP 2122255103 2001:aaaa:5ef5:79fb:1847:2c0d:a230:23ab 53329"
   " typ host",
 
 };
