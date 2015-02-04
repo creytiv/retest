@@ -122,7 +122,7 @@ int test_sipsess(void)
 	struct test test;
 	struct sa laddr;
 	char to_uri[256];
-	int i, err;
+	int err;
 	uint16_t port;
 
 	memset(&test, 0, sizeof(test));
@@ -137,15 +137,16 @@ int test_sipsess(void)
 	if (err)
 		goto out;
 
-	for (i=0; i<64; i++) {
-		port = 1024 + rand_u16() % 64512;
-		(void)sa_set_str(&laddr, "127.0.0.1", port);
-		err = sip_transp_add(test.sip, SIP_TRANSP_UDP, &laddr);
-		if (!err)
-			break;
-	}
+	(void)sa_set_str(&laddr, "127.0.0.1", 0);
+	err = sip_transp_add(test.sip, SIP_TRANSP_UDP, &laddr);
 	if (err)
 		goto out;
+
+	err = sip_transp_laddr(test.sip, &laddr, SIP_TRANSP_UDP, NULL);
+	if (err)
+		goto out;
+
+	port = sa_port(&laddr);
 
 	err = sipsess_listen(&test.sock, test.sip, 32, conn_handler, &test);
 	if (err)
