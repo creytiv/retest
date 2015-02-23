@@ -904,8 +904,12 @@ int test_ice(void)
 	if (err)
 		return err;
 
-	err |= test_ice_loop(ICE_MODE_FULL, false, ICE_MODE_FULL, false);
-	err |= test_ice_loop(ICE_MODE_FULL, true,  ICE_MODE_FULL, true);
+	err = test_ice_loop(ICE_MODE_FULL, false, ICE_MODE_FULL, false);
+	if (err)
+		return err;
+	err = test_ice_loop(ICE_MODE_FULL, true,  ICE_MODE_FULL, true);
+	if (err)
+		return err;
 
 	return err;
 }
