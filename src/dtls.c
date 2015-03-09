@@ -191,7 +191,7 @@ static void conn_handler(const struct sa *src, void *arg)
 }
 
 
-static int test_dtls_srtp_base(bool dtls_srtp)
+static int test_dtls_srtp_base(enum tls_method method, bool dtls_srtp)
 {
 	static const char *srtp_suites =
 		"SRTP_AES128_CM_SHA1_80:"
@@ -206,7 +206,7 @@ static int test_dtls_srtp_base(bool dtls_srtp)
 
 	test.dtls_srtp = dtls_srtp;
 
-	err = tls_alloc(&test.tls, TLS_METHOD_DTLSV1, NULL, NULL);
+	err = tls_alloc(&test.tls, method, NULL, NULL);
 	if (err)
 		goto out;
 
@@ -299,12 +299,12 @@ static int test_dtls_srtp_base(bool dtls_srtp)
 }
 
 
-static bool have_dtls_support(void)
+static bool have_dtls_support(enum tls_method method)
 {
 	struct tls *tls = NULL;
 	int err;
 
-	err = tls_alloc(&tls, TLS_METHOD_DTLSV1, NULL, NULL);
+	err = tls_alloc(&tls, method, NULL, NULL);
 
 	mem_deref(tls);
 
@@ -316,14 +316,25 @@ int test_dtls(void)
 {
 	int err = 0;
 
-	if (!have_dtls_support()) {
-		(void)re_printf("skip DTLS tests\n");
+	if (!have_dtls_support(TLS_METHOD_DTLSV1)) {
+		(void)re_printf("skip DTLS 1.0 tests\n");
 		return 0;
 	}
+	else {
+		err = test_dtls_srtp_base(TLS_METHOD_DTLSV1, false);
+		if (err)
+			return err;
+	}
 
-	err = test_dtls_srtp_base(false);
-	if (err)
-		return err;
+	if (!have_dtls_support(TLS_METHOD_DTLSV1_2)) {
+		(void)re_printf("skip DTLS 1.2 tests\n");
+		return 0;
+	}
+	else {
+		err = test_dtls_srtp_base(TLS_METHOD_DTLSV1_2, false);
+		if (err)
+			return err;
+	}
 
 	return 0;
 }
@@ -333,12 +344,12 @@ int test_dtls_srtp(void)
 {
 	int err = 0;
 
-	if (!have_dtls_support()) {
+	if (!have_dtls_support(TLS_METHOD_DTLSV1)) {
 		(void)re_printf("skip DTLS tests\n");
 		return 0;
 	}
 
-	err = test_dtls_srtp_base(true);
+	err = test_dtls_srtp_base(TLS_METHOD_DTLSV1, true);
 	if (err)
 		return err;
 
