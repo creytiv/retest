@@ -9,9 +9,10 @@
 	if ((expected) != (actual)) {				\
 		(void)re_fprintf(stderr, "\n");			\
 		DEBUG_WARNING("TEST_EQUALS: %s:%u: %s():"	\
-			      " expected=%d, actual=%d\n",	\
+			      " expected=%d(0x%x), actual=%d(0x%x)\n",	\
 			      __FILE__, __LINE__, __func__,	\
-			      (expected), (actual));		\
+			      (expected), (expected),		\
+			      (actual), (actual));		\
 		err = EINVAL;					\
 		goto out;					\
 	}
@@ -259,11 +260,15 @@ struct turnserver {
 	} chanv[4];
 	size_t chanc;
 
+	struct sa permv[4];
+	size_t permc;
+
 	size_t n_allocate;
 	size_t n_createperm;
 	size_t n_chanbind;
 	size_t n_send;
 	size_t n_raw;
+	size_t n_recv;
 };
 
 int turnserver_alloc(struct turnserver **turnp);

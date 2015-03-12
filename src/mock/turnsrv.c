@@ -48,12 +48,43 @@ static struct channel *find_channel_peer(struct turnserver *tt,
 }
 
 
+static int add_permission(struct turnserver *tt, const struct sa *peer)
+{
+	int err;
+	TEST_ASSERT(tt->permc < ARRAY_SIZE(tt->permv));
+	tt->permv[tt->permc] = *peer;
+	++tt->permc;
+ out:
+	return err;
+}
+
+
+static struct sa *find_permission(struct turnserver *tt,
+				  const struct sa *peer)
+{
+	size_t i;
+
+	if (!tt)
+		return NULL;
+
+	for (i=0; i<tt->permc; i++) {
+
+		if (sa_cmp(&tt->permv[i], peer, SA_ADDR))
+			return &tt->permv[i];
+	}
+
+	return NULL;
+}
+
+
 /* Receive packet on the "relayed" address -- relay to the client */
 static void relay_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 {
 	struct turnserver *turn = arg;
 	struct channel *chan;
 	int err = 0;
+
+	++turn->n_recv;
 
 	chan = find_channel_peer(turn, src);
 	if (chan) {
@@ -159,13 +190,21 @@ static void srv_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 				 STUN_ATTR_XOR_RELAY_ADDR, &turn->relay);
 		break;
 
-	case STUN_METHOD_CREATEPERM:
+	case STUN_METHOD_CREATEPERM: {
+		struct stun_attr *peer;
+
 		++turn->n_createperm;
+
+		peer = stun_msg_attr(msg, STUN_ATTR_XOR_PEER_ADDR);
+		TEST_ASSERT(peer != NULL);
+
+		add_permission(turn, &peer->v.xor_peer_addr);
 
 		/* todo: install permissions and check them */
 		err = stun_reply(IPPROTO_UDP, turn->us, src, 0,
 				 msg, NULL, 0, false,
 				 0);
+	}
 		break;
 
 	case STUN_METHOD_CHANBIND: {
@@ -202,10 +241,15 @@ static void srv_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 		peer = stun_msg_attr(msg, STUN_ATTR_XOR_PEER_ADDR);
 		data = stun_msg_attr(msg, STUN_ATTR_DATA);
 
-		/* todo: check for valid Permission */
-
 		if (!peer || !data) {
 			DEBUG_WARNING("SEND: missing peer/data attrib\n");
+			goto out;
+		}
+
+		/* check for valid Permission */
+		if (!find_permission(turn, &peer->v.xor_peer_addr)) {
+			DEBUG_NOTICE("no permission to peer %j\n",
+				     &peer->v.xor_peer_addr);
 			goto out;
 		}
 
