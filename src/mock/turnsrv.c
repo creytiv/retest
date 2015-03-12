@@ -13,6 +13,11 @@
 #include <re_dbg.h>
 
 
+enum {
+	TCP_MAX_LENGTH = 2048,
+};
+
+
 static struct channel *find_channel_numb(struct turnserver *tt, uint16_t nr)
 {
 	size_t i;
@@ -120,10 +125,9 @@ static void relay_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 }
 
 
-/* Simulated TURN server */
-static void srv_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
+static void process_msg(struct turnserver *turn, int proto, void *sock,
+			const struct sa *src, struct mbuf *mb)
 {
-	struct turnserver *turn = arg;
 	struct stun_msg *msg = NULL;
 	struct sa laddr;
 	int err = 0;
@@ -155,6 +159,12 @@ static void srv_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 		return;
 	}
 
+#if 0
+	re_printf("process: %s:%p:%J %s\n",
+		  net_proto2name(proto), sock, src,
+		  stun_method_name(stun_msg_method(msg)));
+#endif
+
 	switch (stun_msg_method(msg)) {
 
 	case STUN_METHOD_ALLOCATE:
@@ -183,7 +193,7 @@ static void srv_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 
 		udp_rxbuf_presz_set(turn->us_relay, 4);
 
-		err = stun_reply(IPPROTO_UDP, turn->us, src, 0,
+		err = stun_reply(proto, sock, src, 0,
 				 msg, NULL, 0, false,
 				 2,
 				 STUN_ATTR_XOR_MAPPED_ADDR, src,
@@ -201,7 +211,7 @@ static void srv_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 		add_permission(turn, &peer->v.xor_peer_addr);
 
 		/* todo: install permissions and check them */
-		err = stun_reply(IPPROTO_UDP, turn->us, src, 0,
+		err = stun_reply(proto, sock, src, 0,
 				 msg, NULL, 0, false,
 				 0);
 	}
@@ -225,7 +235,7 @@ static void srv_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 		turn->chanv[turn->chanc].peer = peer->v.xor_peer_addr;
 		++turn->chanc;
 
-		err = stun_reply(IPPROTO_UDP, turn->us, src, 0,
+		err = stun_reply(proto, sock, src, 0,
 				 msg, NULL, 0, false,
 				 0);
 	}
@@ -270,12 +280,140 @@ static void srv_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 
  out:
 	if (err && stun_msg_class(msg) == STUN_CLASS_REQUEST) {
-		(void)stun_ereply(IPPROTO_UDP, turn->us, src, 0, msg,
+		(void)stun_ereply(proto, sock, src, 0, msg,
 				  500, "Server Error",
 				  NULL, 0, false, 0);
 	}
 
 	mem_deref(msg);
+}
+
+
+/* Simulated TURN server */
+static void srv_udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
+{
+	struct turnserver *turn = arg;
+
+	process_msg(turn, IPPROTO_UDP, turn->us, src, mb);
+}
+
+
+static void tcp_estab_handler(void *arg)
+{
+	struct turnserver *turn = arg;
+	(void)turn;
+}
+
+
+static void tcp_recv_handler(struct mbuf *mb, void *arg)
+{
+	struct turnserver *conn = arg;
+	int err = 0;
+
+	if (conn->mb) {
+		size_t pos;
+
+		pos = conn->mb->pos;
+
+		conn->mb->pos = conn->mb->end;
+
+		err = mbuf_write_mem(conn->mb, mbuf_buf(mb),mbuf_get_left(mb));
+		if (err) {
+			DEBUG_WARNING("tcp: buffer write error: %m\n", err);
+			goto out;
+		}
+
+		conn->mb->pos = pos;
+	}
+	else {
+		conn->mb = mem_ref(mb);
+	}
+
+	for (;;) {
+
+		size_t len, pos, end;
+		uint16_t typ;
+
+		if (mbuf_get_left(conn->mb) < 4)
+			break;
+
+		typ = ntohs(mbuf_read_u16(conn->mb));
+		len = ntohs(mbuf_read_u16(conn->mb));
+
+		if (len > TCP_MAX_LENGTH) {
+			re_printf("tcp: bad length: %zu\n", len);
+			err = EBADMSG;
+			goto out;
+		}
+
+		if (typ < 0x4000)
+			len += STUN_HEADER_SIZE;
+		else if (typ < 0x8000)
+			len += 4;
+		else {
+			re_printf("tcp: bad type: 0x%04x\n", typ);
+			err = EBADMSG;
+			goto out;
+		}
+
+		conn->mb->pos -= 4;
+
+		if (mbuf_get_left(conn->mb) < len)
+			break;
+
+		pos = conn->mb->pos;
+		end = conn->mb->end;
+
+		conn->mb->end = pos + len;
+
+		process_msg(conn, IPPROTO_TCP, conn->tc, &conn->paddr,
+			    conn->mb);
+
+		/* 4 byte alignment */
+		while (len & 0x03)
+			++len;
+
+		conn->mb->pos = pos + len;
+		conn->mb->end = end;
+
+		if (conn->mb->pos >= conn->mb->end) {
+			conn->mb = mem_deref(conn->mb);
+			break;
+		}
+	}
+
+ out:
+	if (err) {
+		conn->mb = mem_deref(conn->mb);
+	}
+}
+
+
+static void tcp_close_handler(int err, void *arg)
+{
+	struct turnserver *turn = arg;
+	(void)err;
+
+	turn->tc = mem_deref(turn->tc);
+}
+
+
+static void tcp_conn_handler(const struct sa *peer, void *arg)
+{
+	struct turnserver *turn = arg;
+	int err = 0;
+
+	if (turn->tc) {
+		tcp_reject(turn->ts);
+	}
+	else {
+		err = tcp_accept(&turn->tc, turn->ts, tcp_estab_handler,
+				 tcp_recv_handler, tcp_close_handler, turn);
+		if (err)
+			tcp_reject(turn->ts);
+
+		turn->paddr = *peer;
+	}
 }
 
 
@@ -285,6 +423,9 @@ static void destructor(void *arg)
 
 	mem_deref(turn->us);
 	mem_deref(turn->us_relay);
+	mem_deref(turn->tc);
+	mem_deref(turn->ts);
+	mem_deref(turn->mb);
 }
 
 
@@ -310,6 +451,14 @@ int turnserver_alloc(struct turnserver **turnp)
 		goto out;
 
 	err = udp_local_get(turn->us, &turn->laddr);
+	if (err)
+		goto out;
+
+	err = tcp_listen(&turn->ts, &laddr, tcp_conn_handler, turn);
+	if (err)
+		goto out;
+
+	err = tcp_sock_local_get(turn->ts, &turn->laddr_tcp);
 	if (err)
 		goto out;
 

@@ -112,6 +112,7 @@ static const struct test tests[] = {
 #endif
 	TEST(test_tmr),
 	TEST(test_turn),
+	TEST(test_turn_tcp),
 	TEST(test_udp),
 	TEST(test_uri),
 	TEST(test_uri_cmp),
