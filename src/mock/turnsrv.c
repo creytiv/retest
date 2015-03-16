@@ -55,7 +55,8 @@ static struct channel *find_channel_peer(struct turnserver *tt,
 
 static int add_permission(struct turnserver *tt, const struct sa *peer)
 {
-	int err;
+	int err = 0;
+
 	TEST_ASSERT(tt->permc < ARRAY_SIZE(tt->permv));
 	tt->permv[tt->permc] = *peer;
 	++tt->permc;
