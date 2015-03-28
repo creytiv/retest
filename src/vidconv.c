@@ -206,6 +206,120 @@ static int test_vidconv_scaling(void)
 }
 
 
+/*
+ * verify that pixel conversion between different planar and packed
+ * pixel formats is working
+ */
+static int test_vidconv_pixel_formats(void)
+{
+	struct plane {
+		size_t sz;
+		const char *data;
+	};
+	static const struct test {
+		enum vidfmt src_fmt;
+		struct plane src_planev[3];
+		enum vidfmt dst_fmt;
+		struct plane dst_planev[3];
+	} testv [] = {
+
+		/* UYVY422 to YUV420P */
+		{
+			VID_FMT_UYVY422,
+			{ {8, "\x22\x11\x33\x11\x22\x11\x33\x11"},
+			  {0,0},
+			  {0,0}
+			},
+
+			VID_FMT_YUV420P,
+			{ {4, "\x11\x11\x11\x11"},
+			  {1, "\x22"},
+			  {1, "\x33"}
+			},
+		},
+
+		/* NV12 to YUV420P */
+		{
+			VID_FMT_NV12,
+			{ {4, "\x11\x11\x11\x11"},
+			  {2, "\x22\x33"},
+			  {0,0}
+			},
+
+			VID_FMT_YUV420P,
+			{ {4, "\x11\x11\x11\x11"},
+			  {1, "\x22"},
+			  {1, "\x33"}
+			},
+		},
+
+#if 0
+		/* YUYV422 to NV12 */
+		{
+			VID_FMT_YUYV422,
+			{ {8, "\x11\x22\x11\x33\x11\x22\x11\x33"},
+			  {0,0},
+			  {0,0}
+			},
+			
+			VID_FMT_NV12,
+			{ {4, "\x11\x11\x11\x11"},
+			  {2, "\x22\x33"},
+			  {0,0}
+			},
+		},
+#endif
+	};
+	struct vidframe *fsrc = NULL, *fdst = NULL;
+	const struct vidsz sz = {2, 2};
+	unsigned i, p;
+	int err = 0;
+
+	for (i=0; i<ARRAY_SIZE(testv); i++) {
+
+		const struct test *test = &testv[i];
+
+#if 0
+		re_printf("test[%u] %s to %s\n", i,
+			  vidfmt_name(test->src_fmt),
+			  vidfmt_name(test->dst_fmt));
+#endif
+
+		err |= vidframe_alloc(&fsrc, test->src_fmt, &sz);
+		err |= vidframe_alloc(&fdst, test->dst_fmt, &sz);
+		if (err)
+			goto out;
+
+		for (p=0; p<3; p++) {
+			if (test->src_planev[p].sz) {
+				memcpy(fsrc->data[p],
+				       test->src_planev[p].data,
+				       test->src_planev[p].sz);
+			}
+		}
+
+		vidconv(fdst, fsrc, 0);
+
+		for (p=0; p<3; p++) {
+
+			TEST_MEMCMP(test->dst_planev[p].data,
+				    test->dst_planev[p].sz,
+				    fdst->data[p],
+				    test->dst_planev[p].sz);
+		}
+
+		fdst = mem_deref(fdst);
+		fsrc = mem_deref(fsrc);
+	}
+
+ out:
+	mem_deref(fsrc);
+	mem_deref(fdst);
+
+	return err;
+}
+
+
 int test_vidconv(void)
 {
 	int err;
@@ -215,6 +329,10 @@ int test_vidconv(void)
 		return err;
 
 	err = test_vidconv_scaling();
+	if (err)
+		return err;
+
+	err = test_vidconv_pixel_formats();
 	if (err)
 		return err;
 
