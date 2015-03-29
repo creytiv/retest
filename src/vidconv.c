@@ -261,7 +261,7 @@ static int test_vidconv_pixel_formats(void)
 			  {0,0},
 			  {0,0}
 			},
-			
+
 			VID_FMT_NV12,
 			{ {4, "\x11\x11\x11\x11"},
 			  {2, "\x22\x33"},
