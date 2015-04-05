@@ -207,7 +207,7 @@ int test_tls(void)
 	if (err)
 		goto out;
 
-	err = re_main_timeout(100);
+	err = re_main_timeout(300);
 	if (err)
 		goto out;
 
