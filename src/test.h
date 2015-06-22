@@ -280,6 +280,24 @@ struct turnserver {
 int turnserver_alloc(struct turnserver **turnp);
 
 
+/**
+ * A simple NAT-box that can be hooked onto a UDP-socket.
+ *
+ * The NAT behaviour is port-preserving and will rewrite the source
+ * IP-address to the public address.
+ */
+struct nat {
+	struct sa public_addr;
+	struct udp_helper *uh;
+	struct udp_sock *us;
+	struct sa bindingv[16];
+	size_t bindingc;
+};
+
+int nat_alloc(struct nat **natp, struct udp_sock *us,
+	      const struct sa *public_addr);
+
+
 /*
  * TCP Server
  */
