@@ -13,6 +13,9 @@
 #include <re_dbg.h>
 
 
+#define NATTED (true)
+
+
 /*
  * Test vectors from RFC 5769
  */
@@ -368,6 +371,9 @@ int test_stun_reqltc(void)
 
 
 struct test {
+	struct stun *stun;
+	struct udp_sock *us;
+	struct sa mapped_addr;
 	size_t n_resp;
 	int err;
 };
@@ -377,6 +383,7 @@ static void stun_resp_handler(int err, uint16_t scode, const char *reason,
 			      const struct stun_msg *msg, void *arg)
 {
 	struct test *test = arg;
+	struct stun_attr *attr;
 	(void)reason;
 
 	if (err)
@@ -391,6 +398,11 @@ static void stun_resp_handler(int err, uint16_t scode, const char *reason,
 	TEST_EQUALS(STUN_METHOD_BINDING, stun_msg_method(msg));
 	TEST_EQUALS(0, stun_msg_chk_fingerprint(msg));
 
+	attr = stun_msg_attr(msg, STUN_ATTR_XOR_MAPPED_ADDR);
+	TEST_ASSERT(attr != NULL);
+
+	test->mapped_addr = attr->v.sa;
+
  out:
 	if (err)
 		test->err = err;
@@ -400,12 +412,22 @@ static void stun_resp_handler(int err, uint16_t scode, const char *reason,
 }
 
 
-static int test_stun_request(int proto)
+static void udp_recv_handler(const struct sa *src, struct mbuf *mb, void *arg)
+{
+	struct test *test = arg;
+	(void)src;
+
+	(void)stun_recv(test->stun, mb);
+}
+
+
+static int test_stun_request(int proto, bool natted)
 {
 	struct stunserver *srv = NULL;
 	struct stun_ctrans *ct = NULL;
-	struct stun *stun = NULL;
+	struct nat *nat = NULL;
 	struct test test;
+	struct sa laddr, public_addr;
 	int err;
 
 	memset(&test, 0, sizeof(test));
@@ -414,11 +436,36 @@ static int test_stun_request(int proto)
 	if (err)
 		goto out;
 
-	err = stun_alloc(&stun, NULL, NULL, NULL);
+	err = stun_alloc(&test.stun, NULL, NULL, NULL);
 	if (err)
 		goto out;
 
-	err = stun_request(&ct, stun, proto, NULL,
+	if (proto == IPPROTO_UDP) {
+		err = sa_set_str(&laddr, "127.0.0.1", 0);
+		TEST_ERR(err);
+
+		err = udp_listen(&test.us, &laddr, udp_recv_handler, &test);
+		if (err)
+			goto out;
+		err = udp_local_get(test.us, &laddr);
+		TEST_ERR(err);
+	}
+
+	if (natted) {
+		err = sa_set_str(&public_addr, "4.5.6.7", 0);
+		TEST_ERR(err);
+
+		err = nat_alloc(&nat, srv->us, &public_addr);
+		if (err)
+			goto out;
+
+		sa_set_port(&public_addr, sa_port(&laddr));
+	}
+	else {
+		public_addr = laddr;
+	}
+
+	err = stun_request(&ct, test.stun, proto, test.us,
 			   stunserver_addr(srv, proto), 0,
 			   STUN_METHOD_BINDING, NULL, 0, true,
 			   stun_resp_handler, &test, 0);
@@ -444,8 +491,14 @@ static int test_stun_request(int proto)
 	TEST_ASSERT(srv->nrecv >= 1);
 	TEST_EQUALS(1, test.n_resp);
 
+	if (proto == IPPROTO_UDP) {
+		TEST_SACMP(&public_addr, &test.mapped_addr, SA_ALL);
+	}
+
  out:
-	mem_deref(stun);
+	mem_deref(test.stun);
+	mem_deref(test.us);
+	mem_deref(nat);
 	mem_deref(srv);
 
 	return err;
@@ -460,11 +513,15 @@ int test_stun(void)
 {
 	int err = 0;
 
-	err = test_stun_request(IPPROTO_UDP);
+	err = test_stun_request(IPPROTO_UDP, false);
 	if (err)
 		return err;
 
-	err = test_stun_request(IPPROTO_TCP);
+	err = test_stun_request(IPPROTO_UDP, NATTED);
+	if (err)
+		return err;
+
+	err = test_stun_request(IPPROTO_TCP, false);
 	if (err)
 		return err;
 
