@@ -278,3 +278,21 @@ struct turnserver {
 };
 
 int turnserver_alloc(struct turnserver **turnp);
+
+
+/*
+ * TCP Server
+ */
+
+enum behavior {
+	BEHAVIOR_NORMAL,
+	BEHAVIOR_REJECT
+};
+
+struct tcp_server {
+	struct tcp_sock *ts;
+	enum behavior behavior;
+	struct sa laddr;
+};
+
+int tcp_server_alloc(struct tcp_server **srvp, enum behavior behavior);

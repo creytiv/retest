@@ -4,13 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <string.h>
-#include <re_types.h>
-#include <re_list.h>
-#include <re_mbuf.h>
-#include <re_fmt.h>
-#include <re_sa.h>
-#include <re_net.h>
-#include <re_uri.h>
+#include <re.h>
 #include "test.h"
 
 
