@@ -248,6 +248,23 @@ int test_fmt_pl_x3264(void)
 }
 
 
+int test_fmt_pl_float(void)
+{
+	struct pl pos = PL("123.456"), neg = PL("-123.456");
+	double v;
+	int err = 0;
+
+	v = pl_float(&pos);
+	TEST_ASSERT(v > .0);
+
+	v = pl_float(&neg);
+	TEST_ASSERT(v < .0);
+
+ out:
+	return err;
+}
+
+
 int test_fmt_regex(void)
 {
 	const struct pl pl  = PL("hei42sann!");
