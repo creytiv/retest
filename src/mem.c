@@ -64,3 +64,29 @@ int test_mem(void)
 	mem_deref(obj);
 	return err;
 }
+
+
+#ifndef SIZE_MAX
+#define SIZE_MAX    (~((size_t)0))
+#endif
+
+
+int test_mem_reallocarray(void)
+{
+	void *a, *b;
+	int err = 0;
+
+	/* expect success */
+	a = mem_reallocarray(NULL, 10, 10, NULL);
+	if (!a)
+		return ENOMEM;
+
+	/* expect failure */
+	b = mem_reallocarray(NULL, SIZE_MAX, SIZE_MAX, NULL);
+	TEST_ASSERT(b == NULL);
+
+ out:
+	mem_deref(a);
+
+	return err;
+}

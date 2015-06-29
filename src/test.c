@@ -72,6 +72,7 @@ static const struct test tests[] = {
 	TEST(test_mbuf),
 	TEST(test_md5),
 	TEST(test_mem),
+	TEST(test_mem_reallocarray),
 	TEST(test_mqueue),
 	TEST(test_natbd),
 	TEST(test_remain),
