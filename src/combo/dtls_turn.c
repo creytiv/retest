@@ -310,7 +310,7 @@ static int agent_alloc(struct agent **agp, uint16_t lport,
 	/* allocate DTLS */
 	ag->dtls_active = dtls_active;
 
-	err = tls_alloc(&ag->tls, TLS_METHOD_DTLSV1, NULL, NULL);
+	err = tls_alloc(&ag->tls, TLS_METHOD_DTLS, NULL, NULL);
 	if (err)
 		goto out;
 
@@ -396,10 +396,28 @@ static int agent_verify(struct agent *ag)
 }
 
 
+static bool have_dtls_support(enum tls_method method)
+{
+	struct tls *tls = NULL;
+	int err;
+
+	err = tls_alloc(&tls, method, NULL, NULL);
+
+	mem_deref(tls);
+
+	return err != ENOSYS;
+}
+
+
 int test_dtls_turn(void)
 {
 	struct agent *a=0, *b=0;
 	int err = 0;
+
+	if (!have_dtls_support(TLS_METHOD_DTLS)) {
+		(void)re_printf("skip DTLS/TURN test\n");
+		return 0;
+	}
 
 	err |= agent_alloc(&a, 0, true, true, true);
 	err |= agent_alloc(&b, 0, false, false, false);
