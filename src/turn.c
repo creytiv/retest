@@ -297,6 +297,11 @@ static void tcp_close_handler(int err, void *arg)
 {
 	struct turntest *tt = arg;
 
+	if (err == ECONNRESET) {
+		re_printf("translate ECONNRESET -> ENOMEM\n");
+		err = ENOMEM;
+	}
+
 	if (err)
 		complete_test(tt, err);
 }
