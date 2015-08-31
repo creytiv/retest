@@ -28,6 +28,7 @@ SRCS	+= md5.c
 SRCS	+= mem.c
 SRCS	+= mqueue.c
 SRCS	+= natbd.c
+SRCS	+= odict.c
 SRCS	+= remain.c
 SRCS	+= rtp.c
 SRCS	+= sa.c
@@ -56,6 +57,8 @@ SRCS	+= dtls.c
 SRCS	+= combo/dtls_turn.c
 SRCS	+= cert.c
 endif
+
+SRCS	+= util.c
 
 # Mock servers
 SRCS	+= mock/pf.c

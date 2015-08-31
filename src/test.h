@@ -142,6 +142,8 @@ int test_mem(void);
 int test_mem_reallocarray(void);
 int test_mqueue(void);
 int test_natbd(void);
+int test_odict(void);
+int test_odict_array(void);
 int test_remain(void);
 int test_rtp(void);
 int test_rtcp_encode(void);
@@ -219,6 +221,12 @@ void test_hexdump_dual(FILE *f,
 		       const void *ep, size_t elen,
 		       const void *ap, size_t alen);
 int re_main_timeout(uint32_t timeout_ms);
+int test_load_file(struct mbuf *mb, const char *filename);
+int test_write_file(struct mbuf *mb, const char *filename);
+
+
+/* util */
+bool odict_compare(const struct odict *dict1, const struct odict *dict2);
 
 
 /*
