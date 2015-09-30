@@ -31,6 +31,8 @@ endif
 BINDIR	:= $(PREFIX)/bin
 CFLAGS	+= -Isrc -I$(LIBRE_INC)
 CFLAGS  += -I$(LIBREM_PATH)/include -I$(SYSROOT)/local/include/rem
+CXXFLAGS	+= -Isrc -I$(LIBRE_INC)
+CXXFLAGS  += -I$(LIBREM_PATH)/include -I$(SYSROOT)/local/include/rem
 BIN	:= $(PROJECT)$(BIN_SUFFIX)
 
 SPLINT_OPTIONS += -Isrc
@@ -47,7 +49,8 @@ LIBS	+= -lrem -lm
 
 include src/srcs.mk
 
-OBJS	:= $(patsubst %.c,$(BUILD)/src/%.o,$(SRCS))
+OBJS      := $(patsubst %.c,$(BUILD)/src/%.o,$(filter %.c,$(SRCS)))
+OBJS      += $(patsubst %.cpp,$(BUILD)/src/%.o,$(filter %.cpp,$(SRCS)))
 
 all: $(BIN)
 
@@ -65,6 +68,10 @@ endif
 $(BUILD)/%.o: %.c $(BUILD) Makefile src/srcs.mk
 	@echo "  CC      $@"
 	@$(CC) $(CFLAGS) -o $@ -c $< $(DFLAGS)
+
+$(BUILD)/%.o: %.cpp $(BUILD) Makefile src/srcs.mk
+	@echo "  CXX     $@"
+	@$(CXX) $(CXXFLAGS) -o $@ -c $< $(DFLAGS)
 
 $(BUILD): Makefile
 	@mkdir -p $(BUILD)/src/mock
