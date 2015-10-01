@@ -33,6 +33,10 @@ CFLAGS	+= -Isrc -I$(LIBRE_INC)
 CFLAGS  += -I$(LIBREM_PATH)/include -I$(SYSROOT)/local/include/rem
 CXXFLAGS	+= -Isrc -I$(LIBRE_INC)
 CXXFLAGS  += -I$(LIBREM_PATH)/include -I$(SYSROOT)/local/include/rem
+
+# XXX: common for C/C++
+CPPFLAGS += -DHAVE_INTTYPES_H
+
 BIN	:= $(PROJECT)$(BIN_SUFFIX)
 
 SPLINT_OPTIONS += -Isrc
@@ -71,7 +75,7 @@ $(BUILD)/%.o: %.c $(BUILD) Makefile src/srcs.mk
 
 $(BUILD)/%.o: %.cpp $(BUILD) Makefile src/srcs.mk
 	@echo "  CXX     $@"
-	@$(CXX) $(CXXFLAGS) -o $@ -c $< $(DFLAGS)
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ -c $< $(DFLAGS)
 
 $(BUILD): Makefile
 	@mkdir -p $(BUILD)/src/mock
