@@ -13,8 +13,8 @@
 #include <re_dbg.h>
 
 
-#define LOCAL_PORT        20000
-#define LOCAL_SECURE_PORT 20001
+#define LOCAL_PORT        0
+#define LOCAL_SECURE_PORT 0
 
 
 static bool sip_msg_handler(const struct sip_msg *msg, void *arg)

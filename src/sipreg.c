@@ -13,8 +13,8 @@
 #include <re_dbg.h>
 
 
-#define LOCAL_PORT        10000
-#define LOCAL_SECURE_PORT 10001
+#define LOCAL_PORT        0
+#define LOCAL_SECURE_PORT 0
 
 
 struct test {
