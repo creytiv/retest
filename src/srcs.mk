@@ -36,6 +36,7 @@ SRCS	+= sdp.c
 SRCS	+= sha.c
 SRCS	+= sip.c
 SRCS	+= sipevent.c
+SRCS	+= sipreg.c
 SRCS	+= sipsess.c
 SRCS	+= srtp.c
 SRCS	+= stun.c
@@ -65,6 +66,7 @@ SRCS	+= util.c
 
 # Mock servers
 SRCS	+= mock/pf.c
+SRCS	+= mock/sipsrv.c
 SRCS	+= mock/stunsrv.c
 SRCS	+= mock/turnsrv.c
 SRCS	+= mock/nat.c

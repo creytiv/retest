@@ -167,6 +167,7 @@ int test_sip_param(void);
 int test_sip_parse(void);
 int test_sip_via(void);
 int test_sipevent(void);
+int test_sipreg(void);
 int test_sipsess(void);
 int test_srtp(void);
 int test_stun_req(void);
@@ -338,3 +339,20 @@ struct tcp_server {
 };
 
 int tcp_server_alloc(struct tcp_server **srvp, enum behavior behavior);
+
+
+/*
+ * SIP Server
+ */
+
+struct sip_server {
+	struct sip *sip;
+	struct sip_lsnr *lsnr;
+	bool terminate;
+
+	unsigned n_register_req;
+};
+
+int sip_server_alloc(struct sip_server **srvp);
+int sip_server_uri(struct sip_server *srv, char *uri, size_t sz,
+		   enum sip_transp tp);
