@@ -97,7 +97,7 @@ static void sip_resp_handler(int err, const struct sip_msg *msg, void *arg)
 }
 
 
-static int test(enum sip_transp tp)
+static int reg_test(enum sip_transp tp)
 {
 	struct test test;
 	struct sip_server *srv = NULL;
@@ -154,10 +154,10 @@ int test_sipreg(void)
 {
 	int err = 0;
 
-	err |= test(SIP_TRANSP_UDP);
-	err |= test(SIP_TRANSP_TCP);
+	err |= reg_test(SIP_TRANSP_UDP);
+	err |= reg_test(SIP_TRANSP_TCP);
 #ifdef USE_TLS
-	err |= test(SIP_TRANSP_TLS);
+	err |= reg_test(SIP_TRANSP_TLS);
 #endif
 
 	return err;
