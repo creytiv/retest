@@ -66,7 +66,7 @@ $(BIN): $(OBJS)
 ifneq ($(GPROF),)
 	@$(LD) $(LFLAGS) $^ ../re/libre.a $(LIBS) -o $@
 else
-	@$(LD) $(LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
+	@$(CXX) $(LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
 endif
 
 $(BUILD)/%.o: %.c $(BUILD) Makefile src/srcs.mk
