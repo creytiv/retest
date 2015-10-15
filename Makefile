@@ -37,6 +37,9 @@ CXXFLAGS  += -I$(LIBREM_PATH)/include -I$(SYSROOT)/local/include/rem
 # XXX: common for C/C++
 CPPFLAGS += -DHAVE_INTTYPES_H
 
+CPPFLAGS += -I$(SYSROOT)/include
+
+
 BIN	:= $(PROJECT)$(BIN_SUFFIX)
 
 SPLINT_OPTIONS += -Isrc
