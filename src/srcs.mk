@@ -21,6 +21,7 @@ SRCS	+= http.c
 SRCS	+= httpauth.c
 SRCS	+= ice.c
 SRCS	+= jbuf.c
+SRCS	+= json.c
 SRCS	+= list.c
 SRCS	+= main.c
 SRCS	+= mbuf.c

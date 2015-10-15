@@ -764,3 +764,25 @@ int test_fmt_str_error(void)
  out:
 	return err;
 }
+
+
+int test_fmt_unicode(void)
+{
+	const char input[] = "abc\\b\\f\\n\\r\\t\\u0001";
+	char buf[1024], buf2[1024];
+	struct pl pl;
+	int err = 0;
+
+	pl_set_str(&pl, input);
+
+	re_snprintf(buf, sizeof(buf), "%H", utf8_decode, &pl);
+
+	TEST_STRCMP("abc\b\f\n\r\t\x01", 9U, buf, str_len(buf));
+
+	re_snprintf(buf2, sizeof(buf2), "%H", utf8_encode, buf);
+
+	TEST_STRCMP(input, str_len(input), buf2, str_len(buf2));
+
+ out:
+	return err;
+}
