@@ -720,7 +720,9 @@ int test_load_file(struct mbuf *mb, const char *filename)
 		else if (n == 0)
 			break;
 
-		err |= mbuf_write_mem(mb, buf, n);
+		err = mbuf_write_mem(mb, buf, n);
+		if (err)
+			break;
 	}
 
 	(void)close(fd);
