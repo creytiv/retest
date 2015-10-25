@@ -306,6 +306,7 @@ static int test_unit(const char *name, bool verbose)
 			if (err) {
 				if (err == ESKIPPED) {
 					++n_skipped;
+					err = 0;
 					continue;
 				}
 
@@ -530,7 +531,13 @@ static void *thread_handler(void *arg)
 
 	err = thr->test->exec();
 	if (err) {
-		DEBUG_WARNING("%s: test failed (%m)\n", thr->test->name, err);
+		if (err == ESKIPPED) {
+			err = 0;
+		}
+		else {
+			DEBUG_WARNING("%s: test failed (%m)\n",
+					thr->test->name, err);
+		}
 	}
 
 	re_thread_close();
