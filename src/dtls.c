@@ -318,7 +318,7 @@ int test_dtls(void)
 
 	if (!have_dtls_support(TLS_METHOD_DTLSV1)) {
 		(void)re_printf("skip DTLS 1.0 tests\n");
-		return 0;
+		return ESKIPPED;
 	}
 	else {
 		err = test_dtls_srtp_base(TLS_METHOD_DTLSV1, false);
@@ -336,7 +336,7 @@ int test_dtls_1_2(void)
 
 	if (!have_dtls_support(TLS_METHOD_DTLSV1_2)) {
 		(void)re_printf("skip DTLS 1.2 tests\n");
-		return 0;
+		return ESKIPPED;
 	}
 	else {
 		err = test_dtls_srtp_base(TLS_METHOD_DTLSV1_2, false);
@@ -354,7 +354,7 @@ int test_dtls_srtp(void)
 
 	if (!have_dtls_support(TLS_METHOD_DTLS)) {
 		(void)re_printf("skip DTLS tests\n");
-		return 0;
+		return ESKIPPED;
 	}
 
 	err = test_dtls_srtp_base(TLS_METHOD_DTLS, true);

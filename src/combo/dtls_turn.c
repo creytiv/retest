@@ -416,7 +416,7 @@ int test_dtls_turn(void)
 
 	if (!have_dtls_support(TLS_METHOD_DTLS)) {
 		(void)re_printf("skip DTLS/TURN test\n");
-		return 0;
+		return ESKIPPED;
 	}
 
 	err |= agent_alloc(&a, 0, true, true, true);

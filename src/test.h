@@ -5,6 +5,12 @@
  */
 
 
+/*
+ * Special negative error code for a skipped test
+ */
+#define ESKIPPED (-1000)
+
+
 #define TEST_EQUALS(expected, actual)				\
 	if ((expected) != (actual)) {				\
 		(void)re_fprintf(stderr, "\n");			\

@@ -215,6 +215,10 @@ static int testcase_oom(const struct test *test, int levels, bool verbose)
 			err = 0;
 			goto out;
 		}
+		else if (err == ESKIPPED) {
+			err = 0;
+			break;
+		}
 		else {
 			DEBUG_WARNING("oom: %s: unexpected error code at"
 				      " %d blocks free (%m)\n",
@@ -289,6 +293,8 @@ static int test_unit(const char *name, bool verbose)
 		}
 	}
 	else {
+		unsigned n_skipped = 0;
+
 		for (i=0; i<ARRAY_SIZE(tests); i++) {
 
 			if (verbose) {
@@ -298,11 +304,19 @@ static int test_unit(const char *name, bool verbose)
 
 			err = tests[i].exec();
 			if (err) {
+				if (err == ESKIPPED) {
+					++n_skipped;
+					continue;
+				}
+
 				DEBUG_WARNING("%s: test failed (%m)\n",
 					      tests[i].name, err);
 				return err;
 			}
 		}
+
+		if (n_skipped)
+			re_printf("skipped:%u\n", n_skipped);
 	}
 
 	return err;

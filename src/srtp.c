@@ -961,7 +961,7 @@ static bool have_srtp(void)
 
 	mem_deref(srtp);
 
-	return err != ENOSYS && err != ENOMEM;
+	return err != ENOSYS;
 }
 
 
@@ -976,7 +976,7 @@ int test_srtp(void)
 	   perhaps only register this test if SRTP is available? */
 	if (!have_srtp()) {
 		(void)re_printf("skipping SRTP test\n");
-		return 0;
+		return ESKIPPED;
 	}
 
 	err  = test_srtp_aescm128();
