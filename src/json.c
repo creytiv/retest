@@ -356,6 +356,22 @@ static int test_json_verify_decode(void)
 			"    \"d\": -1.3014211440691497E-17  "
 			"}"
 		},
+
+		/* array with objects (legal JSON) */
+		{
+			2,
+			4,
+			"["
+			"  {"
+			"    \"foo\" : 111,"
+			"    \"bar\" : 111"
+			"  },"
+			"  {"
+			"    \"foo\" : 222,"
+			"    \"bar\" : 222"
+			"  }"
+			"]"
+		}
 	};
 	struct odict *dict = NULL, *dict2 = NULL;
 	struct mbuf *mb_enc = NULL;
@@ -499,7 +515,6 @@ int test_json_bad(void)
 			"8n0}3:28e27}8]75:[:e47968e96n[:2f]n1:]n2[t"
 		},
 
-		/* TODO: these strings are not returning EBADMSG */
 		{
 			EBADMSG,
 			"{"
@@ -516,19 +531,14 @@ int test_json_bad(void)
 			EBADMSG,
 			"{ \"key\" : \"broken_value }"
 		},
-#if 1
 		{
 			0,
 			"\"hei\""
 		},
-#endif
-#if 1
 		{
 			0,
 			"123"
 		},
-#endif
-
 	};
 	struct odict *dict = NULL;
 	unsigned i;
