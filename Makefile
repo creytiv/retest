@@ -63,14 +63,9 @@ all: $(BIN)
 
 -include $(OBJS:.o=.d)
 
-# GPROF requires static linking
 $(BIN): $(OBJS)
 	@echo "  LD      $@"
-ifneq ($(GPROF),)
-	@$(LD) $(LFLAGS) $^ ../re/libre.a $(LIBS) -o $@
-else
-	@$(CXX) $(LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
-endif
+	@$(CC) $(LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
 
 $(BUILD)/%.o: %.c $(BUILD) Makefile src/srcs.mk
 	@echo "  CC      $@"

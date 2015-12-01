@@ -218,18 +218,6 @@ int test_dtls_turn(void);
 #endif
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* special test */
-int test_cplusplus(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-
 #ifdef USE_TLS
 extern const char test_certificate[];
 #endif

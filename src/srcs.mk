@@ -61,8 +61,6 @@ SRCS	+= combo/dtls_turn.c
 SRCS	+= cert.c
 endif
 
-SRCS	+= cplusplus.cpp
-
 SRCS	+= util.c
 
 # Mock servers
