@@ -32,6 +32,7 @@ SRCS	+= natbd.c
 SRCS	+= odict.c
 SRCS	+= remain.c
 SRCS	+= rtp.c
+SRCS	+= rtcp.c
 SRCS	+= sa.c
 SRCS	+= sdp.c
 SRCS	+= sha.c
