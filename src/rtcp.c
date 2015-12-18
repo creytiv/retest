@@ -67,6 +67,9 @@ static void rtp_recv(const struct sa *src, const struct rtp_header *hdr,
 		     struct mbuf *mb, void *arg)
 {
 	struct fixture *f = arg;
+	(void)src;
+	(void)hdr;
+	(void)mb;
 
 	++f->n_recv;
 
