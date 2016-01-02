@@ -258,7 +258,7 @@ static int test_dtls_srtp_base(enum tls_method method, bool dtls_srtp)
 		goto out;
 	}
 
-	err = re_main_timeout(200);
+	err = re_main_timeout(500);
 	if (err)
 		goto out;
 
