@@ -383,7 +383,8 @@ static int test_srtp_loop(size_t offset, enum srtp_suite suite, uint16_t seq)
 }
 
 
-static int test_srtcp_loop(size_t offset, enum srtp_suite suite)
+static int test_srtcp_loop(size_t offset, enum srtp_suite suite,
+			   enum rtcp_type type)
 {
 	struct srtp *ctx_tx = NULL, *ctx_rx = NULL;
 	struct mbuf *mb1 = NULL, *mb2 = NULL;
@@ -421,7 +422,19 @@ static int test_srtcp_loop(size_t offset, enum srtp_suite suite)
 		mb1->pos = mb1->end = offset;
 		mb2->pos = mb2->end = offset;
 
-		err = rtcp_encode(mb1, RTCP_BYE, 2, srcv, "ciao");
+		if (type == RTCP_BYE) {
+			err = rtcp_encode(mb1, RTCP_BYE, 2, srcv, "ciao");
+		}
+		else if (type == RTCP_RR) {
+			err = rtcp_encode(mb1, RTCP_RR, 0, srcv[0],
+					  NULL, NULL);
+		}
+		else {
+			re_printf("unknown type %d\n", type);
+			err = EINVAL;
+			break;
+		}
+
 		if (err)
 			break;
 
@@ -970,7 +983,7 @@ static bool have_srtp(void)
  */
 int test_srtp(void)
 {
-	int err;
+	int err = 0;
 
 	/* XXX: find a better solution for optional SRTP.
 	   perhaps only register this test if SRTP is available? */
@@ -1001,12 +1014,13 @@ int test_srtp(void)
 	if (err)
 		return err;
 
-	err |= test_srtcp_loop(0, SRTP_AES_CM_128_HMAC_SHA1_32);
-	err |= test_srtcp_loop(0, SRTP_AES_CM_128_HMAC_SHA1_80);
-	err |= test_srtcp_loop(0, SRTP_AES_256_CM_HMAC_SHA1_32);
-	err |= test_srtcp_loop(0, SRTP_AES_256_CM_HMAC_SHA1_80);
-	err |= test_srtcp_loop(4, SRTP_AES_CM_128_HMAC_SHA1_32);
-	err |= test_srtcp_loop(4, SRTP_AES_CM_128_HMAC_SHA1_80);
+	err |= test_srtcp_loop(0, SRTP_AES_CM_128_HMAC_SHA1_32, RTCP_BYE);
+	err |= test_srtcp_loop(0, SRTP_AES_CM_128_HMAC_SHA1_80, RTCP_BYE);
+	err |= test_srtcp_loop(0, SRTP_AES_256_CM_HMAC_SHA1_32, RTCP_BYE);
+	err |= test_srtcp_loop(0, SRTP_AES_256_CM_HMAC_SHA1_80, RTCP_BYE);
+	err |= test_srtcp_loop(4, SRTP_AES_CM_128_HMAC_SHA1_32, RTCP_BYE);
+	err |= test_srtcp_loop(4, SRTP_AES_CM_128_HMAC_SHA1_80, RTCP_BYE);
+	err |= test_srtcp_loop(0, SRTP_AES_CM_128_HMAC_SHA1_32, RTCP_RR);
 	if (err)
 		return err;
 
