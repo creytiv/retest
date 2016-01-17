@@ -867,6 +867,8 @@ static int test_srtp_unauth(void)
 		goto out;
 
 	err = send_rtp_packet(srtp_tx, mb, 3);
+	if (err)
+		goto out;
 
 	/* flip bits in the auth-tag to force authentication error */
 	mb->buf[mb->end - 1] ^= 0x55;

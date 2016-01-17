@@ -69,6 +69,7 @@ static int test_mbuf_basic(void)
 	if (err)
 		goto out;
 	err = pl_strcmp(&foo, str);
+	TEST_ERR(err);
 
 	mb.pos = mb.end = 0;
 	err = mbuf_fill(&mb, 'm', 9);
