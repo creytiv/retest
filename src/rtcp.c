@@ -85,7 +85,8 @@ static int fixture_init(struct fixture *f)
 
 	memset(f, 0, sizeof(*f));
 
-	sa_init(&f->rtp_addr, AF_INET);
+	err = sa_set_str(&f->rtp_addr, "127.0.0.1", 0);
+	TEST_ERR(err);
 
 	err = rtp_listen(&f->rtp, IPPROTO_UDP, &f->rtp_addr, 10000, 49152,
 			 true, rtp_recv, NULL, f);
