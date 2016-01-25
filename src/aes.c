@@ -116,7 +116,7 @@ int test_aes(void)
 
 	if (!have_aes()) {
 		(void)re_printf("skipping aes test\n");
-		return 0;
+		return ESKIPPED;
 	}
 
 	err = test_aes_ctr_loop();
