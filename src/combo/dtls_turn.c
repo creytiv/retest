@@ -415,7 +415,7 @@ int test_dtls_turn(void)
 	int err = 0;
 
 	if (!have_dtls_support(TLS_METHOD_DTLS)) {
-		(void)re_printf("skip DTLS/TURN test\n");
+		re_fprintf(stderr, "skip DTLS/TURN test\n");
 		return ESKIPPED;
 	}
 

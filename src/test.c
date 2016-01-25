@@ -315,7 +315,7 @@ static int test_unit(const char *name, bool verbose)
 		}
 
 		if (n_skipped)
-			re_printf("skipped:%u\n", n_skipped);
+			re_fprintf(stderr, "skipped:%u\n", n_skipped);
 	}
 
 	return err;
