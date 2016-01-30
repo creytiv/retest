@@ -530,3 +530,30 @@ int test_uri_params_headers(void)
  out:
 	return err;
 }
+
+
+static int devnull_print_handler(const char *p, size_t size, void *arg)
+{
+	(void)p;
+	(void)size;
+	(void)arg;
+	return 0;
+}
+
+
+int test_uri_escape(void)
+{
+	struct re_printf pf_devnull = {devnull_print_handler, NULL};
+	const struct pl pl1 = PL("%");
+	const struct pl pl2 = PL("%0");
+	int e, err = 0;
+
+	e = uri_user_unescape(&pf_devnull, &pl1);
+	TEST_EQUALS(EBADMSG, e);
+
+	e = uri_user_unescape(&pf_devnull, &pl2);
+	TEST_EQUALS(EBADMSG, e);
+
+ out:
+	return err;
+}
