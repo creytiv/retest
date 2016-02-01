@@ -134,6 +134,7 @@ int test_g711_alaw(void);
 int test_g711_ulaw(void);
 int test_hash(void);
 int test_hmac_sha1(void);
+int test_hmac_sha256(void);
 int test_http(void);
 int test_http_loop(void);
 int test_httpauth_chall(void);
