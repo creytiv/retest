@@ -255,8 +255,6 @@ int test_hmac_sha256(void)
 		TEST_MEMCMP(digest, sizeof(digest), md, sizeof(md));
 
 		hmac = mem_deref(hmac);
-
-		re_printf("test hmac %zu:  %zu bytes data OK\n", i, data_len);
 	}
 
  out:
