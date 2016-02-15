@@ -291,6 +291,9 @@ int test_rtcp_encode(void)
 		msg = mem_deref(msg);
 	}
 
+	/* verify that rtcp_decode() read the whole buffer */
+	TEST_EQUALS(mb->end, mb->pos);
+
  out:
 	mem_deref(mb);
 	return err;
@@ -449,6 +452,9 @@ int test_rtcp_encode_afb(void)
 		err = EBADMSG;
 		goto out;
 	}
+
+	/* verify that rtcp_decode() read the whole buffer */
+	TEST_EQUALS(mb->end, mb->pos);
 
  out:
 	mem_deref(mb);
