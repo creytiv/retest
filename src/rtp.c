@@ -290,6 +290,8 @@ int test_rtcp_encode(void)
 		err = rtcp_decode(&msg, mb);
 		msg = mem_deref(msg);
 	}
+	if (err)
+		goto out;
 
 	/* verify that rtcp_decode() read the whole buffer */
 	TEST_EQUALS(mb->end, mb->pos);
