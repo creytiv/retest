@@ -253,13 +253,12 @@ static int test_vidconv_pixel_formats(void)
 			},
 		},
 
-#if 0
-		/* YUYV422 to NV12 */
+		/* YUV420P to NV12 */
 		{
-			VID_FMT_YUYV422,
-			{ {8, "\x11\x22\x11\x33\x11\x22\x11\x33"},
-			  {0,0},
-			  {0,0}
+			VID_FMT_YUV420P,
+			{ {4, "\x11\x11\x11\x11"},
+			  {1, "\x22"},
+			  {1, "\x33"}
 			},
 
 			VID_FMT_NV12,
@@ -268,7 +267,6 @@ static int test_vidconv_pixel_formats(void)
 			  {0,0}
 			},
 		},
-#endif
 	};
 	struct vidframe *fsrc = NULL, *fdst = NULL;
 	const struct vidsz sz = {2, 2};
