@@ -14,11 +14,6 @@
 #include <re_dbg.h>
 
 
-#define WIDTH 320
-#define HEIGHT 240
-#define SCALE 2
-
-
 /*
  * http://en.wikipedia.org/wiki/YCbCr
  *
@@ -163,8 +158,11 @@ static void vidframe_dump(const struct vidframe *f)
  * Test vidconv module by scaling a random image up and then down.
  * The two images should then be pixel accurate.
  */
-static int test_vidconv_scaling(void)
+static int test_vidconv_scaling(enum vidfmt via_fmt)
 {
+#define WIDTH 40
+#define HEIGHT 30
+#define SCALE 2
 	struct vidframe *f0 = NULL, *f1 = NULL, *f2 = NULL;
 	const struct vidsz size0 = {WIDTH, HEIGHT};
 	const struct vidsz size1 = {WIDTH*SCALE, HEIGHT*SCALE};
@@ -173,7 +171,7 @@ static int test_vidconv_scaling(void)
 	int i, err = 0;
 
 	err |= vidframe_alloc(&f0, VID_FMT_YUV420P, &size0);
-	err |= vidframe_alloc(&f1, VID_FMT_YUV420P, &size1);
+	err |= vidframe_alloc(&f1, via_fmt, &size1);
 	err |= vidframe_alloc(&f2, VID_FMT_YUV420P, &size0);
 	if (err)
 		goto out;
@@ -226,50 +224,68 @@ static int test_vidconv_pixel_formats(void)
 		/* UYVY422 to YUV420P */
 		{
 			VID_FMT_UYVY422,
-			{ {8, "\x22\x11\x33\x11\x22\x11\x33\x11"},
+			{ {32,
+			   "\x20\x00\x30\x01"
+			   "\x21\x02\x31\x03"
+			   "\x20\x04\x30\x05"
+			   "\x21\x06\x31\x07"
+			   "\x22\x08\x32\x09"
+			   "\x23\x0a\x33\x0b"
+			   "\x22\x0c\x32\x0d"
+			   "\x23\x0e\x33\x0f"},
 			  {0,0},
 			  {0,0}
 			},
 
 			VID_FMT_YUV420P,
-			{ {4, "\x11\x11\x11\x11"},
-			  {1, "\x22"},
-			  {1, "\x33"}
+			{ {16,
+			   "\x00\x01\x02\x03\x04\x05\x06\x07"
+			   "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"},
+			  {4, "\x20\x21\x22\x23"},
+			  {4, "\x30\x31\x32\x33"}
 			},
 		},
 
 		/* NV12 to YUV420P */
 		{
 			VID_FMT_NV12,
-			{ {4, "\x11\x11\x11\x11"},
-			  {2, "\x22\x33"},
+			{ {16,
+			   "\x00\x01\x02\x03\x04\x05\x06\x07"
+			   "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"},
+			  {8, "\x20\x30\x21\x31\x22\x32\x23\x33"},
 			  {0,0}
 			},
 
 			VID_FMT_YUV420P,
-			{ {4, "\x11\x11\x11\x11"},
-			  {1, "\x22"},
-			  {1, "\x33"}
+			{ {16,
+			   "\x00\x01\x02\x03\x04\x05\x06\x07"
+			   "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"},
+			  {4, "\x20\x21\x22\x23"},
+			  {4, "\x30\x31\x32\x33"}
 			},
 		},
 
 		/* YUV420P to NV12 */
 		{
 			VID_FMT_YUV420P,
-			{ {4, "\x11\x11\x11\x11"},
-			  {1, "\x22"},
-			  {1, "\x33"}
+			{ {16,
+			   "\x00\x01\x02\x03\x04\x05\x06\x07"
+			   "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"},
+			  {4, "\x20\x21\x22\x23"},
+			  {4, "\x30\x31\x32\x33"}
 			},
 
 			VID_FMT_NV12,
-			{ {4, "\x11\x11\x11\x11"},
-			  {2, "\x22\x33"},
+			{ {16,
+			   "\x00\x01\x02\x03\x04\x05\x06\x07"
+			   "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"},
+			  {8, "\x20\x30\x21\x31\x22\x32\x23\x33"},
 			  {0,0}
 			},
 		},
 	};
 	struct vidframe *fsrc = NULL, *fdst = NULL;
-	const struct vidsz sz = {2, 2};
+	const struct vidsz sz = {4, 4};
 	unsigned i, p;
 	int err = 0;
 
@@ -326,7 +342,8 @@ int test_vidconv(void)
 	if (err)
 		return err;
 
-	err = test_vidconv_scaling();
+	err  = test_vidconv_scaling(VID_FMT_YUV420P);
+	err |= test_vidconv_scaling(VID_FMT_NV12);
 	if (err)
 		return err;
 
