@@ -16,16 +16,36 @@
 enum {N_TIMERS=32};
 
 struct tmr_test {
-	struct tmr tmrv[N_TIMERS];
+	struct test {
+		struct tmr_test *tt;
+		struct tmr tmr;
+		unsigned n_fire;
+	} testv[N_TIMERS];
+
+	uint64_t prev_jfs;
 	size_t timers_ok;
+	int err;
 };
 
 
-static void timeout(void *arg)
+static void timeout_handler(void *arg)
 {
-	struct tmr_test *tt = arg;
+	struct test *test = arg;
+	struct tmr_test *tt = test->tt;
 
+	++test->n_fire;
 	++tt->timers_ok;
+
+	/* check that timers are fired in correct order */
+	if (tt->prev_jfs && test->tmr.jfs < tt->prev_jfs) {
+		DEBUG_WARNING("timer (%llu) less than prev jfs (%llu)\n",
+			      test->tmr.jfs, tt->prev_jfs);
+		tt->err = ETIMEDOUT;
+		re_cancel();
+		return;
+	}
+
+	tt->prev_jfs = test->tmr.jfs;
 
 	if (tt->timers_ok >= N_TIMERS)
 		re_cancel();
@@ -35,40 +55,38 @@ static void timeout(void *arg)
 int test_tmr(void)
 {
 	struct tmr_test tt;
-	struct list *lst;
-	struct le *le;
-	uint64_t prev = 0;
 	size_t i;
 	int err;
 
 	memset(&tt, 0, sizeof(tt));
 
-	for (i=0; i<N_TIMERS; i++)
-		tmr_start(&tt.tmrv[i], rand_u16() % 10, timeout, &tt);
+	for (i=0; i<N_TIMERS; i++) {
 
-	/* verify that timers are sorted by jfs */
-	lst = tt.tmrv[0].le.list;
-	for (le = lst->head; le; le = le->next) {
-
-		const struct tmr *tmr = le->data;
-
-		if (tmr->jfs < prev) {
-			err = ETIMEDOUT;
-			goto out;
-		}
-
-		prev = tmr->jfs;
+		tt.testv[i].tt = &tt;
+		tmr_start(&tt.testv[i].tmr, rand_u16() % 10,
+			  timeout_handler, &tt.testv[i]);
 	}
 
 	err = re_main_timeout(500);
+	if (err)
+		goto out;
 
-	if (!err && tt.timers_ok != N_TIMERS)
-		err = EINVAL;
+	TEST_ERR(tt.err);
+	TEST_EQUALS(N_TIMERS, tt.timers_ok);
+
+	/* verify that all timers were fired once */
+	for (i=0; i<N_TIMERS; i++) {
+
+		struct test *test = &tt.testv[i];
+
+		TEST_EQUALS(1, test->n_fire);
+		TEST_ASSERT(!tmr_isrunning(&test->tmr));
+	}
 
  out:
 	/* cleanup */
 	for (i=0; i<N_TIMERS; i++)
-		tmr_cancel(&tt.tmrv[i]);
+		tmr_cancel(&tt.testv[i].tmr);
 
 	return err;
 }
