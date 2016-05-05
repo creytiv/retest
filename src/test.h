@@ -149,6 +149,7 @@ int test_json_unicode(void);
 int test_json_array(void);
 int test_list(void);
 int test_list_ref(void);
+int test_list_sort(void);
 int test_mbuf(void);
 int test_md5(void);
 int test_mem(void);

@@ -15,6 +15,7 @@
 
 struct node {
 	struct le le;
+	int value;
 };
 
 int test_list(void)
@@ -102,6 +103,68 @@ int test_list_ref(void)
 
 	/* note: done after list_flush() */
 	mem_deref(node);
+
+	return err;
+}
+
+
+static bool sort_handler(struct le *le1, struct le *le2, void *arg)
+{
+	struct node *node1 = le1->data;
+	struct node *node2 = le2->data;
+
+	/* NOTE: important to use less than OR equal to, otherwise
+	   the list_sort function may be stuck in a loop */
+	return node1->value <= node2->value;
+}
+
+
+#define NUM_ELEMENTS 100
+int test_list_sort(void)
+{
+	struct list lst;
+	struct le *le;
+	int prev_value;
+	bool prev_value_set = false;
+	unsigned i;
+	int err = 0;
+
+	list_init(&lst);
+
+	/* add many elements with a random value */
+	for (i=0; i<NUM_ELEMENTS; i++) {
+
+		struct node *node;
+
+		node = mem_zalloc(sizeof(*node), node_destructor);
+		if (!node) {
+			err = ENOMEM;
+			goto out;
+		}
+
+		node->value = -50 + rand_u16() % 100;
+
+		list_append(&lst, &node->le, node);
+	}
+
+	/* sort the list in ascending order */
+	list_sort(&lst, sort_handler, NULL);
+
+	/* verify that the list is sorted */
+	for (le = lst.head; le; le = le->next) {
+
+		struct node *node = le->data;
+
+		if (prev_value_set) {
+			TEST_ASSERT(node->value >= prev_value);
+		}
+
+		prev_value = node->value;
+		prev_value_set = true;
+	}
+
+ out:
+	list_flush(&lst);
 
 	return err;
 }

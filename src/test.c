@@ -86,6 +86,7 @@ static const struct test tests[] = {
 	TEST(test_json_array),
 	TEST(test_list),
 	TEST(test_list_ref),
+	TEST(test_list_sort),
 	TEST(test_mbuf),
 	TEST(test_md5),
 	TEST(test_mem),
