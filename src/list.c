@@ -112,6 +112,7 @@ static bool sort_handler(struct le *le1, struct le *le2, void *arg)
 {
 	struct node *node1 = le1->data;
 	struct node *node2 = le2->data;
+	(void)arg;
 
 	/* NOTE: important to use less than OR equal to, otherwise
 	   the list_sort function may be stuck in a loop */
