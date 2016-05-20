@@ -125,7 +125,7 @@ int test_list_sort(void)
 {
 	struct list lst;
 	struct le *le;
-	int prev_value;
+	int prev_value = 0;
 	bool prev_value_set = false;
 	unsigned i;
 	int err = 0;
