@@ -152,8 +152,10 @@ static void process_msg(struct turnserver *turn, int proto, void *sock,
 		}
 
 		chan = find_channel_numb(turn, numb);
-		if (!chan)
+		if (!chan) {
+			DEBUG_WARNING("channel not found: numb=%u\n", numb);
 			return;
+		}
 
 		/* relay data from channel to peer */
 		(void)udp_send(turn->us_relay, &chan->peer, mb);
