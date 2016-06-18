@@ -38,11 +38,13 @@ static void destructor(void *arg)
 {
 	struct turntest *tt = arg;
 
+	/* NOTE: must be derefed before udp socket */
+	mem_deref(tt->turnc);
+
 	mem_deref(tt->us_cli);
 	mem_deref(tt->us_peer);
 	mem_deref(tt->tc);
 	mem_deref(tt->mb);
-	mem_deref(tt->turnc);
 	mem_deref(tt->turnsrv);
 }
 
