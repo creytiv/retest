@@ -510,6 +510,8 @@ static int test_stun_req_attributes(void)
 	struct stun_msg *msg = NULL;
 	struct mbuf *mb;
 	struct stun_attr *attr;
+	const uint64_t rsv_token = 0x1100c0ffee;
+	const uint32_t lifetime = 3600;
 	const uint16_t chan = 0x4000;
 	const uint8_t req_addr_fam = AF_INET;
 	int err;
@@ -522,9 +524,11 @@ static int test_stun_req_attributes(void)
 
 	err = stun_msg_encode(mb, STUN_METHOD_BINDING, STUN_CLASS_REQUEST,
 			      tid, NULL, NULL, 0, false,
-			      0x00, 2,
+			      0x00, 4,
+			      STUN_ATTR_REQ_ADDR_FAMILY, &req_addr_fam,
 			      STUN_ATTR_CHANNEL_NUMBER, &chan,
-			      STUN_ATTR_REQ_ADDR_FAMILY, &req_addr_fam);
+			      STUN_ATTR_LIFETIME, &lifetime,
+			      STUN_ATTR_RSV_TOKEN, &rsv_token);
 	if (err)
 		goto out;
 
@@ -537,15 +541,27 @@ static int test_stun_req_attributes(void)
 	TEST_EQUALS(STUN_CLASS_REQUEST, stun_msg_class(msg));
 	TEST_EQUALS(STUN_METHOD_BINDING, stun_msg_method(msg));
 
-	/* verify attributes */
+	/* verify integer attributes of different sizes */
 
+	/* 8-bit */
+	attr = stun_msg_attr(msg, STUN_ATTR_REQ_ADDR_FAMILY);
+	TEST_ASSERT(attr != NULL);
+	TEST_EQUALS(req_addr_fam, attr->v.req_addr_family);
+
+	/* 16-bit */
 	attr = stun_msg_attr(msg, STUN_ATTR_CHANNEL_NUMBER);
 	TEST_ASSERT(attr != NULL);
 	TEST_EQUALS(chan, attr->v.channel_number);
 
-	attr = stun_msg_attr(msg, STUN_ATTR_REQ_ADDR_FAMILY);
+	/* 32-bit */
+	attr = stun_msg_attr(msg, STUN_ATTR_LIFETIME);
 	TEST_ASSERT(attr != NULL);
-	TEST_EQUALS(req_addr_fam, attr->v.req_addr_family);
+	TEST_EQUALS(lifetime, attr->v.lifetime);
+
+	/* 64-bit */
+	attr = stun_msg_attr(msg, STUN_ATTR_RSV_TOKEN);
+	TEST_ASSERT(attr != NULL);
+	TEST_EQUALS(rsv_token, attr->v.rsv_token);
 
  out:
 	mem_deref(msg);
