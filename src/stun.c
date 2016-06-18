@@ -505,6 +505,55 @@ static int test_stun_request(int proto, bool natted)
 }
 
 
+static int test_stun_req_attributes(void)
+{
+	struct stun_msg *msg = NULL;
+	struct mbuf *mb;
+	struct stun_attr *attr;
+	const uint16_t chan = 0x4000;
+	const uint8_t req_addr_fam = AF_INET;
+	int err;
+
+	mb = mbuf_alloc(1024);
+	if (!mb) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	err = stun_msg_encode(mb, STUN_METHOD_BINDING, STUN_CLASS_REQUEST,
+			      tid, NULL, NULL, 0, false,
+			      0x00, 2,
+			      STUN_ATTR_CHANNEL_NUMBER, &chan,
+			      STUN_ATTR_REQ_ADDR_FAMILY, &req_addr_fam);
+	if (err)
+		goto out;
+
+	/* Decode STUN message */
+	mb->pos = 0;
+	err = stun_msg_decode(&msg, mb, NULL);
+	if (err)
+		goto out;
+
+	TEST_EQUALS(STUN_CLASS_REQUEST, stun_msg_class(msg));
+	TEST_EQUALS(STUN_METHOD_BINDING, stun_msg_method(msg));
+
+	/* verify attributes */
+
+	attr = stun_msg_attr(msg, STUN_ATTR_CHANNEL_NUMBER);
+	TEST_ASSERT(attr != NULL);
+	TEST_EQUALS(chan, attr->v.channel_number);
+
+	attr = stun_msg_attr(msg, STUN_ATTR_REQ_ADDR_FAMILY);
+	TEST_ASSERT(attr != NULL);
+	TEST_EQUALS(req_addr_fam, attr->v.req_addr_family);
+
+ out:
+	mem_deref(msg);
+	mem_deref(mb);
+	return err;
+}
+
+
 /*
  * Send a STUN Binding Request to the mock STUN-Server,
  * and expect a STUN Binding Response.
@@ -522,6 +571,10 @@ int test_stun(void)
 		return err;
 
 	err = test_stun_request(IPPROTO_TCP, false);
+	if (err)
+		return err;
+
+	err = test_stun_req_attributes();
 	if (err)
 		return err;
 
