@@ -129,7 +129,7 @@ static int reg_test(enum sip_transp tp)
 	if (err)
 		goto out;
 
-	err = re_main_timeout(500);
+	err = re_main_timeout(800);
 	if (err)
 		goto out;
 
