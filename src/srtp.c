@@ -296,6 +296,7 @@ static int test_srtp_loop(size_t offset, enum srtp_suite suite, uint16_t seq)
 	struct mbuf *mb = NULL;
 	const size_t key_len = get_keylen(suite);
 	const size_t tag_len = get_taglen(suite);
+	uint8_t payload[160];
 	unsigned i;
 	int err = 0;
 
@@ -317,15 +318,14 @@ static int test_srtp_loop(size_t offset, enum srtp_suite suite, uint16_t seq)
 	if (err)
 		goto out;
 
-	for (i=0; i<100; i++) {
+	rand_bytes(payload, sizeof(payload));
+
+	for (i=0; i<10; i++) {
 		struct rtp_header hdr;
 		uint8_t hdrbuf[12];
-		uint8_t payload[160];
 		size_t end;
 
 		mb->pos = mb->end = offset;
-
-		rand_bytes(payload, sizeof(payload));
 
 		memset(&hdr, 0, sizeof(hdr));
 
@@ -1016,18 +1016,7 @@ int test_srtp(void)
 	if (err)
 		return err;
 
-	err |= test_srtcp_loop(0, SRTP_AES_CM_128_HMAC_SHA1_32, RTCP_BYE);
-	err |= test_srtcp_loop(0, SRTP_AES_CM_128_HMAC_SHA1_80, RTCP_BYE);
-	err |= test_srtcp_loop(0, SRTP_AES_256_CM_HMAC_SHA1_32, RTCP_BYE);
-	err |= test_srtcp_loop(0, SRTP_AES_256_CM_HMAC_SHA1_80, RTCP_BYE);
-	err |= test_srtcp_loop(4, SRTP_AES_CM_128_HMAC_SHA1_32, RTCP_BYE);
-	err |= test_srtcp_loop(4, SRTP_AES_CM_128_HMAC_SHA1_80, RTCP_BYE);
-	err |= test_srtcp_loop(0, SRTP_AES_CM_128_HMAC_SHA1_32, RTCP_RR);
-	if (err)
-		return err;
-
 	err  = test_srtp_libsrtp();
-	err |= test_srtcp_libsrtp();
 	if (err)
 		return err;
 
@@ -1044,6 +1033,33 @@ int test_srtp(void)
 		return err;
 
 	err = test_srtp_random();
+	if (err)
+		return err;
+
+	return err;
+}
+
+
+int test_srtcp(void)
+{
+	int err = 0;
+
+	if (!have_srtp()) {
+		(void)re_printf("skipping SRTCP test\n");
+		return ESKIPPED;
+	}
+
+	err |= test_srtcp_loop(0, SRTP_AES_CM_128_HMAC_SHA1_32, RTCP_BYE);
+	err |= test_srtcp_loop(0, SRTP_AES_CM_128_HMAC_SHA1_80, RTCP_BYE);
+	err |= test_srtcp_loop(0, SRTP_AES_256_CM_HMAC_SHA1_32, RTCP_BYE);
+	err |= test_srtcp_loop(0, SRTP_AES_256_CM_HMAC_SHA1_80, RTCP_BYE);
+	err |= test_srtcp_loop(4, SRTP_AES_CM_128_HMAC_SHA1_32, RTCP_BYE);
+	err |= test_srtcp_loop(4, SRTP_AES_CM_128_HMAC_SHA1_80, RTCP_BYE);
+	err |= test_srtcp_loop(0, SRTP_AES_CM_128_HMAC_SHA1_32, RTCP_RR);
+	if (err)
+		return err;
+
+	err = test_srtcp_libsrtp();
 	if (err)
 		return err;
 

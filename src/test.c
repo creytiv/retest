@@ -121,6 +121,7 @@ static const struct test tests[] = {
 	TEST(test_sipreg),
 	TEST(test_sipsess),
 	TEST(test_srtp),
+	TEST(test_srtcp),
 	TEST(test_stun_req),
 	TEST(test_stun_resp),
 	TEST(test_stun_reqltc),
