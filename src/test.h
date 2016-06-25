@@ -207,6 +207,8 @@ int test_uri_params_headers(void);
 int test_uri_escape(void);
 int test_vid(void);
 int test_vidconv(void);
+int test_vidconv_scaling(void);
+int test_vidconv_pixel_formats(void);
 int test_websock(void);
 #ifdef USE_TLS
 int test_dtls(void);

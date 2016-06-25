@@ -148,6 +148,8 @@ static const struct test tests[] = {
 	TEST(test_uri_escape),
 	TEST(test_vid),
 	TEST(test_vidconv),
+	TEST(test_vidconv_scaling),
+	TEST(test_vidconv_pixel_formats),
 	TEST(test_websock),
 
 #ifdef USE_TLS

@@ -158,7 +158,7 @@ static void vidframe_dump(const struct vidframe *f)
  * Test vidconv module by scaling a random image up and then down.
  * The two images should then be pixel accurate.
  */
-static int test_vidconv_scaling(enum vidfmt via_fmt)
+static int test_vidconv_scaling_base(enum vidfmt via_fmt)
 {
 #define WIDTH 40
 #define HEIGHT 30
@@ -208,7 +208,7 @@ static int test_vidconv_scaling(enum vidfmt via_fmt)
  * verify that pixel conversion between different planar and packed
  * pixel formats is working
  */
-static int test_vidconv_pixel_formats(void)
+int test_vidconv_pixel_formats(void)
 {
 	struct plane {
 		size_t sz;
@@ -342,12 +342,16 @@ int test_vidconv(void)
 	if (err)
 		return err;
 
-	err  = test_vidconv_scaling(VID_FMT_YUV420P);
-	err |= test_vidconv_scaling(VID_FMT_NV12);
-	if (err)
-		return err;
+	return err;
+}
 
-	err = test_vidconv_pixel_formats();
+
+int test_vidconv_scaling(void)
+{
+	int err = 0;
+
+	err  = test_vidconv_scaling_base(VID_FMT_YUV420P);
+	err |= test_vidconv_scaling_base(VID_FMT_NV12);
 	if (err)
 		return err;
 
