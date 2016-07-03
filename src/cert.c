@@ -26,7 +26,7 @@
  *   Fingerprint=49:A4:E9:F4:80:3A:D4:38:84:F1:64:C3:B9:4B:F9:BB:80:F7:07:76
  */
 
-const char test_certificate[] =
+const char test_certificate_rsa[] =
 
 "-----BEGIN CERTIFICATE-----\r\n"
 "MIIDmTCCAoGgAwIBAgIJAIt1/MAlTpB7MA0GCSqGSIb3DQEBCwUAMGIxCzAJBgNV\r\n"

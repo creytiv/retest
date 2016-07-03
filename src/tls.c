@@ -185,8 +185,8 @@ int test_tls(void)
 	if (err)
 		goto out;
 
-	err = tls_set_certificate(tt.tls, test_certificate,
-				  strlen(test_certificate));
+	err = tls_set_certificate(tt.tls, test_certificate_rsa,
+				  strlen(test_certificate_rsa));
 	if (err)
 		goto out;
 
@@ -269,8 +269,8 @@ int test_tls_certificate(void)
 	if (err)
 		goto out;
 
-	err = tls_set_certificate(tls, test_certificate,
-				  strlen(test_certificate));
+	err = tls_set_certificate(tls, test_certificate_rsa,
+				  strlen(test_certificate_rsa));
 	TEST_EQUALS(0, err);
 
 	/* verify fingerprint of the certificate */

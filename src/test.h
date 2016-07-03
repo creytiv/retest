@@ -226,7 +226,7 @@ int test_dtls_turn(void);
 
 
 #ifdef USE_TLS
-extern const char test_certificate[];
+extern const char test_certificate_rsa[];
 #endif
 
 

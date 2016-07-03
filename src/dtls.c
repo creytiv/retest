@@ -210,8 +210,8 @@ static int test_dtls_srtp_base(enum tls_method method, bool dtls_srtp)
 	if (err)
 		goto out;
 
-	err = tls_set_certificate(test.tls, test_certificate,
-				  strlen(test_certificate));
+	err = tls_set_certificate(test.tls, test_certificate_rsa,
+				  strlen(test_certificate_rsa));
 	if (err)
 		goto out;
 
