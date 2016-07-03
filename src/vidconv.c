@@ -26,6 +26,7 @@
  */
 
 
+#if 0
 static double rgb2y_ref(int r, int g, int b)
 {
 	return 16.0 + (65.738*r)/256 + (129.057*g)/256 + (25.064*b)/256;
@@ -40,36 +41,26 @@ static double rgb2v_ref(int r, int g, int b)
 {
 	return 128 + 112.439*r/256 - 94.154*g/256 - 18.285*b/256;
 }
+#endif
 
 
-static int testx(const char *name, int rmin, int rmax, double x, double xref)
-{
-	double diff = x - xref;
-	int err = 0;
-
-	/* the difference should be within the range (-1.0, 1.0) */
-	if (diff > 1.0 || diff < -1.0) {
-		DEBUG_WARNING("component '%s' -- diff is too large: %f\n",
-			      name, diff);
-		return EBADMSG;
-	}
-	TEST_ASSERT(x >= rmin && x <= rmax);
-
- out:
-	return err;
-}
+#define CLIP(X) ( (X) > 255 ? 255 : (X) < 0 ? 0 : X)
 
 
-static int test_vid_rgb2yuv_color(int r, int g, int b)
-{
-	int err = 0;
+/* RGB -> YUV */
+#define RGB2Y(R, G, B) \
+	CLIP(( (  66 * (R) + 129 * (G) +  25 * (B) + 128) >> 8) +  16)
+#define RGB2U(R, G, B) \
+	CLIP(( ( -38 * (R) -  74 * (G) + 112 * (B) + 128) >> 8) + 128)
+#define RGB2V(R, G, B) \
+	CLIP(( ( 112 * (R) -  94 * (G) -  18 * (B) + 128) >> 8) + 128)
 
-	err |= testx("Y", 16, 235, rgb2y(r, g, b), rgb2y_ref(r, g, b));
-	err |= testx("U", 16, 240, rgb2u(r, g, b), rgb2u_ref(r, g, b));
-	err |= testx("V", 16, 240, rgb2v(r, g, b), rgb2v_ref(r, g, b));
 
-	return err;
-}
+#define test_vid_rgb2yuv_color(r, g, b)			\
+							\
+	TEST_EQUALS(RGB2Y(r, g, b), rgb2y(r, g, b));	\
+	TEST_EQUALS(RGB2U(r, g, b), rgb2u(r, g, b));	\
+	TEST_EQUALS(RGB2V(r, g, b), rgb2v(r, g, b));
 
 
 static int test_vid_rgb2yuv(void)
@@ -77,29 +68,26 @@ static int test_vid_rgb2yuv(void)
 	int r, g, b;
 	int err = 0;
 
-	/* full range of 1 color component only */
-	for (r=0; r<256; r++)
-		err |= test_vid_rgb2yuv_color(r, 0, 0);
-	for (g=0; g<256; g++)
-		err |= test_vid_rgb2yuv_color(0, g, 0);
-	for (b=0; b<256; b++)
-		err |= test_vid_rgb2yuv_color(0, 0, b);
-	if (err)
-		return err;
-
 	/* combine 2 color components */
-	for (r=0; r<256; r++)
-		for (g=0; g<256; g++)
-			err |= test_vid_rgb2yuv_color(r, g, 0);
+	for (r=0; r<256; r++) {
+		for (g=0; g<256; g++) {
+			test_vid_rgb2yuv_color(r, g, 0);
+		}
+	}
 
-	for (r=0; r<256; r++)
-		for (b=0; b<256; b++)
-			err |= test_vid_rgb2yuv_color(r, 0, b);
+	for (r=0; r<256; r++) {
+		for (b=0; b<256; b++) {
+			test_vid_rgb2yuv_color(r, 0, b);
+		}
+	}
 
-	for (g=0; g<256; g++)
-		for (b=0; b<256; b++)
-			err |= test_vid_rgb2yuv_color(0, g, b);
+	for (g=0; g<256; g++) {
+		for (b=0; b<256; b++) {
+			test_vid_rgb2yuv_color(0, g, b);
+		}
+	}
 
+ out:
 	return err;
 }
 
