@@ -233,6 +233,7 @@ int test_tls(void)
 }
 
 
+/* XXX: replace with ECDSA certs */
 int test_tls_selfsigned(void)
 {
 	struct tls *tls = NULL;
