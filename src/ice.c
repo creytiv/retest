@@ -894,15 +894,29 @@ static int test_ice_cand_attribute(void)
 }
 
 
-int test_ice(void)
+int test_ice_cand(void)
 {
 	int err = 0;
 
-	err |= test_ice_basic_candidate();
-	err |= test_ice_cand_prio();
-	err |= test_ice_cand_attribute();
+	err = test_ice_basic_candidate();
 	if (err)
 		return err;
+
+	err = test_ice_cand_prio();
+	if (err)
+		return err;
+
+	err = test_ice_cand_attribute();
+	if (err)
+		return err;
+
+	return err;
+}
+
+
+int test_ice(void)
+{
+	int err = 0;
 
 	err = test_ice_loop(ICE_MODE_FULL, false, ICE_MODE_FULL, false);
 	if (err)
