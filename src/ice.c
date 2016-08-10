@@ -758,7 +758,7 @@ static int icetest_alloc(struct ice_test **itp,
 }
 
 
-static int test_ice_loop(enum ice_mode mode_a, bool turn_a,
+static int _test_ice_loop(enum ice_mode mode_a, bool turn_a,
 			 enum ice_mode mode_b, bool turn_b)
 {
 	struct ice_test *it = NULL;
@@ -914,18 +914,15 @@ int test_ice_cand(void)
 }
 
 
-int test_ice(void)
+int test_ice_loop(void)
 {
-	int err = 0;
+	return _test_ice_loop(ICE_MODE_FULL, false, ICE_MODE_FULL, false);
+}
 
-	err = test_ice_loop(ICE_MODE_FULL, false, ICE_MODE_FULL, false);
-	if (err)
-		return err;
-	err = test_ice_loop(ICE_MODE_FULL, true,  ICE_MODE_FULL, true);
-	if (err)
-		return err;
 
-	return err;
+int test_ice_loop_turn(void)
+{
+	return _test_ice_loop(ICE_MODE_FULL, true,  ICE_MODE_FULL, true);
 }
 
 
@@ -933,7 +930,7 @@ int test_ice_lite(void)
 {
 	int err = 0;
 
-	err |= test_ice_loop(ICE_MODE_FULL, true, ICE_MODE_LITE, false);
+	err |= _test_ice_loop(ICE_MODE_FULL, true, ICE_MODE_LITE, false);
 
 	return err;
 }
