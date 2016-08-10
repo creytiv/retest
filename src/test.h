@@ -182,7 +182,11 @@ int test_sip_param(void);
 int test_sip_parse(void);
 int test_sip_via(void);
 int test_sipevent(void);
-int test_sipreg(void);
+int test_sipreg_udp(void);
+int test_sipreg_tcp(void);
+#ifdef USE_TLS
+int test_sipreg_tls(void);
+#endif
 int test_sipsess(void);
 int test_srtp(void);
 int test_srtcp(void);

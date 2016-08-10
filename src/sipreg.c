@@ -150,14 +150,24 @@ static int reg_test(enum sip_transp tp)
 }
 
 
-int test_sipreg(void)
+int test_sipreg_udp(void)
+{
+	return reg_test(SIP_TRANSP_UDP);
+}
+
+
+int test_sipreg_tcp(void)
+{
+	return reg_test(SIP_TRANSP_TCP);
+}
+
+
+int test_sipreg_tls(void)
 {
 	int err = 0;
 
-	err |= reg_test(SIP_TRANSP_UDP);
-	err |= reg_test(SIP_TRANSP_TCP);
 #ifdef USE_TLS
-	err |= reg_test(SIP_TRANSP_TLS);
+	err = reg_test(SIP_TRANSP_TLS);
 #endif
 
 	return err;
