@@ -13,11 +13,8 @@ enum {NUM_TESTS = 64};
 
 static int mkstr(char **strp)
 {
-	size_t sz = (rand_u16() & 0x3f) + 2;
+	size_t sz = 8;
 	char *str;
-
-	if (sz & 1)
-		return str_dup(strp, "duplicated string");
 
 	str = mem_alloc(sz, NULL);
 	if (!str)
@@ -167,6 +164,11 @@ int test_dns_rr(void)
 	size_t i;
 	int err = ENOMEM;
 
+	static const uint16_t typev[] = {
+		DNS_TYPE_A,    DNS_TYPE_NS,  DNS_TYPE_CNAME,
+		DNS_TYPE_SOA,  DNS_TYPE_PTR, DNS_TYPE_MX,
+		DNS_TYPE_AAAA, DNS_TYPE_SRV, DNS_TYPE_NAPTR};
+
 	mb = mbuf_alloc(512);
 	if (!mb)
 		return ENOMEM;
@@ -175,12 +177,7 @@ int test_dns_rr(void)
 	if (err)
 		goto out;
 
-	for (i=0; i<NUM_TESTS; i++) {
-
-		static const uint16_t typev[] = {
-			DNS_TYPE_A,    DNS_TYPE_NS,  DNS_TYPE_CNAME,
-			DNS_TYPE_SOA,  DNS_TYPE_PTR, DNS_TYPE_MX,
-			DNS_TYPE_AAAA, DNS_TYPE_SRV, DNS_TYPE_NAPTR};
+	for (i=0; i<ARRAY_SIZE(typev); i++) {
 
 		hash_flush(ht);
 
@@ -190,7 +187,7 @@ int test_dns_rr(void)
 			break;
 		}
 
-		err = mkrr(rr, typev[i % ARRAY_SIZE(typev)]);
+		err = mkrr(rr, typev[i]);
 		if (err)
 			break;
 
