@@ -162,13 +162,9 @@ int test_sipreg_tcp(void)
 }
 
 
+#ifdef USE_TLS
 int test_sipreg_tls(void)
 {
-	int err = 0;
-
-#ifdef USE_TLS
-	err = reg_test(SIP_TRANSP_TLS);
-#endif
-
-	return err;
+	return reg_test(SIP_TRANSP_TLS);
 }
+#endif
