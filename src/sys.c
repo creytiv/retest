@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#include <ctype.h>
 #include <string.h>
 #include <re.h>
 #include "test.h"
@@ -106,6 +107,8 @@ int test_sys_rand(void)
 {
 	char str[64];
 	uint8_t buf[64];
+	size_t i;
+	int err = 0;
 
 	volatile uint16_t u16 = rand_u16();
 	volatile uint32_t u32 = rand_u32();
@@ -115,10 +118,18 @@ int test_sys_rand(void)
 	(void)u16;
 	(void)u32;
 	(void)u64;
-	(void)ch;
+
+	TEST_ASSERT(ch > 0);
+	TEST_ASSERT(isprint(ch));
 
 	rand_str(str, sizeof(str));
 	rand_bytes(buf, sizeof(buf));
 
-	return 0;
+	for (i = 0; i < (sizeof(str)-1); i++) {
+		TEST_ASSERT(str[i] > 0);
+		TEST_ASSERT(isprint(str[i]));
+	}
+
+ out:
+	return err;
 }
