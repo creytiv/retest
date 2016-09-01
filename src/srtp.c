@@ -944,8 +944,7 @@ static int test_unencrypted_srtcp(void)
 
 	/* verify that RTCP packet is not encrypted */
 	TEST_ASSERT(ep == false);
-	TEST_EQUALS(mb2->end + 4 + tag_len, mb1->end);
-	TEST_MEMCMP(mb2->buf, mb2->end, mb1->buf, mb2->end);
+	TEST_MEMCMP(mb2->buf, mb2->end, mb1->buf, mb1->end - 4 - tag_len);
 
 	/* rx */
 	mb1->pos = 0;
