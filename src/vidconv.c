@@ -304,10 +304,12 @@ int test_vidconv_pixel_formats(void)
 
 		for (p=0; p<3; p++) {
 
+			size_t size = test->dst_planev[p].sz;
+
 			TEST_MEMCMP(test->dst_planev[p].data,
 				    test->dst_planev[p].sz,
 				    fdst->data[p],
-				    test->dst_planev[p].sz);
+				    size);
 		}
 
 		fdst = mem_deref(fdst);
