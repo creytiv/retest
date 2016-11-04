@@ -169,10 +169,11 @@ static void server_conn_handler(const struct sa *peer, void *arg)
 }
 
 
-int test_tls(void)
+static int test_tls_base(enum tls_keytype keytype)
 {
 	struct tls_test tt;
 	struct sa srv;
+	struct mbuf *mb_key=0, *mb_cert=0;
 	int err;
 
 	memset(&tt, 0, sizeof(tt));
@@ -185,10 +186,39 @@ int test_tls(void)
 	if (err)
 		goto out;
 
-	err = tls_set_certificate(tt.tls, test_certificate_rsa,
-				  strlen(test_certificate_rsa));
-	if (err)
+	switch (keytype) {
+
+	case TLS_KEYTYPE_RSA:
+		err = tls_set_certificate(tt.tls, test_certificate_rsa,
+					  strlen(test_certificate_rsa));
+		if (err)
+			goto out;
+		break;
+
+	case TLS_KEYTYPE_EC:
+		mb_key = mbuf_alloc(512);
+		mb_cert = mbuf_alloc(512);
+		if (!mb_key || !mb_cert) {
+			err = ENOMEM;
+			goto out;
+		}
+
+		err  = test_load_file(mb_key, "data/ec-keypair.der");
+		err |= test_load_file(mb_cert, "data/ec-cert.der");
+		if (err)
+			goto out;
+
+		err = tls_set_certificate_der(tt.tls, TLS_KEYTYPE_EC,
+					      mb_cert->buf, mb_cert->end,
+					      mb_key->buf, mb_key->end);
+		if (err)
+			goto out;
+		break;
+
+	default:
+		err = EINVAL;
 		goto out;
+	}
 
 	err = tcp_listen(&tt.ts, &srv, server_conn_handler, &tt);
 	if (err)
@@ -228,8 +258,22 @@ int test_tls(void)
 	mem_deref(tt.tc_srv);
 	mem_deref(tt.ts);
 	mem_deref(tt.tls);
+	mem_deref(mb_cert);
+	mem_deref(mb_key);
 
 	return err;
+}
+
+
+int test_tls(void)
+{
+	return test_tls_base(TLS_KEYTYPE_RSA);
+}
+
+
+int test_tls_ec(void)
+{
+	return test_tls_base(TLS_KEYTYPE_EC);
 }
 
 

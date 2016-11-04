@@ -222,6 +222,7 @@ int test_dtls(void);
 int test_dtls_1_2(void);
 int test_dtls_srtp(void);
 int test_tls(void);
+int test_tls_ec(void);
 int test_tls_selfsigned(void);
 int test_tls_certificate(void);
 #endif
