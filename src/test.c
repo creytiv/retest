@@ -476,6 +476,12 @@ int test_perf(const char *name, bool verbose)
 			err = testcase_perf(&tests[i],
 					    &usec_avg);
 			if (err) {
+				if (err == ESKIPPED) {
+					re_printf("skipped: %s\n",
+						  tests[i].name);
+					tim->test = NULL;
+					continue;
+				}
 				DEBUG_WARNING("perf: %s failed (%m)\n",
 					      tests[i].name, err);
 				return err;
@@ -495,6 +501,9 @@ int test_perf(const char *name, bool verbose)
 
 			struct timing *tim = &timingv[i];
 			double usec_avg = tim->nsec_avg / 1000.0;
+
+			if (!tim->test)
+				continue;
 
 			re_fprintf(stderr, "%-32s: %10.2f usec\n",
 				   tim->test->name, usec_avg);
