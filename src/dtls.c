@@ -330,6 +330,7 @@ int test_dtls(void)
 }
 
 
+#if 0
 int test_dtls_1_2(void)
 {
 	int err = 0;
@@ -346,6 +347,7 @@ int test_dtls_1_2(void)
 
 	return 0;
 }
+#endif
 
 
 int test_dtls_srtp(void)

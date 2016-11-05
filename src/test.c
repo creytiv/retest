@@ -50,7 +50,7 @@ static const struct test tests[] = {
 	TEST(test_dsp),
 #ifdef USE_TLS
 	TEST(test_dtls),
-	TEST(test_dtls_1_2),
+	/*TEST(test_dtls_1_2),*/
 	TEST(test_dtls_srtp),
 #endif
 	TEST(test_fir),
