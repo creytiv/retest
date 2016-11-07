@@ -152,6 +152,7 @@ int test_udp(void)
 {
 	struct udp_sock *uss2;
 	struct udp_test *ut;
+	int layer = 0;
 	int err;
 
 	ut = mem_zalloc(sizeof(*ut), destructor);
@@ -175,10 +176,14 @@ int test_udp(void)
 	if (err)
 		goto out;
 
-	err = udp_register_helper(&ut->uh, ut->usc, 0,
+	TEST_ASSERT(NULL == udp_helper_find(ut->usc, layer));
+
+	err = udp_register_helper(&ut->uh, ut->usc, layer,
 				  udp_helper_send, udp_helper_recv, ut);
 	if (err)
 		goto out;
+
+	TEST_ASSERT(NULL != udp_helper_find(ut->usc, layer));
 
 	/* expect failure */
 	if (!udp_listen(&uss2, &ut->srv, udp_recv_client, ut)) {
