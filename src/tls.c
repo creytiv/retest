@@ -82,8 +82,8 @@ static void client_estab_handler(void *arg)
 	}
 	else if (tt->keytype == TLS_KEYTYPE_EC) {
 
-		if (NULL == strstr(cipher, "ECDSA")) {
-			DEBUG_WARNING("no ECDSA in cipher (%s)\n", cipher);
+		if (NULL == strstr(cipher, "ECDH")) {
+			DEBUG_WARNING("no ECDH in cipher (%s)\n", cipher);
 			err = EPROTO;
 			goto out;
 		}
