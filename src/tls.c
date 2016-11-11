@@ -20,6 +20,7 @@ struct tls_test {
 	struct tcp_sock *ts;
 	struct tcp_conn *tc_cli;
 	struct tcp_conn *tc_srv;
+	enum tls_keytype keytype;
 	bool estab_cli;
 	bool estab_srv;
 	size_t recv_cli;
@@ -72,8 +73,23 @@ static void can_send(struct tls_test *tt)
 static void client_estab_handler(void *arg)
 {
 	struct tls_test *tt = arg;
+	const char *cipher = tls_cipher_name(tt->sc_cli);
+	int err = 0;
+
+	if (tt->keytype == TLS_KEYTYPE_RSA) {
+
+		TEST_ASSERT(NULL == strstr(cipher, "ECDSA"));
+	}
+	else if (tt->keytype == TLS_KEYTYPE_EC) {
+
+		TEST_ASSERT(NULL != strstr(cipher, "ECDSA"));
+	}
+
 	tt->estab_cli = true;
 	can_send(tt);
+
+ out:
+	check(tt, err);
 }
 
 
@@ -173,10 +189,11 @@ static int test_tls_base(enum tls_keytype keytype)
 {
 	struct tls_test tt;
 	struct sa srv;
-	struct mbuf *mb_key=0, *mb_cert=0;
 	int err;
 
 	memset(&tt, 0, sizeof(tt));
+
+	tt.keytype = keytype;
 
 	err = sa_set_str(&srv, "127.0.0.1", 0);
 	if (err)
@@ -196,21 +213,8 @@ static int test_tls_base(enum tls_keytype keytype)
 		break;
 
 	case TLS_KEYTYPE_EC:
-		mb_key = mbuf_alloc(512);
-		mb_cert = mbuf_alloc(512);
-		if (!mb_key || !mb_cert) {
-			err = ENOMEM;
-			goto out;
-		}
-
-		err  = test_load_file(mb_key, "data/ec-keypair.der");
-		err |= test_load_file(mb_cert, "data/ec-cert.der");
-		if (err)
-			goto out;
-
-		err = tls_set_certificate_der(tt.tls, TLS_KEYTYPE_EC,
-					      mb_cert->buf, mb_cert->end,
-					      mb_key->buf, mb_key->end);
+		err = tls_set_certificate(tt.tls, test_certificate_ecdsa,
+					  strlen(test_certificate_ecdsa));
 		if (err)
 			goto out;
 		break;
@@ -258,8 +262,6 @@ static int test_tls_base(enum tls_keytype keytype)
 	mem_deref(tt.tc_srv);
 	mem_deref(tt.ts);
 	mem_deref(tt.tls);
-	mem_deref(mb_cert);
-	mem_deref(mb_key);
 
 	return err;
 }
