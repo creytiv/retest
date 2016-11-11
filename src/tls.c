@@ -82,7 +82,11 @@ static void client_estab_handler(void *arg)
 	}
 	else if (tt->keytype == TLS_KEYTYPE_EC) {
 
-		TEST_ASSERT(NULL != strstr(cipher, "ECDSA"));
+		if (NULL == strstr(cipher, "ECDSA")) {
+			DEBUG_WARNING("no ECDSA in cipher (%s)\n", cipher);
+			err = EPROTO;
+			goto out;
+		}
 	}
 
 	tt->estab_cli = true;
