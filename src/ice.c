@@ -453,7 +453,7 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 	ice_conf(agent->ice)->debug = true;
 #endif
 
-	err = icem_alloc(&agent->icem, NULL, mode, offerer, IPPROTO_UDP, 0,
+	err = icem_alloc(&agent->icem, mode, offerer, IPPROTO_UDP, 0,
 			 rand_u64(), agent->lufrag, agent->lpwd,
 			 agent_gather_handler, agent_connchk_handler, agent);
 	if (err)
@@ -468,12 +468,12 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 	}
 
 	if (offerer) {
-		TEST_ASSERT(find_debug_string(agent->icem,
-					      "local_role=Controlling"));
+		TEST_EQUALS(ICE_ROLE_CONTROLLING,
+			    icem_local_role(agent->icem));
 	}
 	else {
-		TEST_ASSERT(find_debug_string(agent->icem,
-					      "local_role=Controlled"));
+		TEST_EQUALS(ICE_ROLE_CONTROLLED,
+			    icem_local_role(agent->icem));
 	}
 
 	icem_set_name(agent->icem, name);
