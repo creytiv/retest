@@ -142,6 +142,15 @@ static void vidframe_dump(const struct vidframe *f)
 }
 
 
+static void write_pattern(uint8_t *buf, size_t len)
+{
+	size_t i;
+
+	for (i=0; i<len; i++)
+		buf[i] = (uint8_t)i;
+}
+
+
 /**
  * Test vidconv module by scaling a random image up and then down.
  * The two images should then be pixel accurate.
@@ -168,7 +177,7 @@ static int test_vidconv_scaling_base(enum vidfmt via_fmt)
 	for (i=0; i<4; i++) {
 
 		if (f0->data[i])
-			rand_bytes(f0->data[i], f0->linesize[i]);
+			write_pattern(f0->data[i], f0->linesize[i]);
 	}
 
 	vidconv(f1, f0, &rect1);
