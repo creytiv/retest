@@ -20,11 +20,9 @@ int test_rtp(void)
 {
 	struct rtp_sock *rtp = NULL;
 	struct mbuf *mb = NULL;
-	uint8_t payload[PAYLOAD_SIZE];
+	static const uint8_t payload[PAYLOAD_SIZE];
 	int j;
 	int err;
-
-	memset(payload, 0, sizeof(payload));
 
 	mb = mbuf_alloc(RTP_HEADER_SIZE);
 	if (!mb)
@@ -39,10 +37,9 @@ int test_rtp(void)
 
 		memset(&hdr, 0, sizeof(hdr));
 
-		hdr.m  = rand_u16() & 0x01;
-		hdr.pt = rand_u16() & 0x7f;
-		hdr.ts = rand_u32();
-		rand_bytes(payload, sizeof(payload));
+		hdr.m  = j & 0x01;
+		hdr.pt = j & 0x7f;
+		hdr.ts = 160 + j;
 
 		mb->pos = mb->end = RTP_HEADER_SIZE;
 		err = mbuf_write_mem(mb, payload, sizeof(payload));
