@@ -21,6 +21,22 @@ enum {
 };
 
 
+static const uint8_t dummy_key[16+14] = {
+	0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+	0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+	0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44,
+	0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44,
+};
+
+static const uint8_t fixed_payload[20] = {
+	0x55, 0x55, 0x55, 0x55,
+	0x11, 0x11, 0x11, 0x11,
+	0xee, 0xee, 0xee, 0xee,
+	0x11, 0x11, 0x11, 0x11,
+	0x55, 0x55, 0x55, 0x55,
+};
+
+
 static size_t get_keylen(enum srtp_suite suite)
 {
 	switch (suite) {
@@ -296,7 +312,6 @@ static int test_srtp_loop(size_t offset, enum srtp_suite suite, uint16_t seq)
 	struct mbuf *mb = NULL;
 	const size_t key_len = get_keylen(suite);
 	const size_t tag_len = get_taglen(suite);
-	uint8_t payload[160];
 	unsigned i;
 	int err = 0;
 
@@ -318,8 +333,6 @@ static int test_srtp_loop(size_t offset, enum srtp_suite suite, uint16_t seq)
 	if (err)
 		goto out;
 
-	rand_bytes(payload, sizeof(payload));
-
 	for (i=0; i<10; i++) {
 		struct rtp_header hdr;
 		uint8_t hdrbuf[12];
@@ -339,7 +352,7 @@ static int test_srtp_loop(size_t offset, enum srtp_suite suite, uint16_t seq)
 
 		memcpy(hdrbuf, &mb->buf[mb->pos-12], 12);
 
-		err = mbuf_write_mem(mb, payload, sizeof(payload));
+		err = mbuf_write_mem(mb, fixed_payload, sizeof(fixed_payload));
 		if (err)
 			break;
 
@@ -370,7 +383,7 @@ static int test_srtp_loop(size_t offset, enum srtp_suite suite, uint16_t seq)
 
 		mb->pos = offset + RTP_HEADER_SIZE;
 
-		TEST_MEMCMP(payload, sizeof(payload),
+		TEST_MEMCMP(fixed_payload, sizeof(fixed_payload),
 			    mbuf_buf(mb), mbuf_get_left(mb));
 	}
 
@@ -609,14 +622,6 @@ static int test_srtcp_libsrtp(void)
 }
 
 
-static const uint8_t fixed_payload[20] = {
-	0x55, 0x55, 0x55, 0x55,
-	0x11, 0x11, 0x11, 0x11,
-	0xee, 0xee, 0xee, 0xee,
-	0x11, 0x11, 0x11, 0x11,
-	0x55, 0x55, 0x55, 0x55,
-};
-
 static int send_rtp_packet(struct srtp *srtp, struct mbuf *mb, uint16_t seq)
 {
 	struct rtp_header hdr;
@@ -795,18 +800,15 @@ static int test_srtp_random(void)
 	struct rtp_header hdr;
 	struct srtp *ctx = NULL;
 	struct mbuf *mb = NULL;
-	uint8_t key[16+14];
 	size_t sz, i;
 	int err = 0;
-
-	rand_bytes(key, sizeof(key));
 
 	mb = mbuf_alloc(1024);
 	if (!mb)
 		return ENOMEM;
 
 	err  = srtp_alloc(&ctx, SRTP_AES_CM_128_HMAC_SHA1_32,
-			  key, sizeof(key), 0);
+			  dummy_key, sizeof(dummy_key), 0);
 	if (err)
 		goto out;
 
