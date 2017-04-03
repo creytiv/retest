@@ -162,14 +162,16 @@ static int test_vidframe_rgb32_2x2_red(void)
 }
 
 
-static int test_vidframe_yuv420p_2x2_white(void)
+static int test_vidframe_yuv_2x2_white(enum vidfmt fmt, unsigned chroma)
 {
 	struct vidframe *vf;
 	struct vidsz sz = {2, 2};
 	const uint8_t ypix[4] = {235, 235, 235, 235};
+	const uint8_t uvpix[4] = {128, 128, 128, 128};
+	const unsigned chroma_sq = chroma * chroma;
 	int err;
 
-	err = vidframe_alloc(&vf, VID_FMT_YUV420P, &sz);
+	err = vidframe_alloc(&vf, fmt, &sz);
 	if (err)
 		return err;
 
@@ -181,18 +183,19 @@ static int test_vidframe_yuv420p_2x2_white(void)
 	TEST_EQUALS(NULL, vf->data[3]);
 
 	TEST_EQUALS(2, vf->linesize[0]);
-	TEST_EQUALS(1, vf->linesize[1]);
-	TEST_EQUALS(1, vf->linesize[2]);
+	TEST_EQUALS(chroma, vf->linesize[1]);
+	TEST_EQUALS(chroma, vf->linesize[2]);
 	TEST_EQUALS(0, vf->linesize[3]);
 
 	TEST_EQUALS(2, vf->size.w);
 	TEST_EQUALS(2, vf->size.h);
 
-	TEST_EQUALS(VID_FMT_YUV420P, vf->fmt);
+	TEST_EQUALS(fmt, vf->fmt);
 
+	TEST_ASSERT(chroma_sq <= sizeof(uvpix));
 	TEST_MEMCMP(ypix, sizeof(ypix), vf->data[0], 4);
-	TEST_EQUALS(128, vf->data[1][0]);
-	TEST_EQUALS(128, vf->data[2][0]);
+	TEST_MEMCMP(uvpix, chroma_sq, vf->data[1], chroma_sq);
+	TEST_MEMCMP(uvpix, chroma_sq, vf->data[2], chroma_sq);
 
  out:
 	mem_deref(vf);
@@ -225,7 +228,8 @@ int test_vid(void)
 	if (err)
 		return err;
 
-	err = test_vidframe_yuv420p_2x2_white();
+	err  = test_vidframe_yuv_2x2_white(VID_FMT_YUV420P, 1);
+	err |= test_vidframe_yuv_2x2_white(VID_FMT_YUV444P, 2);
 	if (err)
 		return err;
 
