@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
 #endif
 
 	/* Initialise debugging */
-#if defined(WIN32) && !defined(CYGWIN)
+#if defined(WIN32)
 	ansi = false;
 #endif
 	dbg_init(DBG_INFO, ansi ? DBG_ANSI : 0);
