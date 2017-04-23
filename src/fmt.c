@@ -387,9 +387,12 @@ static int va_printf(struct mbuf *mb, const char *fmt, ...)
 
 int test_fmt_print(void)
 {
-	const struct pl ref1 = PL("-12345 -1234567890 -1234567890123456789");
-	const struct pl ref2 = PL("12345 1234567890 1234567890123456789");
-	const struct pl ref3 = PL("65535 4294967295 18446744073709551615");
+	const struct pl ref1 = PL("-12345 -12345 -1234567890 "
+			  "-1234567890123456789");
+	const struct pl ref2 = PL("12345 12345 1234567890 "
+			  "1234567890123456789");
+	const struct pl ref3 = PL("65535 65535 4294967295 "
+			  "18446744073709551615");
 	struct pl pl;
 	struct mbuf mb;
 	const int a = 42;
@@ -397,7 +400,7 @@ int test_fmt_print(void)
 	int err;
 
 	mbuf_init(&mb);
-	err = mbuf_printf(&mb, "%d %ld %lld", -12345, -1234567890L,
+	err = mbuf_printf(&mb, "%hd %d %ld %lld", -12345, -12345, -1234567890L,
 			  -1234567890123456789LL);
 	if (err)
 		goto out;
@@ -410,7 +413,7 @@ int test_fmt_print(void)
 	}
 
 	mbuf_reset(&mb);
-	err = mbuf_printf(&mb, "%u %lu %llu", 12345, 1234567890UL,
+	err = mbuf_printf(&mb, "%hu %u %lu %llu", 12345, 12345, 1234567890UL,
 			  1234567890123456789ULL);
 	if (err)
 		goto out;
@@ -423,7 +426,7 @@ int test_fmt_print(void)
 	}
 
 	mbuf_reset(&mb);
-	err = mbuf_printf(&mb, "%u %lu %llu", 65535, 4294967295UL,
+	err = mbuf_printf(&mb, "%hu %u %lu %llu", 65535, 65535, 4294967295UL,
 			  18446744073709551615ULL);
 	if (err)
 		goto out;
