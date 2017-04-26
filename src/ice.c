@@ -404,6 +404,7 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 		       const char *name, uint8_t compid, bool offerer)
 {
 	struct agent *agent;
+	enum ice_role lrole;
 	int err;
 
 	agent = mem_zalloc(sizeof(*agent), agent_destructor);
@@ -453,7 +454,9 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 	ice_conf(agent->ice)->debug = true;
 #endif
 
-	err = icem_alloc(&agent->icem, mode, offerer, IPPROTO_UDP, 0,
+	lrole = offerer ? ICE_ROLE_CONTROLLING : ICE_ROLE_CONTROLLED;
+
+	err = icem_alloc(&agent->icem, mode, lrole, IPPROTO_UDP, 0,
 			 rand_u64(), agent->lufrag, agent->lpwd,
 			 agent_gather_handler, agent_connchk_handler, agent);
 	if (err)
