@@ -128,6 +128,7 @@ int test_list_sort(void)
 	int prev_value = 0;
 	bool prev_value_set = false;
 	unsigned i;
+	unsigned value_counter = 7;
 	int err = 0;
 
 	list_init(&lst);
@@ -143,7 +144,8 @@ int test_list_sort(void)
 			goto out;
 		}
 
-		node->value = -50 + rand_u16() % 100;
+		node->value = -50 + (value_counter % 100);
+		value_counter *= 3;
 
 		list_append(&lst, &node->le, node);
 	}

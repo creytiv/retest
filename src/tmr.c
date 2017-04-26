@@ -63,7 +63,7 @@ int test_tmr(void)
 	for (i=0; i<N_TIMERS; i++) {
 
 		tt.testv[i].tt = &tt;
-		tmr_start(&tt.testv[i].tmr, rand_u16() % 10,
+		tmr_start(&tt.testv[i].tmr, i % 4,
 			  timeout_handler, &tt.testv[i]);
 	}
 

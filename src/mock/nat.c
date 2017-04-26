@@ -14,6 +14,11 @@
 #include <re_dbg.h>
 
 
+enum {
+	LAYER_NAT = -1000
+};
+
+
 static void nat_binding_add(struct nat *nat, const struct sa *addr)
 {
 	if (!nat || !addr)
@@ -25,6 +30,23 @@ static void nat_binding_add(struct nat *nat, const struct sa *addr)
 	}
 
 	nat->bindingv[nat->bindingc++] = *addr;
+}
+
+
+static struct sa *nat_binding_find_addr(struct nat *nat, const struct sa *addr)
+{
+	unsigned i;
+
+	if (!nat || !addr)
+		return NULL;
+
+	for (i=0; i<nat->bindingc; i++) {
+
+		if (sa_cmp(addr, &nat->bindingv[i], SA_ALL))
+			return &nat->bindingv[i];
+	}
+
+	return NULL;
 }
 
 
@@ -70,8 +92,7 @@ static bool nat_helper_send(int *err, struct sa *dst,
 }
 
 
-static bool nat_helper_recv(struct sa *src,
-			    struct mbuf *mb, void *arg)
+static bool nat_helper_recv(struct sa *src, struct mbuf *mb, void *arg)
 {
 	struct nat *nat = arg;
 	struct sa map;
@@ -94,6 +115,39 @@ static bool nat_helper_recv(struct sa *src,
 }
 
 
+static bool firewall_egress(int *err, struct sa *dst,
+			    struct mbuf *mb, void *arg)
+{
+	struct nat *nat = arg;
+	(void)err;
+	(void)mb;
+
+	/* add egress mapping to external addr */
+	if (!nat_binding_find_addr(nat, dst)) {
+		nat_binding_add(nat, dst);
+	}
+
+	return false;
+}
+
+
+static bool firewall_ingress(struct sa *src,
+			     struct mbuf *mb, void *arg)
+{
+	struct nat *nat = arg;
+	(void)mb;
+
+	/* check if external address has a mapping */
+	if (!nat_binding_find_addr(nat, src)) {
+
+		DEBUG_NOTICE("firewall: drop 1 packet from %J\n", src);
+		return true;
+	}
+
+	return false;
+}
+
+
 static void nat_destructor(void *arg)
 {
 	struct nat *nat = arg;
@@ -104,23 +158,52 @@ static void nat_destructor(void *arg)
 
 
 /* inbound NAT */
-int nat_alloc(struct nat **natp, struct udp_sock *us,
-	      const struct sa *public_addr)
+int nat_alloc(struct nat **natp, enum natbox_type type,
+	      struct udp_sock *us, const struct sa *public_addr)
 {
 	struct nat *nat;
 	int err = 0;
 
-	if (!natp || !us || !public_addr)
+	if (!natp || !us)
 		return EINVAL;
+
+	if (type == NAT_INBOUND_SNAT && !public_addr)
+		return EINVAL;
+
+	if (udp_helper_find(us, LAYER_NAT)) {
+		DEBUG_WARNING("udp helper already exist on layer %d\n",
+			      LAYER_NAT);
+		return EPROTO;
+	}
 
 	nat = mem_zalloc(sizeof(*nat), nat_destructor);
 	if (!nat)
 		return ENOMEM;
 
-	nat->public_addr = *public_addr;
+	nat->type = type;
+	if (public_addr)
+		nat->public_addr = *public_addr;
 	nat->us = mem_ref(us);
-	err = udp_register_helper(&nat->uh, us, -1000,
-				  nat_helper_send, nat_helper_recv, nat);
+
+	switch (type) {
+
+	case NAT_INBOUND_SNAT:
+		err = udp_register_helper(&nat->uh, us, LAYER_NAT,
+					  nat_helper_send,
+					  nat_helper_recv, nat);
+		break;
+
+	case NAT_FIREWALL:
+		err = udp_register_helper(&nat->uh, us, LAYER_NAT,
+					  firewall_egress,
+					  firewall_ingress, nat);
+		break;
+
+	default:
+		DEBUG_WARNING("invalid NAT type %d\n", type);
+		err = ENOTSUP;
+		break;
+	}
 	if (err)
 		goto out;
 

@@ -455,7 +455,7 @@ static int test_stun_request(int proto, bool natted)
 		err = sa_set_str(&public_addr, "4.5.6.7", 0);
 		TEST_ERR(err);
 
-		err = nat_alloc(&nat, srv->us, &public_addr);
+		err = nat_alloc(&nat, NAT_INBOUND_SNAT, srv->us, &public_addr);
 		if (err)
 			goto out;
 

@@ -142,6 +142,15 @@ static void vidframe_dump(const struct vidframe *f)
 }
 
 
+static void write_pattern(uint8_t *buf, size_t len)
+{
+	size_t i;
+
+	for (i=0; i<len; i++)
+		buf[i] = (uint8_t)i;
+}
+
+
 /**
  * Test vidconv module by scaling a random image up and then down.
  * The two images should then be pixel accurate.
@@ -168,7 +177,7 @@ static int test_vidconv_scaling_base(enum vidfmt via_fmt)
 	for (i=0; i<4; i++) {
 
 		if (f0->data[i])
-			rand_bytes(f0->data[i], f0->linesize[i]);
+			write_pattern(f0->data[i], f0->linesize[i]);
 	}
 
 	vidconv(f1, f0, &rect1);
@@ -271,6 +280,37 @@ int test_vidconv_pixel_formats(void)
 			  {0,0}
 			},
 		},
+
+		/* RGB32 to YUV444P */
+		{
+			VID_FMT_RGB32,
+			{ { (16*4),
+			    "\x00\x00\x00\x00" "\x00\x00\x00\x00" /* black */
+			    "\xff\x00\x00\x00" "\xff\x00\x00\x00" /* red */
+			    "\x00\xff\x00\x00" "\x00\xff\x00\x00" /* green */
+			    "\x00\x00\xff\x00" "\x00\x00\xff\x00" /* blue */
+			    "\xff\x00\xff\x00" "\xff\x00\xff\x00"
+			    "\x00\xff\xff\x00" "\x00\xff\xff\x00"
+			    "\xff\xff\x00\x00" "\xff\xff\x00\x00"
+			    "\xff\xff\xff\xff" "\xff\xff\xff\xff"},/* white */
+
+			  {0, ""},
+			  {0, ""}
+			},
+
+			VID_FMT_YUV444P,
+			{ {16,
+			   "\x10\x10\x29\x29" "\x90\x90\x52\x52"
+			   "\x6b\x6b\xd2\xd2" "\xa9\xa9\xeb\xeb"},
+			  {16,
+			   "\x80\x80\xf0\xf0" "\x36\x36\x5a\x5a"
+			   "\xca\xca\x10\x10" "\xa6\xa6\x80\x80"},
+			  {16,
+			   "\x80\x80\x6e\x6e" "\x22\x22\xf0\xf0"
+			   "\xde\xde\x92\x92" "\x10\x10\x80\x80"},
+			},
+		},
+
 	};
 	struct vidframe *fsrc = NULL, *fdst = NULL;
 	const struct vidsz sz = {4, 4};

@@ -320,6 +320,11 @@ struct turnserver {
 int turnserver_alloc(struct turnserver **turnp);
 
 
+enum natbox_type {
+	NAT_INBOUND_SNAT,  /* NOTE: must be installed on receiving socket */
+	NAT_FIREWALL,
+};
+
 /**
  * A simple NAT-box that can be hooked onto a UDP-socket.
  *
@@ -327,6 +332,7 @@ int turnserver_alloc(struct turnserver **turnp);
  * IP-address to the public address.
  */
 struct nat {
+	enum natbox_type type;
 	struct sa public_addr;
 	struct udp_helper *uh;
 	struct udp_sock *us;
@@ -334,8 +340,8 @@ struct nat {
 	size_t bindingc;
 };
 
-int nat_alloc(struct nat **natp, struct udp_sock *us,
-	      const struct sa *public_addr);
+int nat_alloc(struct nat **natp, enum natbox_type type,
+	      struct udp_sock *us, const struct sa *public_addr);
 
 
 /*

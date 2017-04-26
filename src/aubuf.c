@@ -23,7 +23,7 @@ int test_aubuf(void)
 	int err;
 
 	for (i=0; i<ARRAY_SIZE(sampv_in); i++)
-		sampv_in[i] = rand_u16();
+		sampv_in[i] = i;
 	memset(sampv_out, 0, sizeof(sampv_out));
 
 	err = aubuf_alloc(&ab, 320, 0);
