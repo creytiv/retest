@@ -43,7 +43,6 @@ struct attrs {
 };
 
 struct agent {
-	struct ice *ice;
 	struct icem *icem;
 	struct udp_sock *us;
 	struct sa laddr;
@@ -58,6 +57,9 @@ struct agent {
 	bool offerer;
 	bool use_turn;
 	size_t n_cand;
+
+	char lufrag[8];
+	char lpwd[32];
 
 	/* results: */
 	bool gathering_ok;
@@ -86,19 +88,19 @@ static void complete_test(struct ice_test *it, int err)
 	it->err = err;
 
 #if 0
-	re_printf("\n\x1b[32m%H\x1b[;m\n", ice_debug, it->a->ice);
-	re_printf("\n\x1b[36m%H\x1b[;m\n", ice_debug, it->b->ice);
+	re_printf("\n\x1b[32m%H\x1b[;m\n", icem_debug, it->a->icem);
+	re_printf("\n\x1b[36m%H\x1b[;m\n", icem_debug, it->b->icem);
 #endif
 
 	re_cancel();
 }
 
 
-static bool find_debug_string(struct ice *ice, const char *str)
+static bool find_debug_string(struct icem *icem, const char *str)
 {
 	char buf[1024];
 
-	if (re_snprintf(buf, sizeof(buf), "%H", ice_debug, ice) < 0)
+	if (re_snprintf(buf, sizeof(buf), "%H", icem_debug, icem) < 0)
 		return false;
 
 	return 0 == re_regex(buf, strlen(buf), str);
@@ -162,7 +164,6 @@ static void agent_destructor(void *arg)
 	struct agent *agent = arg;
 
 	mem_deref(agent->icem);
-	mem_deref(agent->ice);
 	mem_deref(agent->us);
 	mem_deref(agent->stun);
 	mem_deref(agent->turn);
@@ -193,8 +194,8 @@ static int agent_encode_sdp(struct agent *ag)
 			break;
 	}
 
-	err |= attr_add(&ag->attr_m, "ice-ufrag", ice_ufrag(ag->ice));
-	err |= attr_add(&ag->attr_m, "ice-pwd", ice_pwd(ag->ice));
+	err |= attr_add(&ag->attr_m, "ice-ufrag", ag->lufrag);
+	err |= attr_add(&ag->attr_m, "ice-pwd", ag->lpwd);
 
 	if (ag->mode == ICE_MODE_LITE) {
 		err |= attr_add(&ag->attr_s, ice_attr_lite, NULL);
@@ -220,9 +221,9 @@ static int agent_verify_outgoing_sdp(const struct agent *agent)
 
 	ufrag = attr_find(&agent->attr_m, "ice-ufrag");
 	pwd   = attr_find(&agent->attr_m, "ice-pwd");
-	TEST_STRCMP(ice_ufrag(agent->ice), str_len(ice_ufrag(agent->ice)),
+	TEST_STRCMP(agent->lufrag, str_len(agent->lufrag),
 		    ufrag, str_len(ufrag));
-	TEST_STRCMP(ice_pwd(agent->ice), str_len(ice_pwd(agent->ice)),
+	TEST_STRCMP(agent->lpwd, str_len(agent->lpwd),
 		    pwd, str_len(pwd));
 
 	if (agent->mode == ICE_MODE_FULL) {
@@ -244,7 +245,7 @@ static int agent_decode_sdp(struct agent *agent, struct agent *other)
 
 	for (i=0; i<other->attr_s.attrc; i++) {
 		struct attr *attr = &other->attr_s.attrv[i];
-		err = ice_sdp_decode(agent->ice, attr->name, attr->value);
+		err = ice_sdp_decode(agent->icem, attr->name, attr->value);
 		if (err)
 			return err;
 	}
@@ -403,11 +404,15 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 		       const char *name, uint8_t compid, bool offerer)
 {
 	struct agent *agent;
+	enum ice_role lrole;
 	int err;
 
 	agent = mem_zalloc(sizeof(*agent), agent_destructor);
 	if (!agent)
 		return ENOMEM;
+
+	rand_str(agent->lufrag, sizeof(agent->lufrag));
+	rand_str(agent->lpwd,   sizeof(agent->lpwd));
 
 	agent->use_turn = use_turn;
 	agent->it = it;
@@ -445,35 +450,34 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 	if (err)
 		goto out;
 
-	err = ice_alloc(&agent->ice, mode, offerer);
+#if 0
+	ice_conf(agent->ice)->debug = true;
+#endif
+
+	lrole = offerer ? ICE_ROLE_CONTROLLING : ICE_ROLE_CONTROLLED;
+
+	err = icem_alloc(&agent->icem, mode, lrole, IPPROTO_UDP, 0,
+			 rand_u64(), agent->lufrag, agent->lpwd,
+			 agent_gather_handler, agent_connchk_handler, agent);
 	if (err)
 		goto out;
 
 	/* verify Mode and Role using debug strings (temp) */
 	if (mode == ICE_MODE_FULL) {
-		TEST_ASSERT(find_debug_string(agent->ice, "local_mode=Full"));
+		TEST_ASSERT(find_debug_string(agent->icem, "local_mode=Full"));
 	}
 	else {
-		TEST_ASSERT(find_debug_string(agent->ice, "local_mode=Lite"));
+		TEST_ASSERT(find_debug_string(agent->icem, "local_mode=Lite"));
 	}
 
 	if (offerer) {
-		TEST_ASSERT(find_debug_string(agent->ice,
-					      "local_role=Controlling"));
+		TEST_EQUALS(ICE_ROLE_CONTROLLING,
+			    icem_local_role(agent->icem));
 	}
 	else {
-		TEST_ASSERT(find_debug_string(agent->ice,
-					      "local_role=Controlled"));
+		TEST_EQUALS(ICE_ROLE_CONTROLLED,
+			    icem_local_role(agent->icem));
 	}
-
-#if 0
-	ice_conf(agent->ice)->debug = true;
-#endif
-
-	err = icem_alloc(&agent->icem, agent->ice, IPPROTO_UDP, 0,
-			 agent_gather_handler, agent_connchk_handler, agent);
-	if (err)
-		goto out;
 
 	icem_set_name(agent->icem, name);
 
@@ -542,10 +546,12 @@ static int verify_after_sdp_exchange(struct agent *agent)
 
 	/* verify remote mode (after SDP exchange) */
 	if (other->mode == ICE_MODE_FULL) {
-		TEST_ASSERT(find_debug_string(agent->ice, "remote_mode=Full"));
+		TEST_ASSERT(find_debug_string(agent->icem,
+					      "remote_mode=Full"));
 	}
 	else {
-		TEST_ASSERT(find_debug_string(agent->ice, "remote_mode=Lite"));
+		TEST_ASSERT(find_debug_string(agent->icem,
+					      "remote_mode=Lite"));
 	}
 
 	/* verify ICE states */
@@ -596,7 +602,7 @@ static int agent_start(struct agent *agent)
 
 	if (agent->mode == ICE_MODE_FULL) {
 
-		err = ice_conncheck_start(agent->ice);
+		err = icem_conncheck_start(agent->icem);
 		if (err)
 			return err;
 
