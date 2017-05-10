@@ -548,6 +548,9 @@ int test_uri_escape(void)
 	const struct pl pl2 = PL("%0");
 	int e, err = 0;
 
+	/* silence warnings */
+	dbg_init(DBG_ERR, 0);
+
 	e = uri_user_unescape(&pf_devnull, &pl1);
 	TEST_EQUALS(EBADMSG, e);
 
@@ -555,5 +558,7 @@ int test_uri_escape(void)
 	TEST_EQUALS(EBADMSG, e);
 
  out:
+	dbg_init(DBG_WARNING, 0);
+
 	return err;
 }
