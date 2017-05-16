@@ -450,10 +450,6 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 	if (err)
 		goto out;
 
-#if 0
-	ice_conf(agent->ice)->debug = true;
-#endif
-
 	lrole = offerer ? ICE_ROLE_CONTROLLING : ICE_ROLE_CONTROLLED;
 
 	err = icem_alloc(&agent->icem, mode, lrole, IPPROTO_UDP, 0,
@@ -461,6 +457,10 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 			 agent_gather_handler, agent_connchk_handler, agent);
 	if (err)
 		goto out;
+
+#if 0
+	icem_conf(agent->icem)->debug = true;
+#endif
 
 	/* verify Mode and Role using debug strings (temp) */
 	if (mode == ICE_MODE_FULL) {
