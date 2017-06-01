@@ -47,7 +47,7 @@ int test_rtp(void)
 			break;
 
 		mb->pos = 0;
-		err = rtp_encode(rtp, hdr.m, hdr.pt, hdr.ts, mb);
+		err = rtp_encode(rtp, false, hdr.m, hdr.pt, hdr.ts, mb);
 		if (err)
 			break;
 
