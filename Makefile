@@ -42,11 +42,6 @@ CPPFLAGS += -I$(SYSROOT)/include
 
 BIN	:= $(PROJECT)$(BIN_SUFFIX)
 
-SPLINT_OPTIONS += -Isrc
-ifneq ($(LIBREM_PATH),)
-SPLINT_OPTIONS += -I$(LIBREM_PATH)/include
-endif
-
 ifneq ($(LIBREM_PATH),)
 LIBS	+= -L$(LIBREM_PATH)
 endif
