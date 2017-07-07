@@ -405,14 +405,17 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 {
 	struct agent *agent;
 	enum ice_role lrole;
+	uint64_t tiebrk;
 	int err;
 
 	agent = mem_zalloc(sizeof(*agent), agent_destructor);
 	if (!agent)
 		return ENOMEM;
 
-	rand_str(agent->lufrag, sizeof(agent->lufrag));
-	rand_str(agent->lpwd,   sizeof(agent->lpwd));
+	re_snprintf(agent->lufrag, sizeof(agent->lufrag),
+		    "ufrag-%s", name);
+	re_snprintf(agent->lpwd, sizeof(agent->lpwd),
+		    "password-0123456789abcdef-%s", name);
 
 	agent->use_turn = use_turn;
 	agent->it = it;
@@ -451,9 +454,10 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 		goto out;
 
 	lrole = offerer ? ICE_ROLE_CONTROLLING : ICE_ROLE_CONTROLLED;
+	tiebrk = offerer ? 2 : 1;
 
 	err = icem_alloc(&agent->icem, mode, lrole, IPPROTO_UDP, 0,
-			 rand_u64(), agent->lufrag, agent->lpwd,
+			 tiebrk, agent->lufrag, agent->lpwd,
 			 agent_gather_handler, agent_connchk_handler, agent);
 	if (err)
 		goto out;
@@ -705,8 +709,8 @@ static void tmr_handler(void *arg)
 	struct ice_test *it = arg;
 
 #if 0
-	re_printf("\n\x1b[32m%H\x1b[;m\n", ice_debug, it->a->ice);
-	re_printf("\n\x1b[36m%H\x1b[;m\n", ice_debug, it->b->ice);
+	re_printf("\n\x1b[32m%H\x1b[;m\n", icem_debug, it->a->icem);
+	re_printf("\n\x1b[36m%H\x1b[;m\n", icem_debug, it->b->icem);
 #endif
 
 	complete_test(it, 0);
