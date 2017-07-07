@@ -8,7 +8,7 @@
 #include "test.h"
 
 
-enum {NUM_TESTS = 64};
+enum {NUM_TESTS = 32};
 
 
 static int mkstr(char **strp)
@@ -102,6 +102,7 @@ static int mkrr(struct dnsrr *rr, uint16_t type)
 int test_dns_hdr(void)
 {
 	struct mbuf *mb;
+	uint16_t u16 = 9753;  /* pseudo-random (predictable) */
 	size_t i;
 	int err = 0;
 
@@ -116,19 +117,19 @@ int test_dns_hdr(void)
 		memset(&hdr, 0, sizeof(hdr));
 		memset(&hdr2, 0, sizeof(hdr2));
 
-		hdr.id     = rand_u16();
-		hdr.qr     = rand_u16() & 1;
-		hdr.opcode = rand_u16() & 0xf;
-		hdr.aa     = rand_u16() & 1;
-		hdr.tc     = rand_u16() & 1;
-		hdr.rd     = rand_u16() & 1;
-		hdr.ra     = rand_u16() & 1;
-		hdr.z      = rand_u16() & 0x7;
-		hdr.rcode  = rand_u16() & 0xf;
-		hdr.nq     = rand_u16();
-		hdr.nans   = rand_u16();
-		hdr.nauth  = rand_u16();
-		hdr.nadd   = rand_u16();
+		hdr.id     = u16;
+		hdr.qr     = u16 & 1;
+		hdr.opcode = u16 & 0xf;
+		hdr.aa     = u16 & 1;
+		hdr.tc     = u16 & 1;
+		hdr.rd     = u16 & 1;
+		hdr.ra     = u16 & 1;
+		hdr.z      = u16 & 0x7;
+		hdr.rcode  = u16 & 0xf;
+		hdr.nq     = u16;
+		hdr.nans   = u16;
+		hdr.nauth  = u16;
+		hdr.nadd   = u16;
 
 		mb->pos = mb->end = 0;
 		err = dns_hdr_encode(mb, &hdr);
@@ -148,6 +149,8 @@ int test_dns_hdr(void)
 			err = EBADMSG;
 			break;
 		}
+
+		u16 *= 17;
 	}
 
 	mem_deref(mb);
