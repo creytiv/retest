@@ -425,9 +425,54 @@ static int test_json_verify_decode(void)
 }
 
 
+static int test_json_exponent(void)
+{
+	static const char *str =
+		"{"
+		"  \"exponent1\"  :  9E18,"
+		"  \"exponent2\"  : -9E18,"
+		"  \"exponent3\"  : 0E99999,"
+		"}";
+
+	struct odict *dict = NULL;
+	const struct odict_entry *e;
+	int err;
+
+	err = json_decode_odict(&dict, DICT_BSIZE,
+				str, strlen(str), MAX_LEVELS);
+	if (err)
+		goto out;
+
+	/* Verify signed 64-bit types */
+
+	e = odict_lookup(dict, "exponent1");
+	TEST_ASSERT(e != NULL);
+	TEST_EQUALS(ODICT_INT, e->type);
+	TEST_EQUALS( 9000000000000000000LL, e->u.integer );
+
+	e = odict_lookup(dict, "exponent2");
+	TEST_ASSERT(e != NULL);
+	TEST_EQUALS(ODICT_INT, e->type);
+	TEST_EQUALS( -9000000000000000000LL, e->u.integer );
+
+	e = odict_lookup(dict, "exponent3");
+	TEST_ASSERT(e != NULL);
+	TEST_EQUALS(ODICT_INT, e->type);
+	TEST_EQUALS( 0LL, e->u.integer );
+
+ out:
+	mem_deref(dict);
+	return err;
+}
+
+
 int test_json(void)
 {
 	int err = 0;
+
+	err = test_json_exponent();
+	if (err)
+		return err;
 
 	err = test_json_basic_parser();
 	if (err)
