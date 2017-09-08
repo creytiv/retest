@@ -116,6 +116,7 @@ int test_dns_hdr(void);
 int test_dns_rr(void);
 int test_dns_dname(void);
 int test_dsp(void);
+int test_dtmf(void);
 int test_fir(void);
 int test_fmt_human_time(void);
 int test_fmt_param(void);
