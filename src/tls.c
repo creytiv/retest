@@ -260,12 +260,14 @@ static int test_tls_base(enum tls_keytype keytype)
 	TEST_EQUALS(1, tt.recv_srv);
 
  out:
+	/* NOTE: close context first */
+	mem_deref(tt.tls);
+
 	mem_deref(tt.sc_cli);
 	mem_deref(tt.sc_srv);
 	mem_deref(tt.tc_cli);
 	mem_deref(tt.tc_srv);
 	mem_deref(tt.ts);
-	mem_deref(tt.tls);
 
 	return err;
 }
