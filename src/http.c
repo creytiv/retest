@@ -239,6 +239,7 @@ static int http_data_handler(const uint8_t *buf, size_t size,
 			     const struct http_msg *msg, void *arg)
 {
 	struct test *t = arg;
+	(void)msg;
 
 	if (!t->mb_body) {
 
