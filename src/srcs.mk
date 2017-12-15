@@ -6,6 +6,7 @@
 
 SRCS	+= aes.c
 SRCS	+= aubuf.c
+SRCS	+= auresamp.c
 SRCS	+= base64.c
 SRCS	+= bfcp.c
 SRCS	+= conf.c
