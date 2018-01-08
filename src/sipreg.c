@@ -122,7 +122,7 @@ static int reg_test(enum sip_transp tp)
 		goto out;
 
 	err = sipreg_register(&reg, sip, reg_uri,
-			      "sip:x@test",
+			      "sip:x@test", NULL,
 			      "sip:x@test",
 			      3600, "x", NULL, 0, 0, NULL, NULL, false,
 			      sip_resp_handler, &test, NULL, NULL);
