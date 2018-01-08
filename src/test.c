@@ -289,6 +289,7 @@ int test_oom(const char *name, bool verbose)
 
 static int test_unit(const char *name, bool verbose)
 {
+	size_t skipv[ARRAY_SIZE(tests)] = {0};
 	size_t i;
 	int err = 0;
 
@@ -317,7 +318,10 @@ static int test_unit(const char *name, bool verbose)
 
 			err = tests[i].exec();
 			if (err) {
-				if (err == ESKIPPED) {
+				if (err == ESKIPPED || err == ENOSYS) {
+
+					skipv[n_skipped] = i;
+
 					++n_skipped;
 					err = 0;
 					continue;
@@ -329,8 +333,16 @@ static int test_unit(const char *name, bool verbose)
 			}
 		}
 
-		if (n_skipped)
+		if (n_skipped) {
 			re_fprintf(stderr, "skipped:%u\n", n_skipped);
+
+			/* show any skipped testcase */
+			for (i=0; i<n_skipped; i++) {
+				size_t ix = skipv[i];
+				re_fprintf(stderr, "skip %s\n",
+					   tests[ix].name );
+			}
+		}
 	}
 
 	return err;
