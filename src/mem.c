@@ -90,3 +90,25 @@ int test_mem_reallocarray(void)
 
 	return err;
 }
+
+
+int test_mem_secure(void)
+{
+	int r, err = 0;
+
+	/* compare */
+	r = mem_seccmp(NULL, NULL, 42);
+	TEST_ASSERT(r < 0);
+
+	r = mem_seccmp((uint8_t *)"abc", (uint8_t *)"abc", 3);
+	TEST_EQUALS(0, r);
+
+	r = mem_seccmp((uint8_t *)"aaa", (uint8_t *)"bbb", 3);
+	TEST_ASSERT(r > 0);
+
+	r = mem_seccmp((uint8_t *)"ccc", (uint8_t *)"aaa", 3);
+	TEST_ASSERT(r > 0);
+
+ out:
+	return err;
+}
