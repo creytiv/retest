@@ -311,7 +311,7 @@ static int test_http_loop_base(bool secure)
 	if (err)
 		goto out;
 
-	err = re_main_timeout(500);
+	err = re_main_timeout(900);
 	if (err)
 		goto out;
 
