@@ -344,7 +344,9 @@ int test_http_loop(void)
 }
 
 
+#ifdef USE_TLS
 int test_https_loop(void)
 {
 	return test_http_loop_base(true);
 }
+#endif
