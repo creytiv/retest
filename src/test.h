@@ -139,6 +139,9 @@ int test_hmac_sha1(void);
 int test_hmac_sha256(void);
 int test_http(void);
 int test_http_loop(void);
+#ifdef USE_TLS
+int test_https_loop(void);
+#endif
 int test_httpauth_chall(void);
 int test_httpauth_resp(void);
 int test_ice_loop(void);

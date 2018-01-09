@@ -122,6 +122,7 @@ struct test {
 	size_t clen;
 	uint32_t n_request;
 	uint32_t n_response;
+	bool secure;
 	int err;
 };
 
@@ -146,6 +147,13 @@ static void http_req_handler(struct http_conn *conn,
 	}
 
 	++t->n_request;
+
+	if (t->secure) {
+		TEST_ASSERT(http_conn_tls(conn) != NULL);
+	}
+	else {
+		TEST_ASSERT(http_conn_tls(conn) == NULL);
+	}
 
 	/* verify HTTP request */
 	TEST_STRCMP("1.1", 3, msg->ver.p, msg->ver.l);
@@ -252,7 +260,7 @@ static int http_data_handler(const uint8_t *buf, size_t size,
 }
 
 
-int test_http_loop(void)
+static int test_http_loop_base(bool secure)
 {
 	struct http_sock *sock = NULL;
 	struct http_cli *cli = NULL;
@@ -265,12 +273,20 @@ int test_http_loop(void)
 
 	memset(&t, 0, sizeof(t));
 
+	t.secure = secure;
+
 	err |= sa_set_str(&srv, "127.0.0.1", 0);
 	err |= sa_set_str(&dns, "127.0.0.1", 53);    /* note: unused */
 	if (err)
 		goto out;
 
-	err = http_listen(&sock, &srv, http_req_handler, &t);
+	if (secure) {
+		err = https_listen(&sock, &srv, "./data/server.pem",
+				   http_req_handler, &t);
+	}
+	else {
+		err = http_listen(&sock, &srv, http_req_handler, &t);
+	}
 	if (err)
 		goto out;
 
@@ -287,7 +303,8 @@ int test_http_loop(void)
 		goto out;
 
 	(void)re_snprintf(url, sizeof(url),
-			  "http://127.0.0.1:%u/index.html", sa_port(&srv));
+			  "http%s://127.0.0.1:%u/index.html",
+			  secure ? "s" : "", sa_port(&srv));
 	err = http_request(&req, cli, "GET", url,
 			   http_resp_handler, http_data_handler, &t,
 			   NULL);
@@ -318,4 +335,16 @@ int test_http_loop(void)
 	mem_deref(sock);
 
 	return err;
+}
+
+
+int test_http_loop(void)
+{
+	return test_http_loop_base(false);
+}
+
+
+int test_https_loop(void)
+{
+	return test_http_loop_base(true);
 }
