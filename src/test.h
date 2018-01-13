@@ -258,6 +258,8 @@ void test_hexdump_dual(FILE *f,
 int re_main_timeout(uint32_t timeout_ms);
 int test_load_file(struct mbuf *mb, const char *filename);
 int test_write_file(struct mbuf *mb, const char *filename);
+void test_set_datapath(const char *path);
+const char *test_datapath(void);
 
 
 /* util */

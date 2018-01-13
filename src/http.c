@@ -281,7 +281,12 @@ static int test_http_loop_base(bool secure)
 		goto out;
 
 	if (secure) {
-		err = https_listen(&sock, &srv, "./data/server.pem",
+		char path[256];
+
+		re_snprintf(path, sizeof(path), "%s/server.pem",
+			    test_datapath());
+
+		err = https_listen(&sock, &srv, path,
 				   http_req_handler, &t);
 	}
 	else {

@@ -47,6 +47,7 @@ static void usage(void)
 	(void)re_fprintf(stderr, "\t-l        List all testcases and exit\n");
 
 	(void)re_fprintf(stderr, "\ncommon options:\n");
+	(void)re_fprintf(stderr, "\t-d <path> Path to data files\n");
 	(void)re_fprintf(stderr, "\t-h        Help\n");
 	(void)re_fprintf(stderr, "\t-m <met>  Async polling method to use\n");
 	(void)re_fprintf(stderr, "\t-v        Verbose output\n");
@@ -86,7 +87,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "hropaltvm:");
+		const int c = getopt(argc, argv, "hropaltvm:d:");
 		if (0 > c)
 			break;
 
@@ -141,6 +142,10 @@ int main(int argc, char *argv[])
 				return err;
 			}
 		}
+			break;
+
+		case 'd':
+			test_set_datapath(optarg);
 			break;
 		}
 	}
@@ -207,6 +212,10 @@ int main(int argc, char *argv[])
 
 	re_printf("using async polling method '%s'\n",
 		  poll_method_name(method));
+
+	if (verbose) {
+		re_printf("using datapath '%s'\n", test_datapath());
+	}
 
 	if (do_reg) {
 		err = test_reg(name, verbose);

@@ -622,6 +622,7 @@ static int test_json_file_parse(const char *filename)
 {
 	struct mbuf *mb_ref = NULL, *mb_enc = NULL;
 	struct odict *dict = NULL, *dict2 = NULL;
+	char path[256];
 	unsigned max_levels = 480;
 	int err;
 
@@ -632,7 +633,9 @@ static int test_json_file_parse(const char *filename)
 		goto out;
 	}
 
-	err = test_load_file(mb_ref, filename);
+	re_snprintf(path, sizeof(path), "%s/%s", test_datapath(), filename);
+
+	err = test_load_file(mb_ref, path);
 	if (err)
 		goto out;
 
@@ -676,14 +679,14 @@ static int test_json_file_parse(const char *filename)
 int test_json_file(void)
 {
 	const char *files[] = {
-		"data/rfc7159.json",
-		"data/fstab.json",
-		"data/widget.json",
-		"data/webapp.json",
-		"data/menu.json",
+		"rfc7159.json",
+		"fstab.json",
+		"widget.json",
+		"webapp.json",
+		"menu.json",
 #if 0
-		"data/citm_catalog.json",
-		"data/sample.json",        /* unicode */
+		"citm_catalog.json",
+		"sample.json",        /* unicode */
 #endif
 	};
 	unsigned i;

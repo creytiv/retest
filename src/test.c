@@ -173,6 +173,13 @@ static const struct test tests[] = {
 };
 
 
+#ifdef DATA_PATH
+static char datapath[256] = DATA_PATH;
+#else
+static char datapath[256] = "./data";
+#endif
+
+
 static const struct test *find_test(const char *name)
 {
 	size_t i;
@@ -821,4 +828,16 @@ int test_write_file(struct mbuf *mb, const char *filename)
 	(void)close(fd);
 
 	return err;
+}
+
+
+void test_set_datapath(const char *path)
+{
+	str_ncpy(datapath, path, sizeof(datapath));
+}
+
+
+const char *test_datapath(void)
+{
+	return datapath;
 }
