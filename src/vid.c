@@ -111,6 +111,12 @@ static int test_vidframe_alloc(void)
 
 
 /*
+ * Create one RGB32 pixel in native endianess
+ */
+#define RGB32(r, g, b)  (r)<<16 | (g)<<8 | (b)
+
+
+/*
  * Test a RGB32 Video-frame with 2 x 2 pixels and 3 RGB pixel
  *
  *    .--+----
@@ -125,9 +131,10 @@ static int test_vidframe_rgb32_2x2_red(void)
 	struct vidframe vf;
 	struct vidsz sz = {2, 2};
 	uint8_t buf[2*4 + 2*4];
-	const uint8_t pix[2][8] = {
-		{   0, 0,0xff, 0, 0, 0xff, 0, 0},
-		{0xff, 0,   0, 0, 0,    0, 0, 0}
+	const uint32_t pix[2][2] = {
+
+		{ RGB32(255U, 0, 0), RGB32(0, 255U, 0) },
+		{ RGB32(0, 0, 255U), RGB32(0,    0, 0) }
 	};
 	int err = 0;
 
