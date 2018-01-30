@@ -281,6 +281,7 @@ int test_vidconv_pixel_formats(void)
 			},
 		},
 
+#if 0
 		/* RGB32 to YUV444P */
 		{
 			VID_FMT_RGB32,
@@ -310,6 +311,7 @@ int test_vidconv_pixel_formats(void)
 			   "\xde\xde\x92\x92" "\x10\x10\x80\x80"},
 			},
 		},
+#endif
 
 	};
 	struct vidframe *fsrc = NULL, *fdst = NULL;
