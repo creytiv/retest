@@ -262,13 +262,11 @@ int test_aes_gcm(void)
 			return err;
 		}
 
-		err = aes_alloc(&enc, AES_MODE_GCM,
-				encr_key, key_bits, iv);
-		if (err) {
+		err = aes_alloc(&enc, AES_MODE_GCM, encr_key, key_bits, iv);
+		if (err)
 			goto out;
-		}
-		err = aes_alloc(&dec, AES_MODE_GCM,
-				encr_key, key_bits, iv);
+
+		err = aes_alloc(&dec, AES_MODE_GCM, encr_key, key_bits, iv);
 		if (err)
 			goto out;
 
@@ -310,8 +308,7 @@ int test_aes_gcm(void)
 			}
 		}
 
-		err |= str_hex(tag_ref, sizeof(tag_ref),
-			       testv[i].tag_str);
+		err |= str_hex(tag_ref, sizeof(tag_ref), testv[i].tag_str);
 		if (err) {
 			DEBUG_WARNING("tag size mismatch\n");
 			break;
@@ -330,8 +327,7 @@ int test_aes_gcm(void)
 		TEST_ERR(err);
 
 		if (test->success) {
-			TEST_MEMCMP(tag_ref, sizeof(tag_ref),
-				    tag, tagsz);
+			TEST_MEMCMP(tag_ref, sizeof(tag_ref), tag, tagsz);
 		}
 
 		/* Decrypt */
