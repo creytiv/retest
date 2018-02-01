@@ -135,6 +135,8 @@ static const struct test tests[] = {
 	TEST(test_sipsess),
 	TEST(test_srtp),
 	TEST(test_srtcp),
+	TEST(test_srtp_gcm),
+	TEST(test_srtcp_gcm),
 	TEST(test_stun_req),
 	TEST(test_stun_resp),
 	TEST(test_stun_reqltc),
@@ -502,7 +504,7 @@ int test_perf(const char *name, bool verbose)
 			err = testcase_perf(&tests[i],
 					    &usec_avg);
 			if (err) {
-				if (err == ESKIPPED) {
+				if (err == ESKIPPED || err == ENOSYS) {
 					re_printf("skipped: %s\n",
 						  tests[i].name);
 					tim->test = NULL;
