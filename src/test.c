@@ -240,6 +240,10 @@ static int testcase_oom(const struct test *test, int levels, bool verbose)
 			err = 0;
 			goto out;
 		}
+		else if (err == ENOSYS) {
+			err = 0;
+			break;
+		}
 		else if (err == ESKIPPED) {
 			err = 0;
 			break;
