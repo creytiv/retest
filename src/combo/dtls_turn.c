@@ -310,7 +310,7 @@ static int agent_alloc(struct agent **agp, uint16_t lport,
 	/* allocate DTLS */
 	ag->dtls_active = dtls_active;
 
-	err = tls_alloc(&ag->tls, TLS_METHOD_DTLS, NULL, NULL);
+	err = tls_alloc(&ag->tls, TLS_METHOD_DTLSV1, NULL, NULL);
 	if (err)
 		goto out;
 
@@ -414,7 +414,7 @@ int test_dtls_turn(void)
 	struct agent *a=0, *b=0;
 	int err = 0;
 
-	if (!have_dtls_support(TLS_METHOD_DTLS)) {
+	if (!have_dtls_support(TLS_METHOD_DTLSV1)) {
 		re_fprintf(stderr, "skip DTLS/TURN test\n");
 		return ESKIPPED;
 	}

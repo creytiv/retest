@@ -316,6 +316,9 @@ int test_dtls(void)
 {
 	int err = 0;
 
+	/* NOTE: DTLS v1.0 should be available on all
+	 *       supported platforms.
+	 */
 	if (!have_dtls_support(TLS_METHOD_DTLSV1)) {
 		(void)re_printf("skip DTLS 1.0 tests\n");
 		return ESKIPPED;
@@ -334,12 +337,12 @@ int test_dtls_srtp(void)
 {
 	int err = 0;
 
-	if (!have_dtls_support(TLS_METHOD_DTLS)) {
+	if (!have_dtls_support(TLS_METHOD_DTLSV1)) {
 		(void)re_printf("skip DTLS tests\n");
 		return ESKIPPED;
 	}
 
-	err = test_dtls_srtp_base(TLS_METHOD_DTLS, true);
+	err = test_dtls_srtp_base(TLS_METHOD_DTLSV1, true);
 	if (err)
 		return err;
 
