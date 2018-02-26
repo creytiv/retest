@@ -1180,6 +1180,10 @@ int test_srtp_gcm(void)
 	if (err)
 		return err;
 
+	err = test_srtp_replay(SRTP_AES_128_GCM);
+	if (err)
+		return err;
+
 	err = test_srtp_random(SRTP_AES_128_GCM);
 	if (err)
 		return err;
