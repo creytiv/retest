@@ -1196,6 +1196,12 @@ int test_srtcp_gcm(void)
 	err |= test_srtcp_loop(0, SRTP_AES_256_GCM, RTCP_BYE);
 	err |= test_srtcp_loop(4, SRTP_AES_128_GCM, RTCP_BYE);
 	err |= test_srtcp_loop(0, SRTP_AES_128_GCM, RTCP_RR);
+	if (err)
+		return err;
+
+	err = test_srtcp_random(SRTP_AES_128_GCM);
+	if (err)
+		return err;
 
 	return err;
 }
