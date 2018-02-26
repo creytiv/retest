@@ -688,9 +688,11 @@ static int recv_srtp_packet(struct srtp *srtp, struct mbuf *mb)
 }
 
 
-static int test_srtp_replay(void)
+static int test_srtp_replay(enum srtp_suite suite)
 {
-	static const uint8_t key[16+14] = {
+	static const uint8_t key[32+14] = {
+		0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+		0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
 		0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
 		0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
 		0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44,
@@ -698,14 +700,15 @@ static int test_srtp_replay(void)
 	};
 	struct srtp *ctx = NULL;
 	struct mbuf *mb = NULL;
+	const size_t key_len = get_keylen(suite);
+	const size_t salt_len = get_saltlen(suite);
 	int e, err = 0;
 
 	mb = mbuf_alloc(1024);
 	if (!mb)
 		return ENOMEM;
 
-	err  = srtp_alloc(&ctx, SRTP_AES_CM_128_HMAC_SHA1_32,
-			  key, sizeof(key), 0);
+	err  = srtp_alloc(&ctx, suite, key, key_len + salt_len, 0);
 	if (err)
 		goto out;
 
@@ -1105,7 +1108,7 @@ int test_srtp(void)
 	if (err)
 		return err;
 
-	err = test_srtp_replay();
+	err = test_srtp_replay(SRTP_AES_CM_128_HMAC_SHA1_32);
 	if (err)
 		return err;
 
