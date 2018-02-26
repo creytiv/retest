@@ -17,7 +17,7 @@
 
 
 enum {
-	SALT_LEN = 14
+	SALT_LEN_CTR = 14
 };
 
 
@@ -45,6 +45,19 @@ static size_t get_keylen(enum srtp_suite suite)
 	case SRTP_AES_CM_128_HMAC_SHA1_80: return 16;
 	case SRTP_AES_256_CM_HMAC_SHA1_32: return 32;
 	case SRTP_AES_256_CM_HMAC_SHA1_80: return 32;
+	default: return 0;
+	}
+}
+
+
+static size_t get_saltlen(enum srtp_suite suite)
+{
+	switch (suite) {
+
+	case SRTP_AES_CM_128_HMAC_SHA1_32: return 14;
+	case SRTP_AES_CM_128_HMAC_SHA1_80: return 14;
+	case SRTP_AES_256_CM_HMAC_SHA1_32: return 14;
+	case SRTP_AES_256_CM_HMAC_SHA1_80: return 14;
 	default: return 0;
 	}
 }
@@ -311,6 +324,7 @@ static int test_srtp_loop(size_t offset, enum srtp_suite suite, uint16_t seq)
 	struct srtp *ctx_tx = NULL, *ctx_rx = NULL;
 	struct mbuf *mb = NULL;
 	const size_t key_len = get_keylen(suite);
+	const size_t salt_len = get_saltlen(suite);
 	const size_t tag_len = get_taglen(suite);
 	unsigned i;
 	int err = 0;
@@ -328,8 +342,8 @@ static int test_srtp_loop(size_t offset, enum srtp_suite suite, uint16_t seq)
 	if (!mb)
 		return ENOMEM;
 
-	err  = srtp_alloc(&ctx_tx, suite, master_key, key_len + SALT_LEN, 0);
-	err |= srtp_alloc(&ctx_rx, suite, master_key, key_len + SALT_LEN, 0);
+	err  = srtp_alloc(&ctx_tx, suite, master_key, key_len + salt_len, 0);
+	err |= srtp_alloc(&ctx_rx, suite, master_key, key_len + salt_len, 0);
 	if (err)
 		goto out;
 
@@ -402,6 +416,7 @@ static int test_srtcp_loop(size_t offset, enum srtp_suite suite,
 	struct srtp *ctx_tx = NULL, *ctx_rx = NULL;
 	struct mbuf *mb1 = NULL, *mb2 = NULL;
 	const size_t key_len = get_keylen(suite);
+	const size_t salt_len = get_saltlen(suite);
 	const size_t tag_len = get_taglen(suite);
 	unsigned i;
 	int err = 0;
@@ -422,8 +437,8 @@ static int test_srtcp_loop(size_t offset, enum srtp_suite suite,
 		goto out;
 	}
 
-	err  = srtp_alloc(&ctx_tx, suite, master_key, key_len + SALT_LEN, 0);
-	err |= srtp_alloc(&ctx_rx, suite, master_key, key_len + SALT_LEN, 0);
+	err  = srtp_alloc(&ctx_tx, suite, master_key, key_len + salt_len, 0);
+	err |= srtp_alloc(&ctx_rx, suite, master_key, key_len + salt_len, 0);
 	if (err)
 		goto out;
 
@@ -852,7 +867,7 @@ static int test_srtp_unauth(void)
 	enum srtp_suite suite = SRTP_AES_CM_128_HMAC_SHA1_32;
 	int err = 0;
 
-	static const uint8_t master_key[16+SALT_LEN] = {
+	static const uint8_t master_key[16+SALT_LEN_CTR] = {
 		0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
 		0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
 		0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44,
@@ -920,7 +935,7 @@ static int test_unencrypted_srtcp(void)
 		goto out;
 	}
 
-	err  = srtp_alloc(&srtp, suite, master_key, 16 + SALT_LEN,
+	err  = srtp_alloc(&srtp, suite, master_key, 16 + SALT_LEN_CTR,
 			  SRTP_UNENCRYPTED_SRTCP);
 	if (err)
 		goto out;
