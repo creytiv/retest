@@ -481,10 +481,8 @@ static int test_srtcp_loop(size_t offset, enum srtp_suite suite,
 		/* tx */
 		mb1->pos = offset;
 		err = srtcp_encrypt(ctx_tx, mb1);
-		if (err) {
-			re_printf("encrypt failed\n");
+		if (err)
 			break;
-		}
 
 		TEST_EQUALS(offset, mb1->pos);
 		TEST_ASSERT(mb1->end != end);
@@ -494,10 +492,8 @@ static int test_srtcp_loop(size_t offset, enum srtp_suite suite,
 		/* rx */
 		mb1->pos = offset;
 		err = srtcp_decrypt(ctx_rx, mb1);
-		if (err) {
-			re_printf("decrypt failed\n");
+		if (err)
 			break;
-		}
 
 		TEST_EQUALS(offset, mb1->pos);
 		TEST_EQUALS(end, mb1->end);
