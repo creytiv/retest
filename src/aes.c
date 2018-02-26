@@ -96,13 +96,13 @@ static int test_aes_ctr_loop(void)
 }
 
 
-static bool have_aes(void)
+static bool have_aes(enum aes_mode mode)
 {
 	static const uint8_t nullkey[AES_BLOCK_SIZE];
 	struct aes *aes = NULL;
 	int err;
 
-	err = aes_alloc(&aes, AES_MODE_CTR, nullkey, 128, NULL);
+	err = aes_alloc(&aes, mode, nullkey, 128, NULL);
 
 	mem_deref(aes);
 
@@ -114,8 +114,8 @@ int test_aes(void)
 {
 	int err;
 
-	if (!have_aes()) {
-		(void)re_printf("skipping aes test\n");
+	if (!have_aes(AES_MODE_CTR)) {
+		(void)re_printf("skipping aes ctr test\n");
 		return ESKIPPED;
 	}
 
@@ -232,6 +232,11 @@ int test_aes_gcm(void)
 		 false
 		},
 	};
+
+	if (!have_aes(AES_MODE_GCM)) {
+		(void)re_printf("skipping aes gcm test\n");
+		return ESKIPPED;
+	}
 
 	for (i=0; i<ARRAY_SIZE(testv); i++) {
 

@@ -52,7 +52,6 @@ static const struct test tests[] = {
 	TEST(test_dsp),
 #ifdef USE_TLS
 	TEST(test_dtls),
-	/*TEST(test_dtls_1_2),*/
 	TEST(test_dtls_srtp),
 #endif
 	TEST(test_dtmf),
@@ -241,6 +240,10 @@ static int testcase_oom(const struct test *test, int levels, bool verbose)
 			/* test timed out, stop now */
 			err = 0;
 			goto out;
+		}
+		else if (err == ENOSYS) {
+			err = 0;
+			break;
 		}
 		else if (err == ESKIPPED) {
 			err = 0;
