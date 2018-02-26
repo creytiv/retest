@@ -349,11 +349,7 @@ static int test_srtp_loop(size_t offset, enum srtp_suite suite, uint16_t seq)
 		return ENOMEM;
 
 	err  = srtp_alloc(&ctx_tx, suite, master_key, key_len + salt_len, 0);
-	if (err)
-		goto out;
-
 	err |= srtp_alloc(&ctx_rx, suite, master_key, key_len + salt_len, 0);
-	TEST_ERR(err);
 	if (err)
 		goto out;
 
