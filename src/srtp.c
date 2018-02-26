@@ -810,7 +810,7 @@ static int test_srtp_reordering_and_wrap(void)
 
 
 /* verify that we dont crash on random input */
-static int test_srtp_random(void)
+static int test_srtp_random(enum srtp_suite suite)
 {
 	struct rtp_header hdr;
 	struct srtp *ctx = NULL;
@@ -822,7 +822,7 @@ static int test_srtp_random(void)
 	if (!mb)
 		return ENOMEM;
 
-	err  = srtp_alloc(&ctx, SRTP_AES_CM_128_HMAC_SHA1_32,
+	err  = srtp_alloc(&ctx, suite,
 			  dummy_key, sizeof(dummy_key), 0);
 	if (err)
 		goto out;
@@ -1048,7 +1048,7 @@ int test_srtp(void)
 	if (err)
 		return err;
 
-	err = test_srtp_random();
+	err = test_srtp_random(SRTP_AES_CM_128_HMAC_SHA1_32);
 	if (err)
 		return err;
 
