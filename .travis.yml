@@ -14,5 +14,5 @@ install:
 
 script: 
     - make EXTRA_CFLAGS=-Werror
-    - valgrind --leak-check=full --error-exitcode=1 ./retest -r -v
+    - valgrind --leak-check=full --error-exitcode=1 --run-libc-freeres=no ./retest -r -v
     - python2 ccheck.py
