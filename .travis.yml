@@ -2,17 +2,17 @@ language: c
 
 before_install:
     - sudo apt-get -qq update
-    - sudo apt-get -y install libssl-dev valgrind
+    - sudo apt-get -y install libssl-dev
 
 install:
     - git clone https://github.com/creytiv/re.git
     - git clone https://github.com/creytiv/rem.git
-    - cd re && make EXTRA_CFLAGS=-DVALGRIND && sudo make install && cd ..
+    - cd re && make && sudo make install && cd ..
     - cd rem && make && sudo make install && cd ..
     - sudo ldconfig
     - wget "https://github.com/alfredh/pytools/raw/master/ccheck.py"
 
 script: 
     - make EXTRA_CFLAGS=-Werror
-    - valgrind --leak-check=full --error-exitcode=1 --run-libc-freeres=no ./retest -r -v
+    - ./retest -r
     - python2 ccheck.py
