@@ -38,6 +38,8 @@ static size_t get_keylen(enum srtp_suite suite)
 	case SRTP_AES_CM_128_HMAC_SHA1_80: return 16;
 	case SRTP_AES_256_CM_HMAC_SHA1_32: return 32;
 	case SRTP_AES_256_CM_HMAC_SHA1_80: return 32;
+	case SRTP_AES_128_GCM:             return 16;
+	case SRTP_AES_256_GCM:             return 32;
 	default: return 0;
 	}
 }
@@ -51,6 +53,8 @@ static size_t get_saltlen(enum srtp_suite suite)
 	case SRTP_AES_CM_128_HMAC_SHA1_80: return 14;
 	case SRTP_AES_256_CM_HMAC_SHA1_32: return 14;
 	case SRTP_AES_256_CM_HMAC_SHA1_80: return 14;
+	case SRTP_AES_128_GCM:             return 12;
+	case SRTP_AES_256_GCM:             return 12;
 	default: return 0;
 	}
 }
@@ -64,6 +68,8 @@ static size_t get_taglen(enum srtp_suite suite)
 	case SRTP_AES_CM_128_HMAC_SHA1_80: return 10;
 	case SRTP_AES_256_CM_HMAC_SHA1_32: return 4;
 	case SRTP_AES_256_CM_HMAC_SHA1_80: return 10;
+	case SRTP_AES_128_GCM:             return 16;
+	case SRTP_AES_256_GCM:             return 16;
 	default: return 0;
 	}
 }
@@ -923,14 +929,17 @@ static int test_srtcp_random(enum srtp_suite suite)
 }
 
 
-static int test_srtp_unauth(void)
+static int test_srtp_unauth(enum srtp_suite suite)
 {
 	struct srtp *srtp_tx, *srtp_rx;
 	struct mbuf *mb = NULL;
-	enum srtp_suite suite = SRTP_AES_CM_128_HMAC_SHA1_32;
+	const size_t key_len = get_keylen(suite);
+	const size_t salt_len = get_saltlen(suite);
 	int err = 0;
 
-	static const uint8_t master_key[16+SALT_LEN_CTR] = {
+	static const uint8_t master_key[32 + SALT_LEN_CTR] = {
+		0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+		0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
 		0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
 		0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
 		0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44,
@@ -941,8 +950,8 @@ static int test_srtp_unauth(void)
 	if (!mb)
 		return ENOMEM;
 
-	err  = srtp_alloc(&srtp_tx, suite, master_key, 16+14, 0);
-	err |= srtp_alloc(&srtp_rx, suite, master_key, 16+14, 0);
+	err  = srtp_alloc(&srtp_tx, suite, master_key, key_len+salt_len, 0);
+	err |= srtp_alloc(&srtp_rx, suite, master_key, key_len+salt_len, 0);
 	if (err)
 		goto out;
 
@@ -1107,7 +1116,7 @@ int test_srtp(void)
 	if (err)
 		return err;
 
-	err = test_srtp_unauth();
+	err = test_srtp_unauth(SRTP_AES_CM_128_HMAC_SHA1_32);
 	if (err)
 		return err;
 
@@ -1147,6 +1156,54 @@ int test_srtcp(void)
 		return err;
 
 	err = test_srtcp_random(SRTP_AES_CM_128_HMAC_SHA1_32);
+	if (err)
+		return err;
+
+	return err;
+}
+
+
+int test_srtp_gcm(void)
+{
+	int err = 0;
+
+	err |= test_srtp_loop(0, SRTP_AES_128_GCM, 3);
+	if (err)
+		return err;
+
+	err |= test_srtp_loop(0, SRTP_AES_256_GCM, 3);
+	err |= test_srtp_loop(0, SRTP_AES_256_GCM, 65530);
+	if (err)
+		return err;
+
+	err = test_srtp_unauth(SRTP_AES_256_GCM);
+	if (err)
+		return err;
+
+	err = test_srtp_replay(SRTP_AES_128_GCM);
+	if (err)
+		return err;
+
+	err = test_srtp_random(SRTP_AES_128_GCM);
+	if (err)
+		return err;
+
+	return err;
+}
+
+
+int test_srtcp_gcm(void)
+{
+	int err = 0;
+
+	err |= test_srtcp_loop(0, SRTP_AES_128_GCM, RTCP_BYE);
+	err |= test_srtcp_loop(0, SRTP_AES_256_GCM, RTCP_BYE);
+	err |= test_srtcp_loop(4, SRTP_AES_128_GCM, RTCP_BYE);
+	err |= test_srtcp_loop(0, SRTP_AES_128_GCM, RTCP_RR);
+	if (err)
+		return err;
+
+	err = test_srtcp_random(SRTP_AES_128_GCM);
 	if (err)
 		return err;
 

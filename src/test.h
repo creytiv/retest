@@ -199,6 +199,8 @@ int test_sipreg_tls(void);
 int test_sipsess(void);
 int test_srtp(void);
 int test_srtcp(void);
+int test_srtp_gcm(void);
+int test_srtcp_gcm(void);
 int test_stun_req(void);
 int test_stun_resp(void);
 int test_stun_reqltc(void);
