@@ -5,7 +5,7 @@ before_install:
     - sudo apt-get -y install libssl-dev
 
 install:
-    - git clone -b srtp_add_gcm https://github.com/creytiv/re.git
+    - git clone https://github.com/creytiv/re.git
     - git clone https://github.com/creytiv/rem.git
     - cd re && make && sudo make install && cd ..
     - cd rem && make && sudo make install && cd ..
