@@ -283,7 +283,7 @@ static int test_http_loop_base(bool secure)
 	if (secure) {
 		char path[256];
 
-		re_snprintf(path, sizeof(path), "%s/server.pem",
+		re_snprintf(path, sizeof(path), "%s/server-ecdsa.pem",
 			    test_datapath());
 
 		err = https_listen(&sock, &srv, path,
