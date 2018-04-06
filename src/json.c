@@ -679,15 +679,11 @@ static int test_json_file_parse(const char *filename)
 int test_json_file(void)
 {
 	const char *files[] = {
-		"rfc7159.json",
 		"fstab.json",
-		"widget.json",
-		"webapp.json",
 		"menu.json",
-#if 0
-		"citm_catalog.json",
-		"sample.json",        /* unicode */
-#endif
+		"rfc7159.json",
+		"webapp.json",
+		"widget.json",
 	};
 	unsigned i;
 	int err = 0;
