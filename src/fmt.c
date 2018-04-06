@@ -791,9 +791,9 @@ int test_fmt_unicode(void)
 int test_fmt_unicode_decode(void)
 {
 	static const struct test {
-		const char* utf8_ref;
+		const char *utf8_ref;
 		const char *str;
-	} testv[] = {
+	} unitestv[] = {
 
 	/* UTF8 Binary:       Unicode:        */
 	{ "\x40",             "\\u0040"        },  /* The '@' symbol */
@@ -807,9 +807,9 @@ int test_fmt_unicode_decode(void)
 	char buf[256];
 	int err = 0;
 
-	for (i=0; i<ARRAY_SIZE(testv); i++) {
+	for (i=0; i<ARRAY_SIZE(unitestv); i++) {
 
-		const struct test *test = &testv[i];
+		const struct test *test = &unitestv[i];
 		struct pl pl;
 		int n_exp;
 		int n;
