@@ -820,11 +820,8 @@ int test_fmt_unicode_decode(void)
 
 		n = re_snprintf(buf, sizeof(buf), "%H", utf8_decode, &pl);
 
-		re_printf("index %zu:  input: '%s'\n", i, test->str);
-		re_printf("            n=%d\n", n);
-		re_printf("            utf8:  '%w'\n", buf, (size_t)n);
-#if 1
-		re_printf("            print: '%s'\n", buf);
+#if 0
+		re_printf("printed: '%s'\n", buf);
 #endif
 
 		TEST_MEMCMP(test->utf8_ref, n_exp, buf, n);
