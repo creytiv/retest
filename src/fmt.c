@@ -786,3 +786,50 @@ int test_fmt_unicode(void)
  out:
 	return err;
 }
+
+
+int test_fmt_unicode_decode(void)
+{
+	static const struct test {
+		const char* utf8_ref;
+		const char *str;
+	} testv[] = {
+
+	/* UTF8 Binary:       Unicode:        */
+	{ "\x40",             "\\u0040"        },  /* The '@' symbol */
+	{ "\xc3\x85",         "\\u00C5"        },
+	{ "\xE2\x82\xAC",     "\\u20AC"        },  /* Euro symbol */
+	{ "\xF0\x9D\x84\x9E", "\\uD834\\uDD1E" },  /* G-key */
+	{ "\xF0\x9F\x98\x82", "\\uD83D\\uDE02" },  /* Face with tears of joy */
+
+	};
+	size_t i;
+	char buf[256];
+	int err = 0;
+
+	for (i=0; i<ARRAY_SIZE(testv); i++) {
+
+		const struct test *test = &testv[i];
+		struct pl pl;
+		int n_exp;
+		int n;
+
+		n_exp = (int)str_len(test->utf8_ref);
+
+		pl_set_str(&pl, test->str);
+
+		n = re_snprintf(buf, sizeof(buf), "%H", utf8_decode, &pl);
+
+		re_printf("index %zu:  input: '%s'\n", i, test->str);
+		re_printf("            n=%d\n", n);
+		re_printf("            utf8:  '%w'\n", buf, (size_t)n);
+#if 1
+		re_printf("            print: '%s'\n", buf);
+#endif
+
+		TEST_MEMCMP(test->utf8_ref, n_exp, buf, n);
+	}
+
+ out:
+	return err;
+}
