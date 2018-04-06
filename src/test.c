@@ -69,6 +69,7 @@ static const struct test tests[] = {
 	TEST(test_fmt_str),
 	TEST(test_fmt_str_error),
 	TEST(test_fmt_unicode),
+	TEST(test_fmt_unicode_decode),
 	TEST(test_g711_alaw),
 	TEST(test_g711_ulaw),
 	TEST(test_hash),
