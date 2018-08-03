@@ -13,6 +13,22 @@
 #include <re_dbg.h>
 
 
+static struct mbuf *mbuf_packet(const uint8_t *pkt, size_t len)
+{
+	struct mbuf *mb;
+
+	mb = mbuf_alloc(len);
+	if (!mb)
+		return NULL;
+
+	(void)mbuf_write_mem(mb, pkt, len);
+
+	mb->pos = 0;
+
+	return mb;
+}
+
+
 static int test_rtmp_header(uint32_t chunk_id)
 {
 	struct rtmp_header hdr;
@@ -35,7 +51,7 @@ static int test_rtmp_header(uint32_t chunk_id)
 	err = rtmp_header_decode(&hdr, mb);
 	TEST_ERR(err);
 
-#if 1
+#if 0
 	re_printf("%H\n", rtmp_header_print, &hdr);
 #endif
 
@@ -54,6 +70,55 @@ static int test_rtmp_header(uint32_t chunk_id)
 }
 
 
+static int test_rtmp_decode_audio(void)
+{
+	/*
+	 * ffplay rtmp://184.72.239.149/vod/mp4:bigbuckbunny_450.mp4
+	 */
+static const uint8_t packet_bytes[] = {
+  0x46, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x08,
+  0xaf, 0x00, 0x11, 0x90, 0x08, 0xc4, 0x00, 0x00,
+  0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00
+};
+
+#define HDR_SIZE 8
+
+	struct rtmp_header hdr;
+	struct mbuf *mb;
+	int err;
+
+	mb = mbuf_packet(packet_bytes, sizeof(packet_bytes));
+
+	err = rtmp_header_decode(&hdr, mb);
+	TEST_ERR(err);
+
+	/* compare */
+	TEST_EQUALS(1,               hdr.format);
+	TEST_EQUALS(6,               hdr.chunk_id);
+	TEST_EQUALS(0,               hdr.timestamp_delta);
+	TEST_EQUALS(82,              hdr.message_length);
+	TEST_EQUALS(RTMP_TYPE_AUDIO, hdr.message_type_id);
+
+	TEST_MEMCMP(packet_bytes + HDR_SIZE, sizeof(packet_bytes) - HDR_SIZE,
+		    mbuf_buf(mb), mbuf_get_left(mb));
+
+	/* XXX: decode control header ? */
+
+ out:
+	mem_deref(mb);
+	return err;
+}
+
+
 int test_rtmp(void)
 {
 	int err;
@@ -63,6 +128,9 @@ int test_rtmp(void)
 	err = test_rtmp_header(319);
 	TEST_ERR(err);
 	err = test_rtmp_header(65599);
+	TEST_ERR(err);
+
+	err = test_rtmp_decode_audio();
 	TEST_ERR(err);
 
  out:
