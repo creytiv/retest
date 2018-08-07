@@ -260,27 +260,59 @@ static const uint8_t packet_bytes[] = {
 
 
 struct test {
+	struct rtmp_dechunker *rd;
 	size_t n_chunk;
 	size_t total_bytes;
+
+	size_t n_msg;
+	uint8_t *buf;
+	size_t buf_len;
 };
+
+
+static void msg_handler(const uint8_t *msg, size_t len, void *arg)
+{
+	struct test *test = arg;
+
+	++test->n_msg;
+
+	mem_deref(test->buf);
+
+	test->buf = mem_ref((void *)msg);
+	test->buf_len = len;
+}
+
 
 static void chunk_handler(const uint8_t *hdr, size_t hdr_len,
 			  const uint8_t *pld, size_t pld_len, void *arg)
 {
 	struct test *test = arg;
+	struct mbuf *mb = mbuf_alloc(1024);
+	int err = 0;
 
-	re_printf("chunk: hdr=%zu pld=%zu\n", hdr_len, pld_len);
+	re_printf("chunk: hdr=%zu pld=%zu [%w]\n", hdr_len, pld_len,
+		  pld, pld_len);
 
 	++test->n_chunk;
 
 	test->total_bytes += (hdr_len + pld_len);
+
+	err |= mbuf_write_mem(mb, hdr, hdr_len);
+	err |= mbuf_write_mem(mb, pld, pld_len);
+
+	mb->pos = 0;
+
+	/* feed the chunks into the de-chunker */
+	err = rtmp_dechunker_receive(test->rd, mb);
+
+	mem_deref(mb);
 }
 
 
 static int test_rtmp_chunking(void)
 {
 	static const uint8_t short_payload[] = {
-		0x00,
+		0xba,
 	};
 	static const uint8_t amf_payload[] = {
 		0x02, 0x00, 0x07, 0x63,
@@ -310,14 +342,25 @@ static int test_rtmp_chunking(void)
 		0x3f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x09
 	};
-	static const uint8_t large_payload[1024] = {0x00};
+	uint8_t large_payload[1024] = {0x00};
 	struct test test;
+	struct rtmp_dechunker *rd = NULL;
 	const uint32_t timestamp = 0;
 	const uint32_t msg_stream_id = 0;
 	int err;
+	size_t i;
 
+	for (i=0; i<sizeof(large_payload); i++) {
+		large_payload[i] = i & 0xff;
+	}
+
+	err = rtmp_dechunker_alloc(&rd, msg_handler, &test);
+	TEST_ERR(err);
+
+#if 0
 	/* Short */
 	memset(&test, 0, sizeof(test));
+	test.rd = rd;
 
 	err = rtmp_chunker(3, timestamp, RTMP_TYPE_AUDIO, msg_stream_id,
 			   short_payload, sizeof (short_payload),
@@ -327,8 +370,16 @@ static int test_rtmp_chunking(void)
 	TEST_EQUALS(1, test.n_chunk);
 	TEST_EQUALS(12+1, test.total_bytes);
 
+	TEST_EQUALS(1, test.n_msg);
+	TEST_MEMCMP(short_payload, sizeof(short_payload),
+		    test.buf, test.buf_len);
+#endif
+
+
+#if 1
 	/* Medium */
 	memset(&test, 0, sizeof(test));
+	test.rd = rd;
 
 	err = rtmp_chunker(3, timestamp, RTMP_TYPE_AMF0, msg_stream_id,
 			   amf_payload, sizeof (amf_payload),
@@ -338,8 +389,18 @@ static int test_rtmp_chunking(void)
 	TEST_EQUALS(2, test.n_chunk);
 	TEST_EQUALS(212, test.total_bytes);
 
+	TEST_EQUALS(1, test.n_msg);
+	TEST_MEMCMP(amf_payload, sizeof(amf_payload),
+		    test.buf, test.buf_len);
+
+	test.buf = mem_deref(test.buf);
+#endif
+
+
+#if 1
 	/* Large */
 	memset(&test, 0, sizeof(test));
+	test.rd = rd;
 
 	err = rtmp_chunker(3, timestamp, RTMP_TYPE_AMF0, msg_stream_id,
 			   large_payload, sizeof (large_payload),
@@ -349,7 +410,14 @@ static int test_rtmp_chunking(void)
 	TEST_EQUALS(8, test.n_chunk);
 	TEST_EQUALS(12 + 7 + 8*128, test.total_bytes);
 
+	TEST_EQUALS(1, test.n_msg);
+	TEST_MEMCMP(large_payload, sizeof(large_payload),
+		    test.buf, test.buf_len);
+#endif
+
  out:
+	mem_deref(rd);
+	mem_deref(test.buf);
 
 	return err;
 }
