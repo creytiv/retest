@@ -259,6 +259,46 @@ static const uint8_t packet_bytes[] = {
 }
 
 
+static int test_rtmp_decode_window_ack_size(void)
+{
+	static const uint8_t packet_bytes[] = {
+		0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x05,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x26, 0x25, 0xa0
+	};
+
+#define HDR_SIZE 8
+
+	struct rtmp_header hdr;
+	struct mbuf *mb;
+	const void *p;
+	uint32_t value;
+	int err;
+
+	mb = mbuf_packet(packet_bytes, sizeof(packet_bytes));
+
+	err = rtmp_header_decode(&hdr, mb);
+	TEST_ERR(err);
+
+	/* compare */
+	TEST_EQUALS(0,                         hdr.format);
+	TEST_EQUALS(2,                         hdr.chunk_id);
+	TEST_EQUALS(0,                         hdr.timestamp);
+	TEST_EQUALS(4,                         hdr.message_length);
+	TEST_EQUALS(RTMP_TYPE_WINDOW_ACK_SIZE, hdr.message_type_id);
+	TEST_EQUALS(0,                         hdr.message_stream_id);
+
+	TEST_EQUALS(4, mbuf_get_left(mb));
+	p = mbuf_buf(mb);
+	value = ntohl( *(uint32_t *)p );
+
+	TEST_EQUALS(2500000, value);
+
+ out:
+	mem_deref(mb);
+	return err;
+}
+
+
 struct test {
 	struct rtmp_dechunker *rd;
 	size_t n_chunk;
@@ -456,6 +496,8 @@ int test_rtmp(void)
 
 	/* Test packet decoding */
 	err = test_rtmp_decode_audio();
+	TEST_ERR(err);
+	err = test_rtmp_decode_window_ack_size();
 	TEST_ERR(err);
 
 	/* Test chunking */
