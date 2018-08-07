@@ -270,7 +270,8 @@ struct test {
 };
 
 
-static void msg_handler(const uint8_t *msg, size_t len, void *arg)
+static void msg_handler(enum rtmp_packet_type type,
+			const uint8_t *msg, size_t len, void *arg)
 {
 	struct test *test = arg;
 
@@ -290,8 +291,10 @@ static void chunk_handler(const uint8_t *hdr, size_t hdr_len,
 	struct mbuf *mb = mbuf_alloc(1024);
 	int err = 0;
 
+#if 0
 	re_printf("chunk: hdr=%zu pld=%zu [%w]\n", hdr_len, pld_len,
 		  pld, pld_len);
+#endif
 
 	++test->n_chunk;
 
@@ -309,6 +312,9 @@ static void chunk_handler(const uint8_t *hdr, size_t hdr_len,
 }
 
 
+/*
+ * XXX: add test for incomplete message
+ */
 static int test_rtmp_chunking(void)
 {
 	static const uint8_t short_payload[] = {
