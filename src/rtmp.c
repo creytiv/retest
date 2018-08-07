@@ -357,7 +357,7 @@ static int test_rtmp_chunking(void)
 	err = rtmp_dechunker_alloc(&rd, msg_handler, &test);
 	TEST_ERR(err);
 
-#if 0
+#if 1
 	/* Short */
 	memset(&test, 0, sizeof(test));
 	test.rd = rd;
@@ -373,6 +373,8 @@ static int test_rtmp_chunking(void)
 	TEST_EQUALS(1, test.n_msg);
 	TEST_MEMCMP(short_payload, sizeof(short_payload),
 		    test.buf, test.buf_len);
+
+	test.buf = mem_deref(test.buf);
 #endif
 
 
@@ -413,6 +415,8 @@ static int test_rtmp_chunking(void)
 	TEST_EQUALS(1, test.n_msg);
 	TEST_MEMCMP(large_payload, sizeof(large_payload),
 		    test.buf, test.buf_len);
+
+	test.buf = mem_deref(test.buf);
 #endif
 
  out:
