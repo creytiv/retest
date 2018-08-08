@@ -377,7 +377,6 @@ static int chunk_handler(const struct rtmp_header *hdr,
 
 	++test->n_chunk;
 
-
 	err = rtmp_header_encode(mb, hdr);
 	if (err)
 		goto out;
