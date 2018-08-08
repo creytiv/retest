@@ -29,9 +29,19 @@ static struct mbuf *mbuf_packet(const uint8_t *pkt, size_t len)
 }
 
 
+static void rtmp_header_init(struct rtmp_header *hdr,
+			     unsigned fmt, uint32_t chunk_id)
+{
+	memset(hdr, 0, sizeof(*hdr));
+
+	hdr->format   = fmt;
+	hdr->chunk_id = chunk_id;
+}
+
+
 static int test_rtmp_header_type0(void)
 {
-	struct rtmp_header hdr;
+	struct rtmp_header hdr0, hdr;
 	struct mbuf *mb;
 	const uint32_t chunk_id = 3;
 	const uint32_t timestamp = 160;
@@ -44,9 +54,14 @@ static int test_rtmp_header_type0(void)
 	if (!mb)
 		return ENOMEM;
 
-	err = rtmp_header_encode_type0(mb, chunk_id,
-				       timestamp, msg_length,
-				       msg_type_id, msg_stream_id);
+	rtmp_header_init(&hdr0, 0, chunk_id);
+
+	hdr0.timestamp = timestamp;
+	hdr0.length    = msg_length;
+	hdr0.type_id   = msg_type_id;
+	hdr0.stream_id = msg_stream_id;
+
+	err = rtmp_header_encode(mb, &hdr0);
 	TEST_ERR(err);
 	TEST_EQUALS(1+11, mb->end);
 
@@ -76,7 +91,7 @@ static int test_rtmp_header_type0(void)
 
 static int test_rtmp_header_type1(void)
 {
-	struct rtmp_header hdr;
+	struct rtmp_header hdr0, hdr;
 	struct mbuf *mb;
 	const uint32_t chunk_id = 3;
 	const uint32_t timestamp_delta = 160;
@@ -88,9 +103,13 @@ static int test_rtmp_header_type1(void)
 	if (!mb)
 		return ENOMEM;
 
-	err = rtmp_header_encode_type1(mb, chunk_id,
-				       timestamp_delta, msg_length,
-				       msg_type_id);
+	rtmp_header_init(&hdr0, 1, chunk_id);
+
+	hdr0.timestamp_delta = timestamp_delta;
+	hdr0.length    = msg_length;
+	hdr0.type_id   = msg_type_id;
+
+	err = rtmp_header_encode(mb, &hdr0);
 	TEST_ERR(err);
 	TEST_EQUALS(1+7, mb->end);
 
@@ -115,7 +134,7 @@ static int test_rtmp_header_type1(void)
 
 static int test_rtmp_header_type2(void)
 {
-	struct rtmp_header hdr;
+	struct rtmp_header hdr0, hdr;
 	struct mbuf *mb;
 	const uint32_t chunk_id = 3;
 	const uint32_t timestamp_delta = 160;
@@ -125,7 +144,11 @@ static int test_rtmp_header_type2(void)
 	if (!mb)
 		return ENOMEM;
 
-	err = rtmp_header_encode_type2(mb, chunk_id, timestamp_delta);
+	rtmp_header_init(&hdr0, 2, chunk_id);
+
+	hdr0.timestamp_delta = timestamp_delta;
+
+	err = rtmp_header_encode(mb, &hdr0);
 	TEST_ERR(err);
 	TEST_EQUALS(1+3, mb->end);
 
@@ -148,7 +171,7 @@ static int test_rtmp_header_type2(void)
 
 static int test_rtmp_header_type3(void)
 {
-	struct rtmp_header hdr;
+	struct rtmp_header hdr0, hdr;
 	struct mbuf *mb;
 	const uint32_t chunk_id = 3;
 	int err;
@@ -157,7 +180,9 @@ static int test_rtmp_header_type3(void)
 	if (!mb)
 		return ENOMEM;
 
-	err = rtmp_header_encode_type3(mb, chunk_id);
+	rtmp_header_init(&hdr0, 3, chunk_id);
+
+	err = rtmp_header_encode(mb, &hdr0);
 	TEST_ERR(err);
 	TEST_EQUALS(1+0, mb->end);
 
@@ -179,7 +204,7 @@ static int test_rtmp_header_type3(void)
 
 static int test_rtmp_header(uint32_t chunk_id)
 {
-	struct rtmp_header hdr;
+	struct rtmp_header hdr0, hdr;
 	struct mbuf *mb;
 	const uint32_t timestamp = 160;
 	const uint32_t msg_length = 194;
@@ -191,9 +216,14 @@ static int test_rtmp_header(uint32_t chunk_id)
 	if (!mb)
 		return ENOMEM;
 
-	err = rtmp_header_encode_type0(mb, chunk_id,
-				       timestamp, msg_length,
-				       msg_type_id, msg_stream_id);
+	rtmp_header_init(&hdr0, 0, chunk_id);
+
+	hdr0.timestamp = timestamp;
+	hdr0.length    = msg_length;
+	hdr0.type_id   = msg_type_id;
+	hdr0.stream_id = msg_stream_id;
+
+	err = rtmp_header_encode(mb, &hdr0);
 	TEST_ERR(err);
 
 	mb->pos = 0;
