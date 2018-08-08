@@ -364,7 +364,7 @@ static void msg_handler(enum rtmp_packet_type type,
 }
 
 
-static int chunk_handler(const uint8_t *hdr, size_t hdr_len,
+static int chunk_handler(const struct rtmp_header *hdr,
 			 const uint8_t *pld, size_t pld_len, void *arg)
 {
 	struct test *test = arg;
@@ -377,12 +377,16 @@ static int chunk_handler(const uint8_t *hdr, size_t hdr_len,
 
 	++test->n_chunk;
 
-	test->total_bytes += (hdr_len + pld_len);
 
-	err |= mbuf_write_mem(mb, hdr, hdr_len);
+	err = rtmp_header_encode(mb, hdr);
+	if (err)
+		goto out;
+
 	err |= mbuf_write_mem(mb, pld, pld_len);
 	if (err)
 		goto out;
+
+	test->total_bytes += (mb->end);
 
 	mb->pos = 0;
 
