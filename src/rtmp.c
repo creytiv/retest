@@ -41,6 +41,8 @@ static int test_rtmp_header_type0(void)
 	int err;
 
 	mb = mbuf_alloc(512);
+	if (!mb)
+		return ENOMEM;
 
 	err = rtmp_header_encode_type0(mb, chunk_id,
 				       timestamp, msg_length,
@@ -83,6 +85,8 @@ static int test_rtmp_header_type1(void)
 	int err;
 
 	mb = mbuf_alloc(512);
+	if (!mb)
+		return ENOMEM;
 
 	err = rtmp_header_encode_type1(mb, chunk_id,
 				       timestamp_delta, msg_length,
@@ -118,6 +122,8 @@ static int test_rtmp_header_type2(void)
 	int err;
 
 	mb = mbuf_alloc(512);
+	if (!mb)
+		return ENOMEM;
 
 	err = rtmp_header_encode_type2(mb, chunk_id, timestamp_delta);
 	TEST_ERR(err);
@@ -148,6 +154,8 @@ static int test_rtmp_header_type3(void)
 	int err;
 
 	mb = mbuf_alloc(512);
+	if (!mb)
+		return ENOMEM;
 
 	err = rtmp_header_encode_type3(mb, chunk_id);
 	TEST_ERR(err);
@@ -180,6 +188,8 @@ static int test_rtmp_header(uint32_t chunk_id)
 	int err;
 
 	mb = mbuf_alloc(512);
+	if (!mb)
+		return ENOMEM;
 
 	err = rtmp_header_encode_type0(mb, chunk_id,
 				       timestamp, msg_length,
@@ -324,17 +334,16 @@ static void msg_handler(enum rtmp_packet_type type,
 }
 
 
-static void chunk_handler(const uint8_t *hdr, size_t hdr_len,
-			  const uint8_t *pld, size_t pld_len, void *arg)
+static int chunk_handler(const uint8_t *hdr, size_t hdr_len,
+			 const uint8_t *pld, size_t pld_len, void *arg)
 {
 	struct test *test = arg;
-	struct mbuf *mb = mbuf_alloc(1024);
+	struct mbuf *mb;
 	int err = 0;
 
-#if 0
-	re_printf("chunk: hdr=%zu pld=%zu [%w]\n", hdr_len, pld_len,
-		  pld, pld_len);
-#endif
+	mb = mbuf_alloc(1024);
+	if (!mb)
+		return ENOMEM;
 
 	++test->n_chunk;
 
@@ -342,13 +351,20 @@ static void chunk_handler(const uint8_t *hdr, size_t hdr_len,
 
 	err |= mbuf_write_mem(mb, hdr, hdr_len);
 	err |= mbuf_write_mem(mb, pld, pld_len);
+	if (err)
+		goto out;
 
 	mb->pos = 0;
 
 	/* feed the chunks into the de-chunker */
 	err = rtmp_dechunker_receive(test->rd, mb);
+	if (err)
+		goto out;
 
+ out:
 	mem_deref(mb);
+
+	return err;
 }
 
 
@@ -403,7 +419,6 @@ static int test_rtmp_chunking(void)
 	err = rtmp_dechunker_alloc(&rd, msg_handler, &test);
 	TEST_ERR(err);
 
-#if 1
 	/* Short */
 	memset(&test, 0, sizeof(test));
 	test.rd = rd;
@@ -411,7 +426,8 @@ static int test_rtmp_chunking(void)
 	err = rtmp_chunker(3, timestamp, RTMP_TYPE_AUDIO, msg_stream_id,
 			   short_payload, sizeof (short_payload),
 			   chunk_handler, &test);
-	TEST_ERR(err);
+	if (err)
+		goto out;
 
 	TEST_EQUALS(1, test.n_chunk);
 	TEST_EQUALS(12+1, test.total_bytes);
@@ -421,7 +437,6 @@ static int test_rtmp_chunking(void)
 		    test.buf, test.buf_len);
 
 	test.buf = mem_deref(test.buf);
-#endif
 
 
 #if 1
@@ -432,7 +447,8 @@ static int test_rtmp_chunking(void)
 	err = rtmp_chunker(3, timestamp, RTMP_TYPE_AMF0, msg_stream_id,
 			   amf_payload, sizeof (amf_payload),
 			   chunk_handler, &test);
-	TEST_ERR(err);
+	if (err)
+		goto out;
 
 	TEST_EQUALS(2, test.n_chunk);
 	TEST_EQUALS(212, test.total_bytes);
@@ -453,7 +469,8 @@ static int test_rtmp_chunking(void)
 	err = rtmp_chunker(3, timestamp, RTMP_TYPE_AMF0, msg_stream_id,
 			   large_payload, sizeof (large_payload),
 			   chunk_handler, &test);
-	TEST_ERR(err);
+	if (err)
+		goto out;
 
 	TEST_EQUALS(8, test.n_chunk);
 	TEST_EQUALS(12 + 7 + 8*128, test.total_bytes);
@@ -475,35 +492,32 @@ static int test_rtmp_chunking(void)
 
 int test_rtmp(void)
 {
-	int err;
+	int err = 0;
 
 	/* Test headers */
-	err = test_rtmp_header_type0();
-	TEST_ERR(err);
-	err = test_rtmp_header_type1();
-	TEST_ERR(err);
-	err = test_rtmp_header_type2();
-	TEST_ERR(err);
-	err = test_rtmp_header_type3();
-	TEST_ERR(err);
+	err |= test_rtmp_header_type0();
+	err |= test_rtmp_header_type1();
+	err |= test_rtmp_header_type2();
+	err |= test_rtmp_header_type3();
+	if (err)
+		return err;
 
-	err = test_rtmp_header(63);
-	TEST_ERR(err);
-	err = test_rtmp_header(319);
-	TEST_ERR(err);
-	err = test_rtmp_header(65599);
-	TEST_ERR(err);
+	err |= test_rtmp_header(63);
+	err |= test_rtmp_header(319);
+	err |= test_rtmp_header(65599);
+	if (err)
+		return err;
 
 	/* Test packet decoding */
-	err = test_rtmp_decode_audio();
-	TEST_ERR(err);
-	err = test_rtmp_decode_window_ack_size();
-	TEST_ERR(err);
+	err |= test_rtmp_decode_audio();
+	err |= test_rtmp_decode_window_ack_size();
+	if (err)
+		return err;
 
 	/* Test chunking */
-	err = test_rtmp_chunking();
-	TEST_ERR(err);
+	err |= test_rtmp_chunking();
+	if (err)
+		return err;
 
- out:
 	return err;
 }
