@@ -63,9 +63,9 @@ static int test_rtmp_header_type0(void)
 	TEST_EQUALS(0,               hdr.format);
 	TEST_EQUALS(chunk_id,        hdr.chunk_id);
 	TEST_EQUALS(timestamp,       hdr.timestamp);
-	TEST_EQUALS(msg_length,      hdr.message_length);
-	TEST_EQUALS(msg_type_id,     hdr.message_type_id);
-	TEST_EQUALS(msg_stream_id,   hdr.message_stream_id);
+	TEST_EQUALS(msg_length,      hdr.length);
+	TEST_EQUALS(msg_type_id,     hdr.type_id);
+	TEST_EQUALS(msg_stream_id,   hdr.stream_id);
 
  out:
 	mem_deref(mb);
@@ -103,8 +103,8 @@ static int test_rtmp_header_type1(void)
 	TEST_EQUALS(1,               hdr.format);
 	TEST_EQUALS(chunk_id,        hdr.chunk_id);
 	TEST_EQUALS(timestamp_delta, hdr.timestamp_delta);
-	TEST_EQUALS(msg_length,      hdr.message_length);
-	TEST_EQUALS(msg_type_id,     hdr.message_type_id);
+	TEST_EQUALS(msg_length,      hdr.length);
+	TEST_EQUALS(msg_type_id,     hdr.type_id);
 
  out:
 	mem_deref(mb);
@@ -209,9 +209,9 @@ static int test_rtmp_header(uint32_t chunk_id)
 	TEST_EQUALS(0,               hdr.format);
 	TEST_EQUALS(chunk_id,        hdr.chunk_id);
 	TEST_EQUALS(timestamp,       hdr.timestamp);
-	TEST_EQUALS(msg_length,      hdr.message_length);
-	TEST_EQUALS(msg_type_id,     hdr.message_type_id);
-	TEST_EQUALS(msg_stream_id,   hdr.message_stream_id);
+	TEST_EQUALS(msg_length,      hdr.length);
+	TEST_EQUALS(msg_type_id,     hdr.type_id);
+	TEST_EQUALS(msg_stream_id,   hdr.stream_id);
 
  out:
 	mem_deref(mb);
@@ -255,8 +255,8 @@ static const uint8_t packet_bytes[] = {
 	TEST_EQUALS(1,               hdr.format);
 	TEST_EQUALS(6,               hdr.chunk_id);
 	TEST_EQUALS(0,               hdr.timestamp_delta);
-	TEST_EQUALS(82,              hdr.message_length);
-	TEST_EQUALS(RTMP_TYPE_AUDIO, hdr.message_type_id);
+	TEST_EQUALS(82,              hdr.length);
+	TEST_EQUALS(RTMP_TYPE_AUDIO, hdr.type_id);
 
 	TEST_MEMCMP(packet_bytes + HDR_SIZE, sizeof(packet_bytes) - HDR_SIZE,
 		    mbuf_buf(mb), mbuf_get_left(mb));
@@ -293,9 +293,9 @@ static int test_rtmp_decode_window_ack_size(void)
 	TEST_EQUALS(0,                         hdr.format);
 	TEST_EQUALS(2,                         hdr.chunk_id);
 	TEST_EQUALS(0,                         hdr.timestamp);
-	TEST_EQUALS(4,                         hdr.message_length);
-	TEST_EQUALS(RTMP_TYPE_WINDOW_ACK_SIZE, hdr.message_type_id);
-	TEST_EQUALS(0,                         hdr.message_stream_id);
+	TEST_EQUALS(4,                         hdr.length);
+	TEST_EQUALS(RTMP_TYPE_WINDOW_ACK_SIZE, hdr.type_id);
+	TEST_EQUALS(0,                         hdr.stream_id);
 
 	TEST_EQUALS(4, mbuf_get_left(mb));
 	p = mbuf_buf(mb);
