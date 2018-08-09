@@ -350,8 +350,7 @@ struct test {
 };
 
 
-static void msg_handler(enum rtmp_packet_type type,
-			const uint8_t *msg, size_t len, void *arg)
+static void msg_handler(struct rtmp_message *msg, void *arg)
 {
 	struct test *test = arg;
 
@@ -359,8 +358,8 @@ static void msg_handler(enum rtmp_packet_type type,
 
 	mem_deref(test->buf);
 
-	test->buf = mem_ref((void *)msg);
-	test->buf_len = len;
+	test->buf = mem_ref(msg->buf);
+	test->buf_len = msg->length;
 }
 
 
