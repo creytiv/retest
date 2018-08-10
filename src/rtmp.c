@@ -339,6 +339,47 @@ static int test_rtmp_decode_window_ack_size(void)
 }
 
 
+static int test_rtmp_decode_ping_request(void)
+{
+	static const uint8_t packet_bytes[] = {
+		0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x04,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00,
+		0x50, 0x2e
+	};
+
+#define HDR_SIZE 8
+
+	struct rtmp_header hdr;
+	struct mbuf *mb;
+	const void *p;
+	uint16_t value;
+	int err;
+
+	mb = mbuf_packet(packet_bytes, sizeof(packet_bytes));
+
+	err = rtmp_header_decode(&hdr, mb);
+	TEST_ERR(err);
+
+	/* compare */
+	TEST_EQUALS(0,                         hdr.format);
+	TEST_EQUALS(RTMP_CHUNK_ID_CONTROL,     hdr.chunk_id);
+	TEST_EQUALS(0,                         hdr.timestamp);
+	TEST_EQUALS(6,                         hdr.length);
+	TEST_EQUALS(RTMP_TYPE_USER_CONTROL_MSG, hdr.type_id);
+	TEST_EQUALS(0,                         hdr.stream_id);
+
+	TEST_EQUALS(6, mbuf_get_left(mb));
+	p = mbuf_buf(mb);
+	value = ntohs( *(uint16_t *)p );
+
+	TEST_EQUALS(6, value);  /* Ping Request */
+
+ out:
+	mem_deref(mb);
+	return err;
+}
+
+
 struct test {
 	struct rtmp_dechunker *rd;
 	size_t n_chunk;
@@ -543,6 +584,7 @@ int test_rtmp(void)
 	/* Test packet decoding */
 	err |= test_rtmp_decode_audio();
 	err |= test_rtmp_decode_window_ack_size();
+	err |= test_rtmp_decode_ping_request();
 	if (err)
 		return err;
 
