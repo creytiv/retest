@@ -496,7 +496,7 @@ static int test_rtmp_chunking(void)
 	memset(&test, 0, sizeof(test));
 	test.rd = rd;
 
-	err = rtmp_chunker(3, timestamp, RTMP_TYPE_AUDIO, msg_stream_id,
+	err = rtmp_chunker(0, 3, timestamp, 0, RTMP_TYPE_AUDIO, msg_stream_id,
 			   short_payload, sizeof (short_payload),
 			   chunk_handler, &test);
 	if (err)
@@ -512,12 +512,11 @@ static int test_rtmp_chunking(void)
 	test.buf = mem_deref(test.buf);
 
 
-#if 1
 	/* Medium */
 	memset(&test, 0, sizeof(test));
 	test.rd = rd;
 
-	err = rtmp_chunker(3, timestamp, RTMP_TYPE_AMF0, msg_stream_id,
+	err = rtmp_chunker(0, 3, timestamp, 0, RTMP_TYPE_AMF0, msg_stream_id,
 			   amf_payload, sizeof (amf_payload),
 			   chunk_handler, &test);
 	if (err)
@@ -531,15 +530,13 @@ static int test_rtmp_chunking(void)
 		    test.buf, test.buf_len);
 
 	test.buf = mem_deref(test.buf);
-#endif
 
 
-#if 1
 	/* Large */
 	memset(&test, 0, sizeof(test));
 	test.rd = rd;
 
-	err = rtmp_chunker(3, timestamp, RTMP_TYPE_AMF0, msg_stream_id,
+	err = rtmp_chunker(0, 3, timestamp, 0, RTMP_TYPE_AMF0, msg_stream_id,
 			   large_payload, sizeof (large_payload),
 			   chunk_handler, &test);
 	if (err)
@@ -553,7 +550,6 @@ static int test_rtmp_chunking(void)
 		    test.buf, test.buf_len);
 
 	test.buf = mem_deref(test.buf);
-#endif
 
  out:
 	mem_deref(rd);
