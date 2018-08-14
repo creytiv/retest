@@ -559,6 +559,93 @@ static int test_rtmp_chunking(void)
 }
 
 
+static int amf_decode(struct mbuf *mb)
+{
+	char *str = 0;
+	int err = 0;
+
+	while (mbuf_get_left(mb) > 0) {
+
+		uint8_t type;
+		uint16_t len;
+
+		union {
+			uint64_t i;
+			double f;
+		} num;
+
+		type = mbuf_read_u8(mb);
+
+		switch (type) {
+
+		case AMF_TYPE_NUMBER: /* number */
+			num.i = sys_ntohll(mbuf_read_u64(mb));
+
+			re_printf("number: %f\n", num.f, num.i);
+			break;
+
+		case AMF_TYPE_STRING: /* string */
+			len = ntohs(mbuf_read_u16(mb));
+
+			err = mbuf_strdup(mb, &str, len);
+			if (err)
+				goto out;
+			re_printf("string: %u bytes (%s)\n", len, str);
+			break;
+
+		case AMF_TYPE_NULL: /* null */
+			re_printf("null\n");
+			break;
+
+		default:
+			re_printf("unknown amf type: %u\n", type);
+			err = EPROTO;
+			goto out;
+		}
+
+		str = mem_deref(str);
+	}
+
+ out:
+	mem_deref(str);
+
+	return err;
+}
+
+
+static int test_rtmp_amf(void)
+{
+	uint8_t packet_bytes[] = {
+		0x02, 0x00, 0x07, 0x5f,
+		0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x00, 0x40,
+		0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05,
+		0x00, 0x40, 0x82, 0xa3, 0xa9, 0xfb, 0xe7, 0x6c,
+		0x8b
+	};
+
+	struct mbuf *mb = mbuf_alloc(512);
+	int err = 0;
+
+	err |= amf_encode_string(mb, "_result");
+	err |= amf_encode_number(mb, 3.0);
+	err |= amf_encode_null(mb);
+	err |= amf_encode_number(mb, 596.458);
+
+	mb->pos = 0;
+
+	err = amf_decode(mb);
+	TEST_ERR(err);
+
+	TEST_MEMCMP(packet_bytes, sizeof(packet_bytes),
+		    mb->buf, mb->end);
+
+ out:
+	mem_deref(mb);
+
+	return err;
+}
+
+
 int test_rtmp(void)
 {
 	int err = 0;
@@ -586,6 +673,11 @@ int test_rtmp(void)
 
 	/* Test chunking */
 	err |= test_rtmp_chunking();
+	if (err)
+		return err;
+
+	/* AMF */
+	err = test_rtmp_amf();
 	if (err)
 		return err;
 
