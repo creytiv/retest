@@ -650,6 +650,20 @@ static int test_rtmp_amf_decode(void)
 	TEST_STRCMP("", 0, entry->key, str_len(entry->key));
 	TEST_STRCMP("connect", 7, entry->u.str, str_len(entry->u.str));
 
+	/* Re-encode it */
+
+	re_printf("## AMF Encode test\n");
+
+	mb->pos = 0;
+	mb->end = 0;
+
+	err = amf_encode_object(mb, dict);
+	TEST_ERR(err);
+
+
+	TEST_MEMCMP(amf_connect, sizeof(amf_connect),
+		    mb->buf, mb->end);
+
  out:
 	mem_deref(dict);
 	mem_deref(mb);
