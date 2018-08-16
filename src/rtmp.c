@@ -593,7 +593,6 @@ static int test_rtmp_amf_encode(void)
 
 static int test_rtmp_amf_loop(const uint8_t *buf, size_t len)
 {
-	struct odict_entry *entry = NULL;
 	struct odict *dict = NULL;
 	struct mbuf *mb = NULL;
 	int err;
@@ -610,16 +609,6 @@ static int test_rtmp_amf_loop(const uint8_t *buf, size_t len)
 #if 1
 	re_printf("ODICT: %H\n", odict_debug, dict);
 #endif
-
-	/* XXX: simple checks for now, add more later */
-
-	TEST_EQUALS(3, list_count(&dict->lst));
-
-	entry = list_ledata(list_head(&dict->lst));
-	TEST_ASSERT(entry != NULL);
-	TEST_EQUALS(ODICT_STRING, entry->type);
-	TEST_STRCMP("", 0, entry->key, str_len(entry->key));
-	TEST_STRCMP("connect", 7, entry->u.str, str_len(entry->u.str));
 
 	/* Re-encode it */
 
@@ -669,7 +658,6 @@ static const uint8_t amf_connect[] = {
 };
 
 
-#if 0
 static const uint8_t amf_result[] = {
 	0x02, 0x00, 0x07, 0x5f,
 	0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x00, 0x3f,
@@ -706,7 +694,6 @@ static const uint8_t amf_result[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x09
 };
-#endif
 
 
 static int test_rtmp_amf_random_input(void)
@@ -782,9 +769,7 @@ int test_rtmp(void)
 	/* AMF */
 	err  = test_rtmp_amf_encode();
 	err |= test_rtmp_amf_loop(amf_connect, sizeof(amf_connect));
-#if 0
 	err |= test_rtmp_amf_loop(amf_result, sizeof(amf_result));
-#endif
 	if (err)
 		return err;
 
