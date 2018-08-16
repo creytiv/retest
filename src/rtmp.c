@@ -709,6 +709,46 @@ static const uint8_t amf_result[] = {
 #endif
 
 
+static int test_rtmp_amf_random_input(void)
+{
+#define NUM_BYTES (1024*1024)
+	struct odict *dict = NULL;
+	struct mbuf *mb = NULL;
+	size_t i;
+	int err;
+
+	mb = mbuf_alloc(NUM_BYTES);
+
+	mb->pos = 0;
+	mb->end = NUM_BYTES;
+
+	rand_bytes(mb->buf, mb->end);
+
+	err = odict_alloc(&dict, 4096);
+	if (err)
+		goto out;
+
+	for (i = 0; i < NUM_BYTES; i++) {
+
+		int e;
+
+		if (mbuf_get_left(mb) == 0)
+			break;
+
+		e = amf_decode(dict, mb);
+		if (e == 0) {
+			re_printf("Success!\n");
+		}
+	}
+
+ out:
+	mem_deref(dict);
+	mem_deref(mb);
+
+	return err;
+}
+
+
 int test_rtmp(void)
 {
 	int err = 0;
@@ -747,6 +787,16 @@ int test_rtmp(void)
 #endif
 	if (err)
 		return err;
+
+	return err;
+}
+
+
+int test_rtmp_fuzzing(void)
+{
+	int err = 0;
+
+	err |= test_rtmp_amf_random_input();
 
 	return err;
 }
