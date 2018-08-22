@@ -719,7 +719,8 @@ static int test_rtmp_amf_encode_connect(void)
 }
 
 
-static int test_rtmp_amf_decode(const uint8_t *buf, size_t len)
+static int test_rtmp_amf_decode(const uint8_t *buf, size_t len,
+				size_t count, size_t count_all)
 {
 	struct odict *dict = NULL;
 	struct mbuf *mb = NULL;
@@ -738,7 +739,8 @@ static int test_rtmp_amf_decode(const uint8_t *buf, size_t len)
 	re_printf("ODICT: %H\n", odict_debug, dict);
 #endif
 
-	TEST_ASSERT(odict_count(dict, false) > 0);
+	TEST_EQUALS(count,     odict_count(dict, false));
+	TEST_EQUALS(count_all, odict_count(dict, true));
 
 	/* todo: verify decoded object */
 
@@ -822,8 +824,8 @@ int test_rtmp(void)
 
 	/* AMF */
 	err  = test_rtmp_amf_encode_connect();
-	err |= test_rtmp_amf_decode(amf_connect, sizeof(amf_connect));
-	err |= test_rtmp_amf_decode(amf_result, sizeof(amf_result));
+	err |= test_rtmp_amf_decode(amf_connect, sizeof(amf_connect), 3, 10);
+	err |= test_rtmp_amf_decode(amf_result, sizeof(amf_result), 4, 11);
 	if (err)
 		return err;
 
