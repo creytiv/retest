@@ -792,6 +792,137 @@ static int test_rtmp_amf_random_input(void)
 }
 
 
+struct rtmp_endpoint {
+	struct rtmp_endpoint *other;
+	struct rtmp_conn *conn;
+	struct tcp_sock *ts;     /* server only */
+	const char *tag;
+	bool is_client;
+	unsigned n_estab;
+	unsigned n_close;
+	int err;
+};
+
+
+static void estab_handler(void *arg)
+{
+	struct rtmp_endpoint *ep = arg;
+
+	DEBUG_NOTICE("[%s] Established\n", ep->tag);
+
+	++ep->n_estab;
+
+	if (ep->other->n_estab)
+		re_cancel();
+}
+
+
+static void close_handler(int err, void *arg)
+{
+	struct rtmp_endpoint *ep = arg;
+
+	DEBUG_NOTICE("rtmp connection closed (%m)\n", err);
+
+	ep->err = err;
+	++ep->n_close;
+
+	re_cancel();
+}
+
+
+static void endpoint_destructor(void *data)
+{
+	struct rtmp_endpoint *ep = data;
+
+	mem_deref(ep->conn);
+	mem_deref(ep->ts);
+}
+
+
+static struct rtmp_endpoint *rtmp_endpoint_alloc(bool is_client)
+{
+	struct rtmp_endpoint *ep;
+
+	ep = mem_zalloc(sizeof(*ep), endpoint_destructor);
+
+	ep->is_client = is_client;
+
+	ep->tag = is_client ? "Client" : "Server";
+
+	return ep;
+}
+
+
+static void tcp_conn_handler(const struct sa *peer, void *arg)
+{
+	struct rtmp_endpoint *ep = arg;
+	int err;
+
+	re_printf("incoming TCP connect from %J\n", peer);
+
+	err = rtmp_accept(&ep->conn, ep->ts, estab_handler, close_handler, ep);
+	if (err) {
+		ep->err = err;
+		re_cancel();
+	}
+}
+
+
+static int test_rtmp_client_server_conn(void)
+{
+	struct rtmp_endpoint *cli, *srv;
+	struct sa srv_addr;
+	char uri[256];
+	int err = 0;
+
+	re_printf("- - - client/server loop - - - start\n");
+
+	cli = rtmp_endpoint_alloc(true);
+	srv = rtmp_endpoint_alloc(false);
+	TEST_ASSERT(cli != NULL);
+	TEST_ASSERT(srv != NULL);
+
+	cli->other = srv;
+	srv->other = cli;
+
+	err = sa_set_str(&srv_addr, "127.0.0.1", 0);
+	TEST_ERR(err);
+
+	err = tcp_listen(&srv->ts, &srv_addr, tcp_conn_handler, srv);
+	TEST_ERR(err);
+
+	err = tcp_local_get(srv->ts, &srv_addr);
+	TEST_ERR(err);
+
+	re_printf("TCP listening on %J\n", &srv_addr);
+
+	re_snprintf(uri, sizeof(uri), "rtmp://%J/vod/foo", &srv_addr);
+
+	err = rtmp_connect(&cli->conn, uri, estab_handler, close_handler, cli);
+	TEST_ERR(err);
+
+	err = re_main_timeout(2000);
+	if (err)
+		goto out;
+
+	TEST_EQUALS(0, cli->err);
+	TEST_EQUALS(0, srv->err);
+
+	TEST_EQUALS(1, cli->n_estab);
+	TEST_EQUALS(1, srv->n_estab);
+	TEST_EQUALS(0, cli->n_close);
+	TEST_EQUALS(0, srv->n_close);
+
+	re_printf("- - - client/server loop - - - end\n");
+
+ out:
+	mem_deref(srv);
+	mem_deref(cli);
+
+	return err;
+}
+
+
 int test_rtmp(void)
 {
 	int err = 0;
@@ -826,6 +957,10 @@ int test_rtmp(void)
 	err  = test_rtmp_amf_encode_connect();
 	err |= test_rtmp_amf_decode(amf_connect, sizeof(amf_connect), 3, 10);
 	err |= test_rtmp_amf_decode(amf_result, sizeof(amf_result), 4, 11);
+	if (err)
+		return err;
+
+	err = test_rtmp_client_server_conn();
 	if (err)
 		return err;
 
