@@ -721,6 +721,8 @@ static int test_rtmp_amf_encode_connect(void)
 	int err;
 
 	mb = mbuf_alloc(512);
+	if (!mb)
+		return ENOMEM;
 
 	err  = rtmp_amf_encode_string(mb, "connect");
 	err |= rtmp_amf_encode_number(mb, 1.0);
@@ -783,6 +785,8 @@ static int test_rtmp_amf_encode_connect_result(void)
 	int err;
 
 	mb = mbuf_alloc(512);
+	if (!mb)
+		return ENOMEM;
 
 	err  = rtmp_amf_encode_string(mb, "_result");
 	err |= rtmp_amf_encode_number(mb, 1);
@@ -851,6 +855,8 @@ static int test_rtmp_amf_encode_createstream(void)
 	int err;
 
 	mb = mbuf_alloc(512);
+	if (!mb)
+		return ENOMEM;
 
 	err  = rtmp_amf_encode_string(mb, "createStream");
 	err |= rtmp_amf_encode_number(mb, 2);
@@ -908,6 +914,8 @@ static int test_rtmp_amf_random_input(void)
 	int err;
 
 	mb = mbuf_alloc(NUM_BYTES);
+	if (!mb)
+		return ENOMEM;
 
 	mb->pos = 0;
 	mb->end = NUM_BYTES;
@@ -1050,6 +1058,9 @@ static int test_rtmp_client_server_conn(void)
 
 	err = re_main_timeout(2000);
 	if (err)
+		goto out;
+
+	if (cli->err == ENOMEM || srv->err == ENOMEM)
 		goto out;
 
 	TEST_EQUALS(0, cli->err);
