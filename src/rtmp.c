@@ -1007,6 +1007,9 @@ static int test_rtmp_client_server_conn(void)
 	TEST_EQUALS(0, cli->n_close);
 	TEST_EQUALS(0, srv->n_close);
 
+	TEST_EQUALS(2500000, rtmp_window_ack_size(cli->conn));
+	TEST_EQUALS(2500000, rtmp_window_ack_size(srv->conn));
+
 	re_printf("- - - client/server loop - - - end\n");
 
  out:
