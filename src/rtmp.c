@@ -717,7 +717,7 @@ static const uint8_t amf_createstream[] = {
 
 static int test_rtmp_amf_encode_connect(void)
 {
-	struct mbuf *mb = 0;
+	struct mbuf *mb = NULL;
 	int err;
 
 	mb = mbuf_alloc(512);
@@ -727,39 +727,7 @@ static int test_rtmp_amf_encode_connect(void)
 	err  = rtmp_amf_encode_string(mb, "connect");
 	err |= rtmp_amf_encode_number(mb, 1.0);
 
-#if 0
-	err |= rtmp_amf_encode_object_start(mb);
-	{
-		err |= rtmp_amf_encode_key(mb, "app");
-		err |= rtmp_amf_encode_string(mb, "vod");
-
-		err |= rtmp_amf_encode_key(mb, "flashVer");
-		err |= rtmp_amf_encode_string(mb, "LNX 9,0,124,2");
-
-		err |= rtmp_amf_encode_key(mb, "tcUrl");
-		err |= rtmp_amf_encode_string(mb,
-				      "rtmp://184.72.239.149:1935/vod");
-
-		err |= rtmp_amf_encode_key(mb, "fpad");
-		err |= rtmp_amf_encode_boolean(mb, false);
-
-		err |= rtmp_amf_encode_key(mb, "capabilities");
-		err |= rtmp_amf_encode_number(mb, 15.0);
-
-		err |= rtmp_amf_encode_key(mb, "audioCodecs");
-		err |= rtmp_amf_encode_number(mb, 4071.0);
-
-		err |= rtmp_amf_encode_key(mb, "videoCodecs");
-		err |= rtmp_amf_encode_number(mb, 252.0);
-
-		err |= rtmp_amf_encode_key(mb, "videoFunction");
-		err |= rtmp_amf_encode_number(mb, 1.0);
-	}
-	err |= rtmp_amf_encode_object_end(mb);
-	TEST_ERR(err);
-#endif
-
-	err = rtmp_amf_encode_object(mb, false, 8,
+	err |= rtmp_amf_encode_object(mb, false, 8,
 		     AMF_TYPE_STRING, "app", "vod",
 		     AMF_TYPE_STRING, "flashVer", "LNX 9,0,124,2",
 		     AMF_TYPE_STRING, "tcUrl","rtmp://184.72.239.149:1935/vod",
@@ -781,7 +749,7 @@ static int test_rtmp_amf_encode_connect(void)
 
 static int test_rtmp_amf_encode_connect_result(void)
 {
-	struct mbuf *mb = 0;
+	struct mbuf *mb = NULL;
 	int err;
 
 	mb = mbuf_alloc(512);
@@ -796,38 +764,6 @@ static int test_rtmp_amf_encode_connect_result(void)
 			     AMF_TYPE_NUMBER, "capabilities", 31.0,
 			     AMF_TYPE_NUMBER, "mode", 1.0);
 	TEST_ERR(err);
-
-
-#if 0
-	err |= rtmp_amf_encode_object_start(mb);
-	{
-		err |= rtmp_amf_encode_key(mb, "level");
-		err |= rtmp_amf_encode_string(mb, "status");
-
-		err |= rtmp_amf_encode_key(mb, "code");
-		err |= rtmp_amf_encode_string(mb,
-					      "NetConnection.Connect.Success");
-
-		err |= rtmp_amf_encode_key(mb, "description");
-		err |= rtmp_amf_encode_string(mb, "Connection succeeded.");
-
-		err |= rtmp_amf_encode_key(mb, "data");
-		err |= rtmp_amf_encode_array_start(mb, 0); /* TODO */
-		{
-			err |= rtmp_amf_encode_key(mb, "version");
-			err |= rtmp_amf_encode_string(mb, "3,5,7,7009");
-		}
-		err |= rtmp_amf_encode_object_end(mb);
-
-		err |= rtmp_amf_encode_key(mb, "clientid");
-		err |= rtmp_amf_encode_number(mb, 734806661);
-
-		err |= rtmp_amf_encode_key(mb, "objectEncoding");
-		err |= rtmp_amf_encode_number(mb, 0);
-	}
-	err |= rtmp_amf_encode_object_end(mb);
-	TEST_ERR(err);
-#endif
 
 	err |= rtmp_amf_encode_object(mb, false, 6,
 	      AMF_TYPE_STRING, "level", "status",
