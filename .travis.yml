@@ -15,4 +15,5 @@ install:
 script: 
     - make EXTRA_CFLAGS=-Werror
     - ./retest -r
+    - ./retest -o
     - python2 ccheck.py
