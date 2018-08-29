@@ -714,6 +714,16 @@ static const uint8_t amf_createstream[] = {
 	0x05
 };
 
+static const uint8_t amf_publish[] = {
+	0x02, 0x00, 0x07, 0x70,
+	0x75, 0x62, 0x6c, 0x69, 0x73, 0x68, 0x00, 0x40,
+	0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05,
+	0x02, 0x00, 0x10, 0x76, 0x79, 0x62, 0x51, 0x4e,
+	0x46, 0x65, 0x37, 0x59, 0x72, 0x62, 0x30, 0x4e,
+	0x33, 0x4f, 0x51, 0x02, 0x00, 0x04, 0x6c, 0x69,
+	0x76, 0x65
+};
+
 
 static int test_rtmp_amf_encode_connect(void)
 {
@@ -808,10 +818,36 @@ static int test_rtmp_amf_encode_createstream(void)
 }
 
 
+static int test_rtmp_amf_encode_publish(void)
+{
+	struct mbuf *mb = NULL;
+	int err;
+
+	mb = mbuf_alloc(512);
+	if (!mb)
+		return ENOMEM;
+
+	err  = rtmp_amf_encode_string(mb, "publish");
+	err |= rtmp_amf_encode_number(mb, 5);
+	err |= rtmp_amf_encode_null(mb);
+	err |= rtmp_amf_encode_string(mb, "vybQNFe7Yrb0N3OQ");
+	err |= rtmp_amf_encode_string(mb, "live");
+
+	TEST_MEMCMP(amf_publish, sizeof(amf_publish), mb->buf, mb->end);
+
+ out:
+	mem_deref(mb);
+
+	return err;
+}
+
+
 static int test_rtmp_amf_decode(const uint8_t *buf, size_t len,
-				size_t count, size_t count_all)
+				size_t count, size_t count_all,
+				const char *command_name)
 {
 	struct odict *dict = NULL;
+	struct odict_entry *e;
 	struct mbuf *mb = NULL;
 	int err;
 
@@ -824,12 +860,18 @@ static int test_rtmp_amf_decode(const uint8_t *buf, size_t len,
 	err = rtmp_amf_decode(dict, mb);
 	TEST_ERR(err);
 
-#if 1
+#if 0
 	re_printf("ODICT: %H\n", odict_debug, dict);
 #endif
 
 	TEST_EQUALS(count,     odict_count(dict, false));
 	TEST_EQUALS(count_all, odict_count(dict, true));
+
+	e = list_ledata(dict->lst.head);
+	TEST_ASSERT(e != NULL);
+	TEST_EQUALS(ODICT_STRING, e->type);
+	TEST_STRCMP(command_name, str_len(command_name),
+		    e->u.str, str_len(e->u.str));
 
 	/* todo: verify decoded object */
 
@@ -1054,10 +1096,18 @@ int test_rtmp(void)
 	err  = test_rtmp_amf_encode_connect();
 	err |= test_rtmp_amf_encode_connect_result();
 	err |= test_rtmp_amf_encode_createstream();
-	err |= test_rtmp_amf_decode(amf_connect, sizeof(amf_connect), 3, 10);
-	err |= test_rtmp_amf_decode(amf_result, sizeof(amf_result), 4, 11);
+	err |= test_rtmp_amf_encode_publish();
+
+	err |= test_rtmp_amf_decode(amf_connect, sizeof(amf_connect), 3, 10,
+				    "connect");
+	err |= test_rtmp_amf_decode(amf_result, sizeof(amf_result), 4, 11,
+				    "_result");
 	err |= test_rtmp_amf_decode(amf_connect_result,
-				    sizeof(amf_connect_result), 4, 11);
+				    sizeof(amf_connect_result), 4, 11,
+				    "_result");
+	err |= test_rtmp_amf_decode(amf_publish,
+				    sizeof(amf_publish), 5, 5,
+				    "publish");
 	if (err)
 		return err;
 
