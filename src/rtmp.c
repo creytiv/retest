@@ -940,13 +940,26 @@ struct rtmp_endpoint {
 static void estab_handler(void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
+	int err = 0;
 
 	DEBUG_NOTICE("[%s] Established\n", ep->tag);
 
 	++ep->n_estab;
 
+	if (ep->is_client) {
+		err = rtmp_createstream(ep->conn);
+		if (err)
+			goto error;
+	}
+
 	if (ep->other->n_estab)
 		re_cancel();
+
+	return;
+
+ error:
+	ep->err = err;
+	re_cancel();
 }
 
 
