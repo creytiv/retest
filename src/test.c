@@ -768,6 +768,10 @@ int re_main_timeout(uint32_t timeout_ms)
 
 	tmr_init(&tmr);
 
+#ifdef TEST_TIMEOUT
+	timeout_ms = TEST_TIMEOUT;
+#endif
+
 	tmr_start(&tmr, timeout_ms, oom_watchdog_timeout, &err);
 	(void)re_main(signal_handler);
 
