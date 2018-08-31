@@ -963,6 +963,13 @@ static void estab_handler(void *arg)
 }
 
 
+static void status_handler(struct odict *dict, void *arg)
+{
+	struct rtmp_endpoint *ep = arg;
+	(void)ep;
+}
+
+
 static void close_handler(int err, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
@@ -1006,7 +1013,8 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 
 	re_printf("incoming TCP connect from %J\n", peer);
 
-	err = rtmp_accept(&ep->conn, ep->ts, estab_handler, close_handler, ep);
+	err = rtmp_accept(&ep->conn, ep->ts, estab_handler,
+			  status_handler, close_handler, ep);
 	if (err) {
 		ep->err = err;
 		re_cancel();
@@ -1044,7 +1052,8 @@ static int test_rtmp_client_server_conn(void)
 
 	re_snprintf(uri, sizeof(uri), "rtmp://%J/vod/foo", &srv_addr);
 
-	err = rtmp_connect(&cli->conn, uri, estab_handler, close_handler, cli);
+	err = rtmp_connect(&cli->conn, uri, estab_handler,
+			   status_handler, close_handler, cli);
 	TEST_ERR(err);
 
 	err = re_main_timeout(2000);
