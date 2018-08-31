@@ -587,6 +587,7 @@ struct dechunk_test {
 static void dechunk_msg_handler(struct rtmp_message *msg, void *arg)
 {
 	struct dechunk_test *dctest = arg;
+	(void)msg;
 
 	++dctest->n_msg;
 }
@@ -1040,6 +1041,7 @@ static void status_handler(struct odict *dict, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
 	(void)ep;
+	(void)dict;
 }
 
 
