@@ -13,6 +13,26 @@
 #include <re_dbg.h>
 
 
+/*
+ * Various complete RTMP packets
+ */
+
+static const uint8_t rtmp_was[] = {
+	0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x05,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x26, 0x25, 0xa0
+};
+
+static const uint8_t rtmp_video_data[] = {
+	0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x09,
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
+};
+
+
+/*
+ * Helper functions
+ */
+
+
 static struct mbuf *mbuf_packet(const uint8_t *pkt, size_t len)
 {
 	struct mbuf *mb;
@@ -555,6 +575,59 @@ static int test_rtmp_chunking(void)
 	mem_deref(rd);
 	mem_deref(test.buf);
 
+	return err;
+}
+
+
+struct dechunk_test {
+	unsigned n_msg;
+};
+
+
+static void dechunk_msg_handler(struct rtmp_message *msg, void *arg)
+{
+	struct dechunk_test *dctest = arg;
+
+	++dctest->n_msg;
+}
+
+
+static int test_rtmp_dechunking(void)
+{
+	static const struct test {
+		const uint8_t *pkt;
+		size_t size;
+	} testv[] = {
+		{ rtmp_was,        ARRAY_SIZE(rtmp_was)        },
+		{ rtmp_video_data, ARRAY_SIZE(rtmp_video_data) },
+	};
+	struct dechunk_test dctest = {0};
+	struct rtmp_dechunker *dechunk = NULL;
+	size_t i;
+	int err;
+
+	err = rtmp_dechunker_alloc(&dechunk, dechunk_msg_handler, &dctest);
+	TEST_ERR(err);
+
+	for (i=0; i<ARRAY_SIZE(testv); i++) {
+
+		const struct test *test = &testv[i];
+		struct mbuf mb = {
+			.pos  = 0,
+			.end  = test->size,
+			.size = test->size,
+			.buf  = (void *)test->pkt
+		};
+
+		err = rtmp_dechunker_receive(dechunk, &mb);
+		if (err)
+			goto out;
+	}
+
+	TEST_EQUALS(ARRAY_SIZE(testv), dctest.n_msg);
+
+ out:
+	mem_deref(dechunk);
 	return err;
 }
 
@@ -1111,6 +1184,7 @@ int test_rtmp(void)
 
 	/* Test chunking */
 	err |= test_rtmp_chunking();
+	err |= test_rtmp_dechunking();
 	if (err)
 		return err;
 
