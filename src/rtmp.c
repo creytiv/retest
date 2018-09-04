@@ -49,16 +49,6 @@ static struct mbuf *mbuf_packet(const uint8_t *pkt, size_t len)
 }
 
 
-static void rtmp_header_init(struct rtmp_header *hdr,
-			     unsigned fmt, uint32_t chunk_id)
-{
-	memset(hdr, 0, sizeof(*hdr));
-
-	hdr->format   = fmt;
-	hdr->chunk_id = chunk_id;
-}
-
-
 static int test_rtmp_header_type0(void)
 {
 	struct rtmp_header hdr0, hdr;
