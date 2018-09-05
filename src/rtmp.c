@@ -505,7 +505,7 @@ static int test_rtmp_chunking(void)
 
 	err = rtmp_chunker(0, 3, timestamp, 0, RTMP_TYPE_AUDIO, msg_stream_id,
 			   short_payload, sizeof (short_payload),
-			   chunk_handler, &test);
+			   RTMP_DEFAULT_CHUNKSIZE, chunk_handler, &test);
 	if (err)
 		goto out;
 
@@ -524,7 +524,7 @@ static int test_rtmp_chunking(void)
 
 	err = rtmp_chunker(0, 3, timestamp, 0, RTMP_TYPE_AMF0, msg_stream_id,
 			   amf_payload, sizeof (amf_payload),
-			   chunk_handler, &test);
+			   RTMP_DEFAULT_CHUNKSIZE, chunk_handler, &test);
 	if (err)
 		goto out;
 
@@ -543,7 +543,7 @@ static int test_rtmp_chunking(void)
 
 	err = rtmp_chunker(0, 3, timestamp, 0, RTMP_TYPE_AMF0, msg_stream_id,
 			   large_payload, sizeof (large_payload),
-			   chunk_handler, &test);
+			   RTMP_DEFAULT_CHUNKSIZE, chunk_handler, &test);
 	if (err)
 		goto out;
 
