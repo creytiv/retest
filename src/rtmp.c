@@ -516,7 +516,6 @@ static int test_rtmp_chunking(void)
 
 	test.buf = mem_deref(test.buf);
 
-
 	/* Medium */
 	memset(&test, 0, sizeof(test));
 	test.rd = rd;
@@ -535,7 +534,6 @@ static int test_rtmp_chunking(void)
 		    test.buf, test.buf_len);
 
 	test.buf = mem_deref(test.buf);
-
 
 	/* Large */
 	memset(&test, 0, sizeof(test));
@@ -566,26 +564,45 @@ static int test_rtmp_chunking(void)
 
 struct dechunk_test {
 	unsigned n_msg;
+	uint32_t last_chunk_id;
+	uint32_t last_stream_id;
+	int err;
 };
 
 
 static void dechunk_msg_handler(struct rtmp_message *msg, void *arg)
 {
 	struct dechunk_test *dctest = arg;
+	int err = 0;
 	(void)msg;
 
+	re_printf("### message: %s\n", rtmp_packet_type_name(msg->type));
+
 	++dctest->n_msg;
+
+	TEST_EQUALS(4, msg->length);
+	TEST_ASSERT(msg->buf != NULL);
+	TEST_EQUALS(msg->length, msg->pos);
+
+	dctest->last_chunk_id = msg->chunk_id;
+	dctest->last_stream_id = msg->stream_id;
+
+ out:
+	if (err)
+		dctest->err = err;
 }
 
 
 static int test_rtmp_dechunking(void)
 {
 	static const struct test {
+		uint32_t chunk_id;
+		uint32_t stream_id;
 		const uint8_t *pkt;
 		size_t size;
 	} testv[] = {
-		{ rtmp_was,        ARRAY_SIZE(rtmp_was)        },
-		{ rtmp_video_data, ARRAY_SIZE(rtmp_video_data) },
+		{ 2, 0, rtmp_was,        ARRAY_SIZE(rtmp_was)        },
+		{ 6, 1, rtmp_video_data, ARRAY_SIZE(rtmp_video_data) },
 	};
 	struct dechunk_test dctest = {0};
 	struct rtmp_dechunker *dechunk = NULL;
@@ -608,6 +625,14 @@ static int test_rtmp_dechunking(void)
 		err = rtmp_dechunker_receive(dechunk, &mb);
 		if (err)
 			goto out;
+
+		if (dctest.err) {
+			err = dctest.err;
+			goto out;
+		}
+
+		TEST_EQUALS(test->chunk_id, dctest.last_chunk_id);
+		TEST_EQUALS(test->stream_id, dctest.last_stream_id);
 	}
 
 	TEST_EQUALS(ARRAY_SIZE(testv), dctest.n_msg);
@@ -1175,12 +1200,15 @@ int test_rtmp(void)
 	if (err)
 		return err;
 
-	/* AMF */
+	/* AMF Encode */
 	err  = test_rtmp_amf_encode_connect();
 	err |= test_rtmp_amf_encode_connect_result();
 	err |= test_rtmp_amf_encode_createstream();
 	err |= test_rtmp_amf_encode_publish();
+	if (err)
+		return err;
 
+	/* AMF Encode */
 	err |= test_rtmp_amf_decode(amf_connect, sizeof(amf_connect), 3, 10,
 				    "connect");
 	err |= test_rtmp_amf_decode(amf_result, sizeof(amf_result), 4, 11,
@@ -1194,6 +1222,7 @@ int test_rtmp(void)
 	if (err)
 		return err;
 
+	/* Client/Server loop */
 	err = test_rtmp_client_server_conn();
 	if (err)
 		return err;
