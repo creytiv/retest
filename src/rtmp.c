@@ -26,7 +26,9 @@ static const uint8_t rtmp_was[] = {
 	 * ffplay rtmp://184.72.239.149/vod/mp4:bigbuckbunny_450.mp4
 	 */
 static const uint8_t rtmp_audio_data[] = {
-	0x46, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x08,
+	0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x08,
+	0x01, 0x00, 0x00, 0x00,
+
 	0xaf, 0x00, 0x11, 0x90, 0x08, 0xc4, 0x00, 0x00,
 	0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -42,7 +44,9 @@ static const uint8_t rtmp_audio_data[] = {
 
 static const uint8_t rtmp_video_data[] = {
 	0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x09,
-	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
+	0x01, 0x00, 0x00, 0x00,
+
+	0x00, 0x00, 0x00, 0x01
 };
 
 static const uint8_t rtmp_ping_request[] = {
@@ -286,7 +290,7 @@ static int test_rtmp_header(uint32_t chunk_id)
 static int test_rtmp_decode_audio(void)
 {
 
-#define HDR_SIZE 8
+#define HDR_SIZE 12
 
 	struct rtmp_header hdr;
 	struct mbuf *mb;
@@ -298,9 +302,10 @@ static int test_rtmp_decode_audio(void)
 	TEST_ERR(err);
 
 	/* compare */
-	TEST_EQUALS(1,               hdr.format);
+	TEST_EQUALS(0,               hdr.format);
 	TEST_EQUALS(6,               hdr.chunk_id);
-	TEST_EQUALS(0,               hdr.timestamp_delta);
+	TEST_EQUALS(0,               hdr.timestamp);
+	/*TEST_EQUALS(0,               hdr.timestamp_delta);*/
 	TEST_EQUALS(82,              hdr.length);
 	TEST_EQUALS(RTMP_TYPE_AUDIO, hdr.type_id);
 
@@ -318,9 +323,6 @@ static int test_rtmp_decode_audio(void)
 
 static int test_rtmp_decode_window_ack_size(void)
 {
-
-#define HDR_SIZE 8
-
 	struct rtmp_header hdr;
 	struct mbuf *mb;
 	const void *p;
@@ -564,8 +566,11 @@ static int test_rtmp_chunking(void)
 
 struct dechunk_test {
 	unsigned n_msg;
+
 	uint32_t last_chunk_id;
+	size_t   last_length;
 	uint32_t last_stream_id;
+
 	int err;
 };
 
@@ -580,11 +585,11 @@ static void dechunk_msg_handler(struct rtmp_message *msg, void *arg)
 
 	++dctest->n_msg;
 
-	TEST_EQUALS(4, msg->length);
 	TEST_ASSERT(msg->buf != NULL);
 	TEST_EQUALS(msg->length, msg->pos);
 
-	dctest->last_chunk_id = msg->chunk_id;
+	dctest->last_chunk_id  = msg->chunk_id;
+	dctest->last_length    = msg->length;
 	dctest->last_stream_id = msg->stream_id;
 
  out:
@@ -597,12 +602,15 @@ static int test_rtmp_dechunking(void)
 {
 	static const struct test {
 		uint32_t chunk_id;
+		size_t length;
 		uint32_t stream_id;
+
 		const uint8_t *pkt;
 		size_t size;
 	} testv[] = {
-		{ 2, 0, rtmp_was,        ARRAY_SIZE(rtmp_was)        },
-		{ 6, 1, rtmp_video_data, ARRAY_SIZE(rtmp_video_data) },
+		{ 2,  4, 0, rtmp_was,        ARRAY_SIZE(rtmp_was)        },
+		{ 6, 82, 1, rtmp_audio_data, ARRAY_SIZE(rtmp_audio_data) },
+		{ 6,  4, 1, rtmp_video_data, ARRAY_SIZE(rtmp_video_data) },
 	};
 	struct dechunk_test dctest = {0};
 	struct rtmp_dechunker *dechunk = NULL;
@@ -631,7 +639,8 @@ static int test_rtmp_dechunking(void)
 			goto out;
 		}
 
-		TEST_EQUALS(test->chunk_id, dctest.last_chunk_id);
+		TEST_EQUALS(test->chunk_id,  dctest.last_chunk_id);
+		TEST_EQUALS(test->length,    dctest.last_length);
 		TEST_EQUALS(test->stream_id, dctest.last_stream_id);
 	}
 
