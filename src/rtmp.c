@@ -1027,6 +1027,10 @@ struct rtmp_endpoint {
 	unsigned n_estab;
 	unsigned n_close;
 	int err;
+
+	struct tcp_helper *th;
+	size_t packet_count;
+	bool fuzzing;
 };
 
 
@@ -1035,7 +1039,7 @@ static void estab_handler(void *arg)
 	struct rtmp_endpoint *ep = arg;
 	int err = 0;
 
-	DEBUG_NOTICE("[%s] Established\n", ep->tag);
+	DEBUG_INFO("[%s] Established\n", ep->tag);
 
 	++ep->n_estab;
 
@@ -1100,12 +1104,56 @@ static struct rtmp_endpoint *rtmp_endpoint_alloc(bool is_client)
 }
 
 
+static void apply_fuzzing(struct rtmp_endpoint *ep, struct mbuf *mb)
+{
+	const size_t len = mbuf_get_left(mb);
+	size_t pos;
+	bool flip;
+	unsigned bit;
+
+	++ep->packet_count;
+
+	pos = rand_u16() % len;
+	bit = rand_u16() % 8;
+
+	/* percent change of corrupt packet */
+	flip = ((rand_u16() % 100) < 33);
+
+	if (flip) {
+		re_printf("    packet #%zu: flip bit %u at pos %zu\n",
+			  ep->packet_count, bit, pos);
+
+		/* flip a random bit */
+		mbuf_buf(mb)[pos] ^= 1<<bit;
+	}
+}
+
+
+static bool helper_send_handler(int *err, struct mbuf *mb, void *arg)
+{
+	struct rtmp_endpoint *ep = arg;
+
+	apply_fuzzing(ep, mb);
+
+	return false;
+}
+
+
+static bool helper_recv_handler(int *err, struct mbuf *mb, bool *estab,
+				void *arg)
+{
+	struct rtmp_endpoint *ep = arg;
+
+	apply_fuzzing(ep, mb);
+
+	return false;
+}
+
+
 static void tcp_conn_handler(const struct sa *peer, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
 	int err;
-
-	re_printf("incoming TCP connect from %J\n", peer);
 
 	err = rtmp_accept(&ep->conn, ep->ts, estab_handler,
 			  status_handler, close_handler, ep);
@@ -1113,10 +1161,22 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 		ep->err = err;
 		re_cancel();
 	}
+
+	/* Enable fuzzing on the server */
+	if (ep->fuzzing) {
+		err = tcp_register_helper(&ep->th, rtmp_conn_tcpconn(ep->conn),
+					  -1000,
+					  0, helper_send_handler,
+					  helper_recv_handler, ep);
+		if (err) {
+			ep->err = err;
+			re_cancel();
+		}
+	}
 }
 
 
-static int test_rtmp_client_server_conn(void)
+static int test_rtmp_client_server_conn(bool fuzzing)
 {
 	struct rtmp_endpoint *cli, *srv;
 	struct sa srv_addr;
@@ -1130,6 +1190,9 @@ static int test_rtmp_client_server_conn(void)
 	TEST_ASSERT(cli != NULL);
 	TEST_ASSERT(srv != NULL);
 
+	cli->fuzzing = fuzzing;
+	srv->fuzzing = fuzzing;
+
 	cli->other = srv;
 	srv->other = cli;
 
@@ -1142,23 +1205,20 @@ static int test_rtmp_client_server_conn(void)
 	err = tcp_local_get(srv->ts, &srv_addr);
 	TEST_ERR(err);
 
-	re_printf("TCP listening on %J\n", &srv_addr);
-
 	re_snprintf(uri, sizeof(uri), "rtmp://%J/vod/foo", &srv_addr);
 
 	err = rtmp_connect(&cli->conn, uri, estab_handler,
 			   status_handler, close_handler, cli);
 	TEST_ERR(err);
 
-	err = re_main_timeout(2000);
+	err = re_main_timeout(1000);
 	if (err)
 		goto out;
 
-	if (cli->err == ENOMEM || srv->err == ENOMEM)
-		goto out;
+	re_printf("- - - client/server loop - - - end\n");
 
-	TEST_EQUALS(0, cli->err);
-	TEST_EQUALS(0, srv->err);
+	if (cli->err || srv->err)
+		goto out;
 
 	TEST_EQUALS(1, cli->n_estab);
 	TEST_EQUALS(1, srv->n_estab);
@@ -1167,8 +1227,6 @@ static int test_rtmp_client_server_conn(void)
 
 	TEST_EQUALS(2500000, rtmp_window_ack_size(cli->conn));
 	TEST_EQUALS(2500000, rtmp_window_ack_size(srv->conn));
-
-	re_printf("- - - client/server loop - - - end\n");
 
  out:
 	mem_deref(srv);
@@ -1232,7 +1290,7 @@ int test_rtmp(void)
 		return err;
 
 	/* Client/Server loop */
-	err = test_rtmp_client_server_conn();
+	err = test_rtmp_client_server_conn(false);
 	if (err)
 		return err;
 
@@ -1242,9 +1300,22 @@ int test_rtmp(void)
 
 int test_rtmp_fuzzing(void)
 {
-	int err = 0;
+	int err = 0, e;
+	int i;
 
-	err |= test_rtmp_amf_random_input();
+#if 1
+	err = test_rtmp_amf_random_input();
+	if (err)
+		return err;
+#endif
+
+	for (i=0; i<32; i++) {
+
+		/* Client/Server loop */
+		e = test_rtmp_client_server_conn(true);
+
+		re_printf("fuzzing test %d returned: %m\n", i, e);
+	}
 
 	return err;
 }
