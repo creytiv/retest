@@ -581,12 +581,13 @@ static void dechunk_msg_handler(struct rtmp_message *msg, void *arg)
 	int err = 0;
 	(void)msg;
 
-	re_printf("### message: %s\n", rtmp_packet_type_name(msg->type));
-
 	++dctest->n_msg;
 
+	TEST_EQUALS(0, msg->format);
 	TEST_ASSERT(msg->buf != NULL);
 	TEST_EQUALS(msg->length, msg->pos);
+	TEST_EQUALS(0, msg->timestamp);
+	/* XXX: compare timestamp_delta later */
 
 	dctest->last_chunk_id  = msg->chunk_id;
 	dctest->last_length    = msg->length;
