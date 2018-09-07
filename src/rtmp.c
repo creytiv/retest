@@ -1022,17 +1022,31 @@ static int test_rtmp_amf_random_input(void)
 struct rtmp_endpoint {
 	struct rtmp_endpoint *other;
 	struct rtmp_conn *conn;
+	struct rtmp_stream *stream;
 	struct tcp_sock *ts;     /* server only */
 	const char *tag;
 	bool is_client;
 	unsigned n_estab;
 	unsigned n_close;
+	unsigned n_ready;
 	int err;
 
 	struct tcp_helper *th;
 	size_t packet_count;
 	bool fuzzing;
 };
+
+
+static void stream_ready_handler(void *arg)
+{
+	struct rtmp_endpoint *ep = arg;
+
+	++ep->n_ready;
+
+	re_printf("Ready!\n");
+
+	re_cancel();
+}
 
 
 static void estab_handler(void *arg)
@@ -1045,13 +1059,18 @@ static void estab_handler(void *arg)
 	++ep->n_estab;
 
 	if (ep->is_client) {
-		err = rtmp_createstream(ep->conn);
+
+		err = rtmp_play(&ep->stream, ep->conn,
+				"sample.mp4", stream_ready_handler,
+				NULL, NULL, ep);
 		if (err)
 			goto error;
 	}
 
+#if 0
 	if (ep->other->n_estab)
 		re_cancel();
+#endif
 
 	return;
 
@@ -1225,6 +1244,8 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 	TEST_EQUALS(1, srv->n_estab);
 	TEST_EQUALS(0, cli->n_close);
 	TEST_EQUALS(0, srv->n_close);
+	TEST_EQUALS(1, cli->n_ready);
+	TEST_EQUALS(0, srv->n_ready);
 
 	TEST_EQUALS(2500000, rtmp_window_ack_size(cli->conn));
 	TEST_EQUALS(2500000, rtmp_window_ack_size(srv->conn));
