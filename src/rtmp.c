@@ -13,6 +13,9 @@
 #include <re_dbg.h>
 
 
+#define WINDOW_ACK_SIZE 2500000
+
+
 /*
  * Various complete RTMP packets
  */
@@ -1027,6 +1030,7 @@ struct rtmp_endpoint {
 	const char *tag;
 	bool is_client;
 	unsigned n_estab;
+	unsigned n_cmd;
 	unsigned n_close;
 	unsigned n_ready;
 	int err;
@@ -1037,6 +1041,13 @@ struct rtmp_endpoint {
 };
 
 
+static void endpoint_terminate(struct rtmp_endpoint *ep, int err)
+{
+	ep->err = err;
+	re_cancel();
+}
+
+
 static void stream_ready_handler(void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
@@ -1045,7 +1056,10 @@ static void stream_ready_handler(void *arg)
 
 	re_printf("Ready!\n");
 
+#if 1
+	/* Test complete */
 	re_cancel();
+#endif
 }
 
 
@@ -1067,16 +1081,97 @@ static void estab_handler(void *arg)
 			goto error;
 	}
 
-#if 0
-	if (ep->other->n_estab)
-		re_cancel();
-#endif
+	return;
+
+ error:
+	endpoint_terminate(ep, err);
+}
+
+
+/* Server */
+static int server_send_reply(struct rtmp_conn *conn,
+			     const struct command_header *req)
+{
+	const char *code = "NetConnection.Connect.Success";
+	const char *descr = "Connection succeeded.";
+	int err;
+
+	err = rtmp_server_reply(conn, req,
+				2,
+
+		AMF_TYPE_OBJECT, 3,
+			AMF_TYPE_STRING, "fmsVer",       "FMS/3,5,7,7009",
+			AMF_TYPE_NUMBER, "capabilities", 31.0,
+			AMF_TYPE_NUMBER, "mode",         1.0,
+
+		AMF_TYPE_OBJECT, 6,
+			AMF_TYPE_STRING, "level",        "status",
+			AMF_TYPE_STRING, "code",         code,
+			AMF_TYPE_STRING, "description",  descr,
+			AMF_TYPE_ARRAY,  "data",         1,
+			AMF_TYPE_STRING, "version",      "3,5,7,7009",
+			AMF_TYPE_NUMBER, "clientid",     734806661.0,
+			AMF_TYPE_NUMBER, "objectEncoding", 0.0);
+
+	return err;
+}
+
+
+static void command_handler(const struct command_header *cmd_hdr,
+			    struct odict *dict, void *arg)
+{
+	struct rtmp_endpoint *ep = arg;
+	int err = 0;
+	(void)dict;
+
+	++ep->n_cmd;
+
+	if (0 == str_casecmp(cmd_hdr->name, "connect")) {
+
+		err = rtmp_control_send_was(ep->conn, WINDOW_ACK_SIZE);
+		if (err)
+			goto error;
+
+		err = rtmp_control_send_set_peer_bw(ep->conn,
+						    WINDOW_ACK_SIZE, 2);
+		if (err)
+			goto error;
+
+		/* Stream Begin */
+		err = rtmp_control_send_user_control_msg(ep->conn,
+						 RTMP_EVENT_STREAM_BEGIN,
+						 RTMP_CONTROL_STREAM_ID);
+		if (err)
+			goto error;
+
+		err = server_send_reply(ep->conn, cmd_hdr);
+		if (err) {
+			re_printf("rtmp: reply failed (%m)\n", err);
+			goto error;
+		}
+	}
+	else if (0 == str_casecmp(cmd_hdr->name, "createStream")) {
+
+		err = rtmp_server_reply(ep->conn, cmd_hdr,
+					2,
+					AMF_TYPE_NULL, NULL,
+					AMF_TYPE_NUMBER, (double)42);
+		if (err) {
+			re_printf("rtmp: reply failed (%m)\n", err);
+			goto error;
+		}
+	}
+	else {
+		re_printf("rtmp: server: command not handled (%s)\n",
+			  cmd_hdr->name);
+
+	}
 
 	return;
 
  error:
-	ep->err = err;
-	re_cancel();
+	if (err)
+		endpoint_terminate(ep, err);
 }
 
 
@@ -1094,10 +1189,9 @@ static void close_handler(int err, void *arg)
 
 	DEBUG_NOTICE("rtmp connection closed (%m)\n", err);
 
-	ep->err = err;
 	++ep->n_close;
 
-	re_cancel();
+	endpoint_terminate(ep, err);
 }
 
 
@@ -1176,11 +1270,9 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 	int err;
 
 	err = rtmp_accept(&ep->conn, ep->ts, estab_handler,
-			  status_handler, close_handler, ep);
-	if (err) {
-		ep->err = err;
-		re_cancel();
-	}
+			  command_handler, status_handler, close_handler, ep);
+	if (err)
+		goto error;
 
 	/* Enable fuzzing on the server */
 	if (ep->fuzzing) {
@@ -1188,11 +1280,15 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 					  -1000,
 					  0, helper_send_handler,
 					  helper_recv_handler, ep);
-		if (err) {
-			ep->err = err;
-			re_cancel();
-		}
+		if (err)
+			goto error;
 	}
+
+	return;
+
+ error:
+	if (err)
+		endpoint_terminate(ep, err);
 }
 
 
@@ -1241,9 +1337,12 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 		goto out;
 
 	TEST_EQUALS(1, cli->n_estab);
-	TEST_EQUALS(1, srv->n_estab);
+	/*TEST_EQUALS(1, srv->n_estab);*/
+	TEST_EQUALS(0, cli->n_cmd);
+	TEST_EQUALS(2, srv->n_cmd);
 	TEST_EQUALS(0, cli->n_close);
 	TEST_EQUALS(0, srv->n_close);
+
 	TEST_EQUALS(1, cli->n_ready);
 	TEST_EQUALS(0, srv->n_ready);
 
