@@ -822,7 +822,7 @@ static int test_rtmp_amf_encode_connect(void)
 	err  = rtmp_amf_encode_string(mb, "connect");
 	err |= rtmp_amf_encode_number(mb, 1.0);
 
-	err |= rtmp_amf_encode_object(mb, false, 8,
+	err |= rtmp_amf_encode_object(mb, AMF_TYPE_OBJECT, 8,
 		     AMF_TYPE_STRING, "app", "vod",
 		     AMF_TYPE_STRING, "flashVer", "LNX 9,0,124,2",
 		     AMF_TYPE_STRING, "tcUrl","rtmp://184.72.239.149:1935/vod",
@@ -854,13 +854,13 @@ static int test_rtmp_amf_encode_connect_result(void)
 	err  = rtmp_amf_encode_string(mb, "_result");
 	err |= rtmp_amf_encode_number(mb, 1);
 
-	err |= rtmp_amf_encode_object(mb, false, 3,
+	err |= rtmp_amf_encode_object(mb, AMF_TYPE_OBJECT, 3,
 			     AMF_TYPE_STRING, "fmsVer", "FMS/3,5,7,7009",
 			     AMF_TYPE_NUMBER, "capabilities", 31.0,
 			     AMF_TYPE_NUMBER, "mode", 1.0);
 	TEST_ERR(err);
 
-	err |= rtmp_amf_encode_object(mb, false, 6,
+	err |= rtmp_amf_encode_object(mb, AMF_TYPE_OBJECT, 6,
 	      AMF_TYPE_STRING, "level", "status",
 	      AMF_TYPE_STRING, "code", "NetConnection.Connect.Success",
 	      AMF_TYPE_STRING, "description", "Connection succeeded.",
