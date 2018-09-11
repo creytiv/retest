@@ -110,10 +110,6 @@ static int test_rtmp_header_type0(void)
 	err = rtmp_header_decode(&hdr, mb);
 	TEST_ERR(err);
 
-#if 0
-	re_printf("%H\n", rtmp_header_print, &hdr);
-#endif
-
 	/* compare */
 	TEST_EQUALS(0,               hdr.format);
 	TEST_EQUALS(chunk_id,        hdr.chunk_id);
@@ -271,10 +267,6 @@ static int test_rtmp_header(uint32_t chunk_id)
 	err = rtmp_header_decode(&hdr, mb);
 	TEST_ERR(err);
 
-#if 0
-	re_printf("%H\n", rtmp_header_print, &hdr);
-#endif
-
 	/* compare */
 	TEST_EQUALS(0,               hdr.format);
 	TEST_EQUALS(chunk_id,        hdr.chunk_id);
@@ -316,8 +308,6 @@ static int test_rtmp_decode_audio(void)
 		    sizeof(rtmp_audio_data) - HDR_SIZE,
 		    mbuf_buf(mb), mbuf_get_left(mb));
 
-	/* XXX: decode control header ? */
-
  out:
 	mem_deref(mb);
 	return err;
@@ -328,7 +318,6 @@ static int test_rtmp_decode_window_ack_size(void)
 {
 	struct rtmp_header hdr;
 	struct mbuf *mb;
-	const void *p;
 	uint32_t value;
 	int err;
 
@@ -346,8 +335,7 @@ static int test_rtmp_decode_window_ack_size(void)
 	TEST_EQUALS(0,                         hdr.stream_id);
 
 	TEST_EQUALS(4, mbuf_get_left(mb));
-	p = mbuf_buf(mb);
-	value = ntohl( *(uint32_t *)p );
+	value = ntohl(mbuf_read_u32(mb));
 
 	TEST_EQUALS(2500000, value);
 
@@ -957,10 +945,6 @@ static int test_rtmp_amf_decode(const uint8_t *buf, size_t len,
 	err = rtmp_amf_decode(dict, mb);
 	TEST_ERR(err);
 
-#if 0
-	re_printf("ODICT: %H\n", odict_debug, dict);
-#endif
-
 	TEST_EQUALS(count,     odict_count(dict, false));
 	TEST_EQUALS(count_all, odict_count(dict, true));
 
@@ -1067,14 +1051,10 @@ static void stream_ready_handler(void *arg)
 
 	++ep->n_ready;
 
-	re_printf("Ready!\n");
-
-#if 1
 	/* Test complete ? */
 	if (endpoints_are_finished(ep)) {
 		re_cancel();
 	}
-#endif
 }
 
 
@@ -1180,19 +1160,14 @@ static void command_handler(const struct command_header *cmd_hdr,
 
 		++ep->n_play;
 
-		re_printf("got play\n");
-
-#if 1
 		/* Test complete ? */
 		if (endpoints_are_finished(ep)) {
 			re_cancel();
 		}
-#endif
 	}
 	else {
 		DEBUG_NOTICE("rtmp: server: command not handled (%s)\n",
-			  cmd_hdr->name);
-
+			     cmd_hdr->name);
 	}
 
 	return;
@@ -1426,7 +1401,7 @@ int test_rtmp(void)
 	if (err)
 		return err;
 
-	/* AMF Encode */
+	/* AMF Decode */
 	err |= test_rtmp_amf_decode(amf_connect, sizeof(amf_connect), 3, 10,
 				    "connect");
 	err |= test_rtmp_amf_decode(amf_result, sizeof(amf_result), 4, 11,
@@ -1454,11 +1429,9 @@ int test_rtmp_fuzzing(void)
 	int err = 0, e;
 	int i;
 
-#if 1
 	err = test_rtmp_amf_random_input();
 	if (err)
 		return err;
-#endif
 
 	for (i=0; i<32; i++) {
 
