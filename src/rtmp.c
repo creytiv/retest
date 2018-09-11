@@ -1033,6 +1033,7 @@ struct rtmp_endpoint {
 	unsigned n_cmd;
 	unsigned n_close;
 	unsigned n_ready;
+	unsigned n_play;
 	int err;
 
 	struct tcp_helper *th;
@@ -1048,6 +1049,18 @@ static void endpoint_terminate(struct rtmp_endpoint *ep, int err)
 }
 
 
+static bool is_finished(const struct rtmp_endpoint *ep)
+{
+	return ep->n_ready > 0 || ep->n_play > 0;
+}
+
+
+static bool endpoints_are_finished(const struct rtmp_endpoint *ep)
+{
+	return is_finished(ep) && is_finished(ep->other);
+}
+
+
 static void stream_ready_handler(void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
@@ -1057,8 +1070,10 @@ static void stream_ready_handler(void *arg)
 	re_printf("Ready!\n");
 
 #if 1
-	/* Test complete */
-	re_cancel();
+	/* Test complete ? */
+	if (endpoints_are_finished(ep)) {
+		re_cancel();
+	}
 #endif
 }
 
@@ -1161,8 +1176,21 @@ static void command_handler(const struct command_header *cmd_hdr,
 			goto error;
 		}
 	}
+	else if (0 == str_casecmp(cmd_hdr->name, "play")) {
+
+		++ep->n_play;
+
+		re_printf("got play\n");
+
+#if 1
+		/* Test complete ? */
+		if (endpoints_are_finished(ep)) {
+			re_cancel();
+		}
+#endif
+	}
 	else {
-		re_printf("rtmp: server: command not handled (%s)\n",
+		DEBUG_NOTICE("rtmp: server: command not handled (%s)\n",
 			  cmd_hdr->name);
 
 	}
@@ -1339,12 +1367,14 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 	TEST_EQUALS(1, cli->n_estab);
 	/*TEST_EQUALS(1, srv->n_estab);*/
 	TEST_EQUALS(0, cli->n_cmd);
-	TEST_EQUALS(2, srv->n_cmd);
+	TEST_EQUALS(3, srv->n_cmd);
 	TEST_EQUALS(0, cli->n_close);
 	TEST_EQUALS(0, srv->n_close);
 
 	TEST_EQUALS(1, cli->n_ready);
 	TEST_EQUALS(0, srv->n_ready);
+	TEST_EQUALS(0, cli->n_play);
+	TEST_EQUALS(1, srv->n_play);
 
 	TEST_EQUALS(2500000, rtmp_window_ack_size(cli->conn));
 	TEST_EQUALS(2500000, rtmp_window_ack_size(srv->conn));
