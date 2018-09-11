@@ -944,7 +944,7 @@ static int test_rtmp_amf_encode_connect_result(void)
 	      AMF_TYPE_STRING, "level", "status",
 	      AMF_TYPE_STRING, "code", "NetConnection.Connect.Success",
 	      AMF_TYPE_STRING, "description", "Connection succeeded.",
-	      AMF_TYPE_ARRAY, "data", 1,
+	      AMF_TYPE_ECMA_ARRAY, "data", 1,
 		      AMF_TYPE_STRING, "version", "3,5,7,7009",
 	      AMF_TYPE_NUMBER, "clientid", 734806661.0,
 	      AMF_TYPE_NUMBER, "objectEncoding", 0.0);
@@ -1230,8 +1230,8 @@ static int server_send_reply(struct rtmp_conn *conn,
 			AMF_TYPE_STRING, "level",        "status",
 			AMF_TYPE_STRING, "code",         code,
 			AMF_TYPE_STRING, "description",  descr,
-			AMF_TYPE_ARRAY,  "data",         1,
-			AMF_TYPE_STRING, "version",      "3,5,7,7009",
+			AMF_TYPE_ECMA_ARRAY,  "data",         1,
+			    AMF_TYPE_STRING, "version",      "3,5,7,7009",
 			AMF_TYPE_NUMBER, "clientid",     734806661.0,
 			AMF_TYPE_NUMBER, "objectEncoding", 0.0);
 
