@@ -1388,6 +1388,8 @@ static void command_handler(const struct command_header *cmd_hdr,
 	else {
 		DEBUG_NOTICE("rtmp: server: command not handled (%s)\n",
 			     cmd_hdr->name);
+		err = EPROTO;
+		goto error;
 	}
 
 	return;
