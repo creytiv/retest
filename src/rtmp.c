@@ -1145,11 +1145,22 @@ struct rtmp_endpoint {
 	unsigned n_close;
 	unsigned n_ready;
 	unsigned n_play;
+	unsigned n_audio;
+	unsigned n_video;
 	int err;
 
 	struct tcp_helper *th;
 	size_t packet_count;
 	bool fuzzing;
+};
+
+
+static const uint8_t fake_audio_packet[6] = {
+	0x5b, 0xb2, 0xfb, 0x11, 0x46, 0xe9
+};
+
+static const uint8_t fake_video_packet[8] = {
+	0xcb, 0x9c, 0xb5, 0x60, 0x7f, 0xe9, 0xbd, 0xe1
 };
 
 
@@ -1160,9 +1171,19 @@ static void endpoint_terminate(struct rtmp_endpoint *ep, int err)
 }
 
 
+/* criteria for test to be finished */
 static bool is_finished(const struct rtmp_endpoint *ep)
 {
-	return ep->n_ready > 0 || ep->n_play > 0;
+	if (ep->is_client) {
+
+		return ep->n_ready > 0 &&
+			ep->n_audio > 0 &&
+			ep->n_video > 0;
+	}
+	else {
+		return ep->n_play > 0;
+	}
+
 }
 
 
@@ -1178,10 +1199,59 @@ static void stream_ready_handler(void *arg)
 
 	++ep->n_ready;
 
+#if 0
 	/* Test complete ? */
 	if (endpoints_are_finished(ep)) {
 		re_cancel();
 	}
+#endif
+
+}
+
+
+static void audio_handler(uint32_t timestamp,
+			  const uint8_t *pld, size_t len, void *arg)
+{
+	struct rtmp_endpoint *ep = arg;
+	int err = 0;
+
+	++ep->n_audio;
+
+	re_printf("stream: recv audio (%zu bytes)\n", len);
+
+	TEST_MEMCMP(fake_audio_packet, sizeof(fake_audio_packet), pld, len);
+
+	/* Test complete ? */
+	if (endpoints_are_finished(ep)) {
+		re_cancel();
+	}
+
+ out:
+	if (err)
+		endpoint_terminate(ep, err);
+}
+
+
+static void video_handler(uint32_t timestamp,
+			    const uint8_t *pld, size_t len, void *arg)
+{
+	struct rtmp_endpoint *ep = arg;
+	int err = 0;
+
+	++ep->n_video;
+
+	re_printf("stream: recv video (%zu bytes)\n", len);
+
+	TEST_MEMCMP(fake_video_packet, sizeof(fake_video_packet), pld, len);
+
+	/* Test complete ? */
+	if (endpoints_are_finished(ep)) {
+		re_cancel();
+	}
+
+ out:
+	if (err)
+		endpoint_terminate(ep, err);
 }
 
 
@@ -1198,7 +1268,7 @@ static void estab_handler(void *arg)
 
 		err = rtmp_play(&ep->stream, ep->conn,
 				"sample.mp4", stream_ready_handler,
-				NULL, NULL, ep);
+				audio_handler, video_handler, ep);
 		if (err)
 			goto error;
 	}
@@ -1218,7 +1288,7 @@ static int server_send_reply(struct rtmp_conn *conn,
 	const char *descr = "Connection succeeded.";
 	int err;
 
-	err = rtmp_server_reply(conn, req,
+	err = rtmp_amf_reply(conn, req,
 				2,
 
 		AMF_TYPE_OBJECT, 3,
@@ -1274,10 +1344,24 @@ static void command_handler(const struct command_header *cmd_hdr,
 	}
 	else if (0 == str_casecmp(cmd_hdr->name, "createStream")) {
 
-		err = rtmp_server_reply(ep->conn, cmd_hdr,
+		uint32_t stream_id = 42;
+
+		ep->stream = rtmp_stream_alloc(ep->conn,
+					       "dummy-stream",
+					       stream_id,
+					       NULL,
+					       audio_handler,
+					       video_handler,
+					       ep);
+		if (!ep->stream) {
+			err = ENOMEM;
+			goto error;
+		}
+
+		err = rtmp_amf_reply(ep->conn, cmd_hdr,
 					2,
 					AMF_TYPE_NULL, NULL,
-					AMF_TYPE_NUMBER, (double)42);
+					AMF_TYPE_NUMBER, (double)stream_id);
 		if (err) {
 			re_printf("rtmp: reply failed (%m)\n", err);
 			goto error;
@@ -1287,10 +1371,19 @@ static void command_handler(const struct command_header *cmd_hdr,
 
 		++ep->n_play;
 
-		/* Test complete ? */
-		if (endpoints_are_finished(ep)) {
-			re_cancel();
-		}
+		/* Send some dummy media packets to client */
+
+		err = rtmp_send_audio(ep->stream, 0,
+				      fake_audio_packet,
+				      sizeof(fake_audio_packet));
+		if (err)
+			goto error;
+
+		err = rtmp_send_video(ep->stream, 0,
+				      fake_video_packet,
+				      sizeof(fake_video_packet));
+		if (err)
+			goto error;
 	}
 	else {
 		DEBUG_NOTICE("rtmp: server: command not handled (%s)\n",
@@ -1463,8 +1556,14 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 
 	re_printf("- - - client/server loop - - - end\n");
 
-	if (cli->err || srv->err)
+	if (cli->err) {
+		err = cli->err;
 		goto out;
+	}
+	if (srv->err) {
+		err = srv->err;
+		goto out;
+	}
 
 	TEST_EQUALS(1, cli->n_estab);
 	/*TEST_EQUALS(1, srv->n_estab);*/
@@ -1477,6 +1576,12 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 	TEST_EQUALS(0, srv->n_ready);
 	TEST_EQUALS(0, cli->n_play);
 	TEST_EQUALS(1, srv->n_play);
+
+	/* play command */
+	TEST_EQUALS(1, cli->n_audio);
+	TEST_EQUALS(1, cli->n_video);
+	TEST_EQUALS(0, srv->n_audio);
+	TEST_EQUALS(0, srv->n_video);
 
 	TEST_EQUALS(2500000, rtmp_window_ack_size(cli->conn));
 	TEST_EQUALS(2500000, rtmp_window_ack_size(srv->conn));
