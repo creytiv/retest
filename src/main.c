@@ -66,6 +66,7 @@ static void dbg_handler(int level, const char *p, size_t len, void *arg)
 
 int main(int argc, char *argv[])
 {
+	struct memstat mstat;
 	bool do_reg = false;
 	bool do_oom = false;
 	bool do_perf = false;
@@ -253,6 +254,12 @@ int main(int argc, char *argv[])
 	/* Check for memory leaks */
 	tmr_debug();
 	mem_debug();
+
+	if (0 == mem_get_stat(&mstat)) {
+
+		if (mstat.bytes_cur || mstat.blocks_cur)
+			return 2;
+	}
 
 	return err;
 }
