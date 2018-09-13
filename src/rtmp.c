@@ -1459,9 +1459,6 @@ static void apply_fuzzing(struct rtmp_endpoint *ep, struct mbuf *mb)
 	flip = ((rand_u16() % 100) < 33);
 
 	if (flip) {
-		re_printf("    packet #%zu: flip bit %u at pos %zu\n",
-			  ep->packet_count, bit, pos);
-
 		/* flip a random bit */
 		mbuf_buf(mb)[pos] ^= 1<<bit;
 	}
@@ -1524,8 +1521,6 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 	char uri[256];
 	int err = 0;
 
-	re_printf("- - - client/server loop - - - start\n");
-
 	cli = rtmp_endpoint_alloc(true);
 	srv = rtmp_endpoint_alloc(false);
 	TEST_ASSERT(cli != NULL);
@@ -1555,8 +1550,6 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 	err = re_main_timeout(1000);
 	if (err)
 		goto out;
-
-	re_printf("- - - client/server loop - - - end\n");
 
 	if (cli->err) {
 		err = cli->err;
@@ -1676,7 +1669,22 @@ int test_rtmp_fuzzing(void)
 		/* Client/Server loop */
 		e = test_rtmp_client_server_conn(true);
 
-		re_printf("fuzzing test %d returned: %m\n", i, e);
+		switch (e) {
+
+		case 0:
+		case EINVAL:
+		case ENOENT:
+		case ENOSTR:
+		case EOVERFLOW:
+		case EPROTO:
+		case ERANGE:
+		case ETIMEDOUT:
+			break;
+
+		default:
+			DEBUG_WARNING("unexpected fuzz error %d (%m)\n", e, e);
+			return e;
+		}
 	}
 
 	return err;
