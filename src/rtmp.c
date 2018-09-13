@@ -1282,7 +1282,7 @@ static void estab_handler(void *arg)
 
 /* Server */
 static int server_send_reply(struct rtmp_conn *conn,
-			     const struct command_header *req)
+			     const struct rtmp_amf_message *req)
 {
 	const char *code = "NetConnection.Connect.Success";
 	const char *descr = "Connection succeeded.";
@@ -1309,16 +1309,14 @@ static int server_send_reply(struct rtmp_conn *conn,
 }
 
 
-static void command_handler(const struct command_header *cmd_hdr,
-			    struct odict *dict, void *arg)
+static void command_handler(struct rtmp_amf_message *msg, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
 	int err = 0;
-	(void)dict;
 
 	++ep->n_cmd;
 
-	if (0 == str_casecmp(cmd_hdr->name, "connect")) {
+	if (0 == str_casecmp(msg->name, "connect")) {
 
 		err = rtmp_control_send_was(ep->conn, WINDOW_ACK_SIZE);
 		if (err)
@@ -1336,13 +1334,13 @@ static void command_handler(const struct command_header *cmd_hdr,
 		if (err)
 			goto error;
 
-		err = server_send_reply(ep->conn, cmd_hdr);
+		err = server_send_reply(ep->conn, msg);
 		if (err) {
 			re_printf("rtmp: reply failed (%m)\n", err);
 			goto error;
 		}
 	}
-	else if (0 == str_casecmp(cmd_hdr->name, "createStream")) {
+	else if (0 == str_casecmp(msg->name, "createStream")) {
 
 		uint32_t stream_id = 42;
 
@@ -1358,7 +1356,7 @@ static void command_handler(const struct command_header *cmd_hdr,
 			goto error;
 		}
 
-		err = rtmp_amf_reply(ep->conn, cmd_hdr,
+		err = rtmp_amf_reply(ep->conn, msg,
 					2,
 					AMF_TYPE_NULL, NULL,
 					AMF_TYPE_NUMBER, (double)stream_id);
@@ -1367,7 +1365,7 @@ static void command_handler(const struct command_header *cmd_hdr,
 			goto error;
 		}
 	}
-	else if (0 == str_casecmp(cmd_hdr->name, "play")) {
+	else if (0 == str_casecmp(msg->name, "play")) {
 
 		++ep->n_play;
 
@@ -1387,7 +1385,7 @@ static void command_handler(const struct command_header *cmd_hdr,
 	}
 	else {
 		DEBUG_NOTICE("rtmp: server: command not handled (%s)\n",
-			     cmd_hdr->name);
+			     msg->name);
 		err = EPROTO;
 		goto error;
 	}
@@ -1400,11 +1398,11 @@ static void command_handler(const struct command_header *cmd_hdr,
 }
 
 
-static void status_handler(struct odict *dict, void *arg)
+static void status_handler(const struct rtmp_amf_message *msg, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
 	(void)ep;
-	(void)dict;
+	(void)msg;  /* ignored */
 }
 
 
