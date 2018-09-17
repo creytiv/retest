@@ -360,7 +360,7 @@ static int test_rtmp_decode_ping_request(void)
 
 	/* compare */
 	TEST_EQUALS(0,                          hdr.format);
-	TEST_EQUALS(RTMP_CHUNK_ID_CONTROL,      hdr.chunk_id);
+	TEST_EQUALS(2,                          hdr.chunk_id);
 	TEST_EQUALS(0,                          hdr.timestamp);
 	TEST_EQUALS(6,                          hdr.length);
 	TEST_EQUALS(RTMP_TYPE_USER_CONTROL_MSG, hdr.type_id);
