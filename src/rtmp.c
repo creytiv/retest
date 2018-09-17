@@ -906,15 +906,15 @@ static int test_rtmp_amf_encode_connect(void)
 	err  = rtmp_amf_encode_string(mb, "connect");
 	err |= rtmp_amf_encode_number(mb, 1.0);
 
-	err |= rtmp_amf_encode_object(mb, AMF_TYPE_OBJECT, 8,
-		     AMF_TYPE_STRING, "app", "vod",
-		     AMF_TYPE_STRING, "flashVer", "LNX 9,0,124,2",
-		     AMF_TYPE_STRING, "tcUrl","rtmp://184.72.239.149:1935/vod",
-		     AMF_TYPE_BOOLEAN, "fpad", false,
-		     AMF_TYPE_NUMBER, "capabilities", 15.0,
-		     AMF_TYPE_NUMBER, "audioCodecs", 4071.0,
-		     AMF_TYPE_NUMBER, "videoCodecs", 252.0,
-		     AMF_TYPE_NUMBER, "videoFunction", 1.0);
+	err |= rtmp_amf_encode_object(mb, RTMP_AMF_TYPE_OBJECT, 8,
+		RTMP_AMF_TYPE_STRING, "app", "vod",
+		RTMP_AMF_TYPE_STRING, "flashVer", "LNX 9,0,124,2",
+		RTMP_AMF_TYPE_STRING, "tcUrl","rtmp://184.72.239.149:1935/vod",
+		RTMP_AMF_TYPE_BOOLEAN, "fpad", false,
+		RTMP_AMF_TYPE_NUMBER, "capabilities", 15.0,
+		RTMP_AMF_TYPE_NUMBER, "audioCodecs", 4071.0,
+		RTMP_AMF_TYPE_NUMBER, "videoCodecs", 252.0,
+		RTMP_AMF_TYPE_NUMBER, "videoFunction", 1.0);
 	TEST_ERR(err);
 
 	TEST_MEMCMP(amf_connect, sizeof(amf_connect), mb->buf, mb->end);
@@ -938,20 +938,20 @@ static int test_rtmp_amf_encode_connect_result(void)
 	err  = rtmp_amf_encode_string(mb, "_result");
 	err |= rtmp_amf_encode_number(mb, 1);
 
-	err |= rtmp_amf_encode_object(mb, AMF_TYPE_OBJECT, 3,
-			     AMF_TYPE_STRING, "fmsVer", "FMS/3,5,7,7009",
-			     AMF_TYPE_NUMBER, "capabilities", 31.0,
-			     AMF_TYPE_NUMBER, "mode", 1.0);
+	err |= rtmp_amf_encode_object(mb, RTMP_AMF_TYPE_OBJECT, 3,
+			     RTMP_AMF_TYPE_STRING, "fmsVer", "FMS/3,5,7,7009",
+			     RTMP_AMF_TYPE_NUMBER, "capabilities", 31.0,
+			     RTMP_AMF_TYPE_NUMBER, "mode", 1.0);
 	TEST_ERR(err);
 
-	err |= rtmp_amf_encode_object(mb, AMF_TYPE_OBJECT, 6,
-	      AMF_TYPE_STRING, "level", "status",
-	      AMF_TYPE_STRING, "code", "NetConnection.Connect.Success",
-	      AMF_TYPE_STRING, "description", "Connection succeeded.",
-	      AMF_TYPE_ECMA_ARRAY, "data", 1,
-		      AMF_TYPE_STRING, "version", "3,5,7,7009",
-	      AMF_TYPE_NUMBER, "clientid", 734806661.0,
-	      AMF_TYPE_NUMBER, "objectEncoding", 0.0);
+	err |= rtmp_amf_encode_object(mb, RTMP_AMF_TYPE_OBJECT, 6,
+	      RTMP_AMF_TYPE_STRING, "level", "status",
+	      RTMP_AMF_TYPE_STRING, "code", "NetConnection.Connect.Success",
+	      RTMP_AMF_TYPE_STRING, "description", "Connection succeeded.",
+	      RTMP_AMF_TYPE_ECMA_ARRAY, "data", 1,
+		      RTMP_AMF_TYPE_STRING, "version", "3,5,7,7009",
+	      RTMP_AMF_TYPE_NUMBER, "clientid", 734806661.0,
+	      RTMP_AMF_TYPE_NUMBER, "objectEncoding", 0.0);
 	TEST_ERR(err);
 
 	TEST_MEMCMP(amf_connect_result, sizeof(amf_connect_result),
@@ -1041,10 +1041,10 @@ static int test_rtmp_amf_encode_strictarray(void)
 		return ENOMEM;
 
 	err  = rtmp_amf_encode_object(mb,
-				      AMF_TYPE_STRICT_ARRAY, 2,
-				          AMF_TYPE_NUMBER, 1.0,
-				          AMF_TYPE_STRICT_ARRAY, 1,
-				              AMF_TYPE_STRING, "abc"
+				      RTMP_AMF_TYPE_STRICT_ARRAY, 2,
+				          RTMP_AMF_TYPE_NUMBER, 1.0,
+				          RTMP_AMF_TYPE_STRICT_ARRAY, 1,
+				              RTMP_AMF_TYPE_STRING, "abc"
 				      );
 	TEST_ERR(err);
 
@@ -1295,19 +1295,19 @@ static int server_send_reply(struct rtmp_conn *conn,
 	err = rtmp_amf_reply(conn, req,
 				2,
 
-		AMF_TYPE_OBJECT, 3,
-			AMF_TYPE_STRING, "fmsVer",       "FMS/3,5,7,7009",
-			AMF_TYPE_NUMBER, "capabilities", 31.0,
-			AMF_TYPE_NUMBER, "mode",         1.0,
+		RTMP_AMF_TYPE_OBJECT, 3,
+			RTMP_AMF_TYPE_STRING, "fmsVer",       "FMS/3,5,7,7009",
+			RTMP_AMF_TYPE_NUMBER, "capabilities", 31.0,
+			RTMP_AMF_TYPE_NUMBER, "mode",         1.0,
 
-		AMF_TYPE_OBJECT, 6,
-			AMF_TYPE_STRING, "level",        "status",
-			AMF_TYPE_STRING, "code",         code,
-			AMF_TYPE_STRING, "description",  descr,
-			AMF_TYPE_ECMA_ARRAY,  "data",         1,
-			    AMF_TYPE_STRING, "version",      "3,5,7,7009",
-			AMF_TYPE_NUMBER, "clientid",     734806661.0,
-			AMF_TYPE_NUMBER, "objectEncoding", 0.0);
+		RTMP_AMF_TYPE_OBJECT, 6,
+			RTMP_AMF_TYPE_STRING, "level",        "status",
+			RTMP_AMF_TYPE_STRING, "code",         code,
+			RTMP_AMF_TYPE_STRING, "description",  descr,
+			RTMP_AMF_TYPE_ECMA_ARRAY,  "data",         1,
+			    RTMP_AMF_TYPE_STRING, "version",      "3,5,7,7009",
+			RTMP_AMF_TYPE_NUMBER, "clientid",     734806661.0,
+			RTMP_AMF_TYPE_NUMBER, "objectEncoding", 0.0);
 
 	return err;
 }
@@ -1362,8 +1362,8 @@ static void command_handler(struct rtmp_amf_message *msg, void *arg)
 
 		err = rtmp_amf_reply(ep->conn, msg,
 					2,
-					AMF_TYPE_NULL, NULL,
-					AMF_TYPE_NUMBER, (double)stream_id);
+				RTMP_AMF_TYPE_NULL, NULL,
+				RTMP_AMF_TYPE_NUMBER, (double)stream_id);
 		if (err) {
 			re_printf("rtmp: reply failed (%m)\n", err);
 			goto error;
