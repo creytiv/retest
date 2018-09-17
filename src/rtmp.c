@@ -389,6 +389,9 @@ struct test {
 };
 
 
+#if 0
+
+
 static void msg_handler(struct rtmp_message *msg, void *arg)
 {
 	struct test *test = arg;
@@ -553,6 +556,7 @@ static int test_rtmp_chunking(void)
 
 	return err;
 }
+#endif
 
 
 struct dechunk_test {
@@ -1613,7 +1617,9 @@ int test_rtmp(void)
 		return err;
 
 	/* Test chunking */
+#if 0
 	err |= test_rtmp_chunking();
+#endif
 	err |= test_rtmp_dechunking();
 	if (err)
 		return err;
