@@ -1080,7 +1080,8 @@ static int test_rtmp_amf_decode(const uint8_t *buf, size_t len,
 		goto out;
 
 	err = rtmp_amf_decode(dict, mb);
-	TEST_ERR(err);
+	if (err)
+		goto out;
 
 	TEST_EQUALS(count,     odict_count(dict, false));
 	TEST_EQUALS(count_all, odict_count(dict, true));
@@ -1553,7 +1554,8 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 
 	err = rtmp_connect(&cli->conn, uri, estab_handler,
 			   status_handler, close_handler, cli);
-	TEST_ERR(err);
+	if (err)
+		goto out;
 
 	err = re_main_timeout(1000);
 	if (err)
@@ -1690,6 +1692,7 @@ int test_rtmp_fuzzing(void)
 		case EPROTO:
 		case ERANGE:
 		case ETIMEDOUT:
+		case ENOMEM:
 			break;
 
 		default:
