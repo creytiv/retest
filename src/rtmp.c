@@ -570,7 +570,7 @@ struct dechunk_test {
 };
 
 
-static void dechunk_msg_handler(struct rtmp_message *msg, void *arg)
+static int dechunk_msg_handler(struct rtmp_message *msg, void *arg)
 {
 	struct dechunk_test *dctest = arg;
 	int err = 0;
@@ -591,6 +591,8 @@ static void dechunk_msg_handler(struct rtmp_message *msg, void *arg)
  out:
 	if (err)
 		dctest->err = err;
+
+	return 0;
 }
 
 
@@ -1680,6 +1682,7 @@ int test_rtmp_fuzzing(void)
 		switch (e) {
 
 		case 0:
+		case EBADMSG:
 		case EINVAL:
 		case ENOENT:
 		case ENOSTR:
