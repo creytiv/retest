@@ -1022,7 +1022,10 @@ static const uint8_t amf_strictarray[] = {
 
 	/* index 1 -- Strict Array */
 	0x0a,
-	0x00, 0x00, 0x00, 0x01,
+	0x00, 0x00, 0x00, 0x02,
+
+	  /* Null */
+	  0x05,
 
 	  /* String */
 	  0x02,
@@ -1043,7 +1046,8 @@ static int test_rtmp_amf_encode_strictarray(void)
 	err  = rtmp_amf_encode_object(mb,
 				      RTMP_AMF_TYPE_STRICT_ARRAY, 2,
 				          RTMP_AMF_TYPE_NUMBER, 1.0,
-				          RTMP_AMF_TYPE_STRICT_ARRAY, 1,
+				          RTMP_AMF_TYPE_STRICT_ARRAY, 2,
+				              RTMP_AMF_TYPE_NULL,
 				              RTMP_AMF_TYPE_STRING, "abc"
 				      );
 	TEST_ERR(err);
