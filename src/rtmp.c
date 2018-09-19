@@ -294,6 +294,8 @@ static int test_rtmp_decode_audio(void)
 	int err;
 
 	mb = mbuf_packet(rtmp_audio_data, sizeof(rtmp_audio_data));
+	if (!mb)
+		return ENOMEM;
 
 	err = rtmp_header_decode(&hdr, mb);
 	TEST_ERR(err);
@@ -324,6 +326,8 @@ static int test_rtmp_decode_window_ack_size(void)
 	int err;
 
 	mb = mbuf_packet(rtmp_was, sizeof(rtmp_was));
+	if (!mb)
+		return ENOMEM;
 
 	err = rtmp_header_decode(&hdr, mb);
 	TEST_ERR(err);
@@ -356,6 +360,8 @@ static int test_rtmp_decode_ping_request(void)
 	int err;
 
 	mb = mbuf_packet(rtmp_ping_request, sizeof(rtmp_ping_request));
+	if (!mb)
+		return ENOMEM;
 
 	err = rtmp_header_decode(&hdr, mb);
 	TEST_ERR(err);
