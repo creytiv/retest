@@ -1297,11 +1297,14 @@ static int server_send_reply(struct rtmp_conn *conn,
 static void command_handler(struct rtmp_amf_message *msg, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
+	const char *name;
 	int err = 0;
+
+	name = rtmp_amf_message_string(msg, 0);
 
 	++ep->n_cmd;
 
-	if (0 == str_casecmp(msg->name, "connect")) {
+	if (0 == str_casecmp(name, "connect")) {
 
 		err = rtmp_control(ep->conn, RTMP_TYPE_WINDOW_ACK_SIZE,
 				   (uint32_t)WINDOW_ACK_SIZE);
@@ -1326,7 +1329,7 @@ static void command_handler(struct rtmp_amf_message *msg, void *arg)
 			goto error;
 		}
 	}
-	else if (0 == str_casecmp(msg->name, "createStream")) {
+	else if (0 == str_casecmp(name, "createStream")) {
 
 		uint32_t stream_id = 42;
 
@@ -1351,7 +1354,7 @@ static void command_handler(struct rtmp_amf_message *msg, void *arg)
 			goto error;
 		}
 	}
-	else if (0 == str_casecmp(msg->name, "play")) {
+	else if (0 == str_casecmp(name, "play")) {
 
 		uint32_t i;
 
@@ -1378,7 +1381,7 @@ static void command_handler(struct rtmp_amf_message *msg, void *arg)
 	}
 	else {
 		DEBUG_NOTICE("rtmp: server: command not handled (%s)\n",
-			     msg->name);
+			     name);
 		err = EPROTO;
 		goto error;
 	}
