@@ -1420,6 +1420,8 @@ static struct rtmp_endpoint *rtmp_endpoint_alloc(bool is_client)
 	struct rtmp_endpoint *ep;
 
 	ep = mem_zalloc(sizeof(*ep), endpoint_destructor);
+	if (!ep)
+		return NULL;
 
 	ep->is_client = is_client;
 
