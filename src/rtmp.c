@@ -1068,25 +1068,21 @@ static int test_rtmp_amf_decode(const uint8_t *buf, size_t len,
 				size_t count, size_t count_all,
 				const char *command_name)
 {
-	struct odict *dict = NULL;
+	struct rtmp_amf_message *msg = NULL;
 	struct odict_entry *e;
 	struct mbuf *mb = NULL;
 	int err;
 
 	mb = mbuf_packet(buf, len);
 
-	err = odict_alloc(&dict, 32);
+	err = rtmp_amf_message_decode(&msg, mb);
 	if (err)
 		goto out;
 
-	err = rtmp_amf_decode(dict, mb);
-	if (err)
-		goto out;
+	TEST_EQUALS(count,     odict_count(msg->dict, false));
+	TEST_EQUALS(count_all, odict_count(msg->dict, true));
 
-	TEST_EQUALS(count,     odict_count(dict, false));
-	TEST_EQUALS(count_all, odict_count(dict, true));
-
-	e = list_ledata(dict->lst.head);
+	e = list_ledata(msg->dict->lst.head);
 	TEST_ASSERT(e != NULL);
 	TEST_EQUALS(ODICT_STRING, e->type);
 	TEST_STRCMP(command_name, str_len(command_name),
@@ -1095,7 +1091,7 @@ static int test_rtmp_amf_decode(const uint8_t *buf, size_t len,
 	/* todo: verify decoded object */
 
  out:
-	mem_deref(dict);
+	mem_deref(msg);
 	mem_deref(mb);
 
 	return err;
@@ -1645,12 +1641,14 @@ int test_rtmp(void)
 		return err;
 
 	/* AMF Decode */
+	err |= test_rtmp_amf_decode(amf_connect_result,
+				    sizeof(amf_connect_result), 4, 11,
+				    "_result");
+
+#if 1
 	err |= test_rtmp_amf_decode(amf_connect, sizeof(amf_connect), 3, 10,
 				    "connect");
 	err |= test_rtmp_amf_decode(amf_result, sizeof(amf_result), 4, 11,
-				    "_result");
-	err |= test_rtmp_amf_decode(amf_connect_result,
-				    sizeof(amf_connect_result), 4, 11,
 				    "_result");
 	err |= test_rtmp_amf_decode(amf_publish,
 				    sizeof(amf_publish), 5, 5,
@@ -1658,6 +1656,7 @@ int test_rtmp(void)
 	err |= test_rtmp_amf_decode(amf_onmetadata,
 				    sizeof(amf_onmetadata), 2, 26,
 				    "onMetaData");
+#endif
 	if (err)
 		return err;
 
