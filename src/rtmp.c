@@ -16,6 +16,9 @@
 #define WINDOW_ACK_SIZE 2500000
 
 
+#define NUM_MEDIA_PACKETS 5
+
+
 /*
  * Various complete RTMP packets
  */
@@ -1192,8 +1195,8 @@ static bool is_finished(const struct rtmp_endpoint *ep)
 	if (ep->is_client) {
 
 		return ep->n_ready > 0 &&
-			ep->n_audio > 0 &&
-			ep->n_video > 0;
+			ep->n_audio >= NUM_MEDIA_PACKETS &&
+			ep->n_video >= NUM_MEDIA_PACKETS;
 	}
 	else {
 		return ep->n_play > 0;
@@ -1230,9 +1233,11 @@ static void audio_handler(uint32_t timestamp,
 	struct rtmp_endpoint *ep = arg;
 	int err = 0;
 
-	++ep->n_audio;
+	re_printf("stream: recv audio (ts=%u, %zu bytes)\n", timestamp, len);
 
-	re_printf("stream: recv audio (%zu bytes)\n", len);
+	TEST_EQUALS(ep->n_audio, timestamp);
+
+	++ep->n_audio;
 
 	TEST_MEMCMP(fake_audio_packet, sizeof(fake_audio_packet), pld, len);
 
@@ -1248,14 +1253,16 @@ static void audio_handler(uint32_t timestamp,
 
 
 static void video_handler(uint32_t timestamp,
-			    const uint8_t *pld, size_t len, void *arg)
+			  const uint8_t *pld, size_t len, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
 	int err = 0;
 
-	++ep->n_video;
+	re_printf("stream: recv video (ts=%u, %zu bytes)\n", timestamp, len);
 
-	re_printf("stream: recv video (%zu bytes)\n", len);
+	TEST_EQUALS(ep->n_video, timestamp);
+
+	++ep->n_video;
 
 	TEST_MEMCMP(fake_video_packet, sizeof(fake_video_packet), pld, len);
 
@@ -1383,23 +1390,28 @@ static void command_handler(struct rtmp_amf_message *msg, void *arg)
 	}
 	else if (0 == str_casecmp(msg->name, "play")) {
 
+		uint32_t i;
+
 		++ep->n_play;
 
 		/* XXX: use a fixed stream name and compare */
 
 		/* Send some dummy media packets to client */
 
-		err = rtmp_send_audio(ep->stream, 0,
-				      fake_audio_packet,
-				      sizeof(fake_audio_packet));
-		if (err)
-			goto error;
+		for (i=0; i<NUM_MEDIA_PACKETS; i++) {
 
-		err = rtmp_send_video(ep->stream, 0,
-				      fake_video_packet,
-				      sizeof(fake_video_packet));
-		if (err)
-			goto error;
+			err = rtmp_send_audio(ep->stream, i,
+					      fake_audio_packet,
+					      sizeof(fake_audio_packet));
+			if (err)
+				goto error;
+
+			err = rtmp_send_video(ep->stream, i,
+					      fake_video_packet,
+					      sizeof(fake_video_packet));
+			if (err)
+				goto error;
+		}
 	}
 	else {
 		DEBUG_NOTICE("rtmp: server: command not handled (%s)\n",
@@ -1590,8 +1602,8 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 	TEST_EQUALS(1, srv->n_play);
 
 	/* play command */
-	TEST_EQUALS(1, cli->n_audio);
-	TEST_EQUALS(1, cli->n_video);
+	TEST_EQUALS(5, cli->n_audio);
+	TEST_EQUALS(5, cli->n_video);
 	TEST_EQUALS(0, srv->n_audio);
 	TEST_EQUALS(0, srv->n_video);
 
