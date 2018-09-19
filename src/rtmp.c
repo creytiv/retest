@@ -1356,11 +1356,16 @@ static void command_handler(struct rtmp_amf_message *msg, void *arg)
 	}
 	else if (0 == str_casecmp(name, "play")) {
 
+		const char *stream_name;
 		uint32_t i;
 
 		++ep->n_play;
 
 		/* XXX: use a fixed stream name and compare */
+
+		stream_name = rtmp_amf_message_string(msg, 3);
+		TEST_STRCMP("sample.mp4", 10,
+			    stream_name, str_len(stream_name));
 
 		/* Send some dummy media packets to client */
 
@@ -1388,6 +1393,7 @@ static void command_handler(struct rtmp_amf_message *msg, void *arg)
 
 	return;
 
+ out:
  error:
 	if (err)
 		endpoint_terminate(ep, err);
