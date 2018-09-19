@@ -1329,19 +1329,20 @@ static void command_handler(struct rtmp_amf_message *msg, void *arg)
 
 	if (0 == str_casecmp(msg->name, "connect")) {
 
-		err = rtmp_control_send_was(ep->conn, WINDOW_ACK_SIZE);
+		err = rtmp_control(ep->conn, RTMP_TYPE_WINDOW_ACK_SIZE,
+				   (uint32_t)WINDOW_ACK_SIZE);
 		if (err)
 			goto error;
 
-		err = rtmp_control_send_set_peer_bw(ep->conn,
-						    WINDOW_ACK_SIZE, 2);
+		err = rtmp_control(ep->conn, RTMP_TYPE_SET_PEER_BANDWIDTH,
+				   (uint32_t)WINDOW_ACK_SIZE, 2);
 		if (err)
 			goto error;
 
 		/* Stream Begin */
-		err = rtmp_control_send_user_control_msg(ep->conn,
-						 RTMP_EVENT_STREAM_BEGIN,
-						 RTMP_CONTROL_STREAM_ID);
+		err = rtmp_control(ep->conn, RTMP_TYPE_USER_CONTROL_MSG,
+				   RTMP_EVENT_STREAM_BEGIN,
+				   RTMP_CONTROL_STREAM_ID);
 		if (err)
 			goto error;
 
@@ -1379,6 +1380,8 @@ static void command_handler(struct rtmp_amf_message *msg, void *arg)
 	else if (0 == str_casecmp(msg->name, "play")) {
 
 		++ep->n_play;
+
+		/* XXX: use a fixed stream name and compare */
 
 		/* Send some dummy media packets to client */
 
