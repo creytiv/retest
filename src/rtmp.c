@@ -1086,7 +1086,7 @@ static int test_rtmp_amf_decode(const uint8_t *buf, size_t len,
 
 	mb = mbuf_packet(buf, len);
 
-	err = rtmp_amf_message_decode(&msg, mb);
+	err = rtmp_amf_decode(&msg, mb);
 	if (err)
 		goto out;
 
@@ -1103,48 +1103,6 @@ static int test_rtmp_amf_decode(const uint8_t *buf, size_t len,
 
  out:
 	mem_deref(msg);
-	mem_deref(mb);
-
-	return err;
-}
-
-
-static int test_rtmp_amf_random_input(void)
-{
-#define NUM_BYTES (16*1024)
-	struct odict *dict = NULL;
-	struct mbuf *mb = NULL;
-	size_t i;
-	int err;
-
-	mb = mbuf_alloc(NUM_BYTES);
-	if (!mb)
-		return ENOMEM;
-
-	mb->pos = 0;
-	mb->end = NUM_BYTES;
-
-	rand_bytes(mb->buf, mb->end);
-
-	err = odict_alloc(&dict, 4096);
-	if (err)
-		goto out;
-
-	for (i = 0; i < NUM_BYTES; i++) {
-
-		int e;
-
-		if (mbuf_get_left(mb) == 0)
-			break;
-
-		e = rtmp_amf_decode(dict, mb);
-		if (e == 0) {
-			re_printf("Success!\n");
-		}
-	}
-
- out:
-	mem_deref(dict);
 	mem_deref(mb);
 
 	return err;
@@ -1695,10 +1653,6 @@ int test_rtmp_fuzzing(void)
 {
 	int err = 0, e;
 	int i;
-
-	err = test_rtmp_amf_random_input();
-	if (err)
-		return err;
 
 	for (i=0; i<32; i++) {
 
