@@ -79,6 +79,7 @@ static struct mbuf *mbuf_packet(const uint8_t *pkt, size_t len)
 }
 
 
+#if 0
 static int test_rtmp_header_type0(void)
 {
 	struct rtmp_header hdr0, hdr;
@@ -280,6 +281,7 @@ static int test_rtmp_header(uint32_t chunk_id)
 
 	return err;
 }
+#endif
 
 
 static int test_rtmp_decode_audio(void)
@@ -1602,6 +1604,7 @@ int test_rtmp(void)
 {
 	int err = 0;
 
+#if 0
 	/* Test headers */
 	err |= test_rtmp_header_type0();
 	err |= test_rtmp_header_type1();
@@ -1615,6 +1618,7 @@ int test_rtmp(void)
 	err |= test_rtmp_header(65599);
 	if (err)
 		return err;
+#endif
 
 	/* Test packet decoding */
 	err |= test_rtmp_decode_audio();
