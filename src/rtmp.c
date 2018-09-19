@@ -1080,11 +1080,14 @@ static int test_rtmp_amf_decode(const uint8_t *buf, size_t len,
 				const char *command_name)
 {
 	struct rtmp_amf_message *msg = NULL;
-	struct odict_entry *e;
 	struct mbuf *mb = NULL;
+	const char *name;
+	bool ret;
 	int err;
 
 	mb = mbuf_packet(buf, len);
+	if (!mb)
+		return ENOMEM;
 
 	err = rtmp_amf_decode(&msg, mb);
 	if (err)
@@ -1093,11 +1096,13 @@ static int test_rtmp_amf_decode(const uint8_t *buf, size_t len,
 	TEST_EQUALS(count,     odict_count(msg->dict, false));
 	TEST_EQUALS(count_all, odict_count(msg->dict, true));
 
-	e = list_ledata(msg->dict->lst.head);
-	TEST_ASSERT(e != NULL);
-	TEST_EQUALS(ODICT_STRING, e->type);
+	name = rtmp_amf_message_string(msg, 0);
 	TEST_STRCMP(command_name, str_len(command_name),
-		    e->u.str, str_len(e->u.str));
+		    name, str_len(name));
+
+	/* should not exist */
+	ret = rtmp_amf_message_get_number(msg, NULL, 0);
+	TEST_ASSERT(!ret);
 
 	/* todo: verify decoded object */
 
