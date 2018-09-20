@@ -184,17 +184,6 @@ static int test_rtmp_decode_ping_request(void)
 }
 
 
-struct test {
-	struct rtmp_dechunker *rd;
-	size_t n_chunk;
-	size_t total_bytes;
-
-	size_t n_msg;
-	uint8_t *buf;
-	size_t buf_len;
-};
-
-
 struct dechunk_test {
 	unsigned n_msg;
 
