@@ -203,15 +203,15 @@ static int dechunk_msg_handler(struct rtmp_message *msg, void *arg)
 
 	++dctest->n_msg;
 
-	TEST_EQUALS(0, msg->format);
+	TEST_EQUALS(0, msg->hdr.format);
 	TEST_ASSERT(msg->buf != NULL);
-	TEST_EQUALS(msg->length, msg->pos);
-	TEST_EQUALS(0, msg->timestamp);
+	TEST_EQUALS(msg->hdr.length, msg->pos);
+	TEST_EQUALS(0, msg->hdr.timestamp);
 	/* XXX: compare timestamp_delta later */
 
-	dctest->last_chunk_id  = msg->chunk_id;
-	dctest->last_length    = msg->length;
-	dctest->last_stream_id = msg->stream_id;
+	dctest->last_chunk_id  = msg->hdr.chunk_id;
+	dctest->last_length    = msg->hdr.length;
+	dctest->last_stream_id = msg->hdr.stream_id;
 
  out:
 	if (err)
