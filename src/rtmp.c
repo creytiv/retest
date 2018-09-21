@@ -55,11 +55,13 @@ static const uint8_t rtmp_video_data[] = {
 	0x00, 0x00, 0x00, 0x01
 };
 
+#if 0
 static const uint8_t rtmp_ping_request[] = {
 	0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x04,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00,
 	0x50, 0x2e
 };
+#endif
 
 /*
  * Helper functions
@@ -82,6 +84,7 @@ static struct mbuf *mbuf_packet(const uint8_t *pkt, size_t len)
 }
 
 
+#if 0
 static int test_rtmp_decode_audio(void)
 {
 
@@ -182,6 +185,7 @@ static int test_rtmp_decode_ping_request(void)
 	mem_deref(mb);
 	return err;
 }
+#endif
 
 
 struct dechunk_test {
@@ -1316,12 +1320,14 @@ int test_rtmp(void)
 {
 	int err = 0;
 
+#if 0
 	/* Test packet decoding */
 	err |= test_rtmp_decode_audio();
 	err |= test_rtmp_decode_window_ack_size();
 	err |= test_rtmp_decode_ping_request();
 	if (err)
 		return err;
+#endif
 
 	/* Test chunking */
 #if 1
