@@ -186,16 +186,16 @@ static int test_rtmp_decode_ping_request(void)
 
 struct dechunk_test {
 	unsigned n_msg;
-	struct rtmp_message msgv[128];
+	struct rtmp_header hdrv[128];
 };
 
 
-static int dechunk_msg_handler(struct rtmp_message *msg, void *arg)
+static int dechunk_msg_handler(const struct rtmp_header *hdr,
+			       const uint8_t *pld, size_t pld_len, void *arg)
 {
 	struct dechunk_test *dctest = arg;
 
-	dctest->msgv[dctest->n_msg] = *msg;
-	dctest->msgv[dctest->n_msg].buf = mem_ref(msg->buf);
+	dctest->hdrv[dctest->n_msg] = *hdr;
 
 	++dctest->n_msg;
 
@@ -219,7 +219,7 @@ static int test_rtmp_dechunking(void)
 	};
 	struct dechunk_test dctest = {0};
 	struct rtmp_dechunker *dechunk = NULL;
-	struct rtmp_message *msg;
+	struct rtmp_header *hdr;
 	size_t i;
 	int err;
 
@@ -244,44 +244,37 @@ static int test_rtmp_dechunking(void)
 
 	TEST_EQUALS(ARRAY_SIZE(testv), dctest.n_msg);
 
-	msg = &dctest.msgv[0];
+	hdr = &dctest.hdrv[0];
 
-	TEST_EQUALS(0,    msg->hdr.format);
-	TEST_EQUALS(2,    msg->hdr.chunk_id);
-	TEST_EQUALS(0,    msg->hdr.timestamp);
-	TEST_EQUALS(0,    msg->hdr.timestamp_delta);
-	TEST_EQUALS(4,    msg->hdr.length);
-	TEST_EQUALS(5,    msg->hdr.type_id);
-	TEST_EQUALS(0,    msg->hdr.stream_id);
-	TEST_EQUALS(4,    msg->pos);
+	TEST_EQUALS(0,    hdr->format);
+	TEST_EQUALS(2,    hdr->chunk_id);
+	TEST_EQUALS(0,    hdr->timestamp);
+	TEST_EQUALS(0,    hdr->timestamp_delta);
+	TEST_EQUALS(4,    hdr->length);
+	TEST_EQUALS(5,    hdr->type_id);
+	TEST_EQUALS(0,    hdr->stream_id);
 
-	msg = &dctest.msgv[1];
+	hdr = &dctest.hdrv[1];
 
-	TEST_EQUALS(0,    msg->hdr.format);
-	TEST_EQUALS(6,    msg->hdr.chunk_id);
-	TEST_EQUALS(0,    msg->hdr.timestamp);
-	TEST_EQUALS(0,    msg->hdr.timestamp_delta);
-	TEST_EQUALS(82,   msg->hdr.length);
-	TEST_EQUALS(8,    msg->hdr.type_id);
-	TEST_EQUALS(1,    msg->hdr.stream_id);
-	TEST_EQUALS(82,   msg->pos);
+	TEST_EQUALS(0,    hdr->format);
+	TEST_EQUALS(6,    hdr->chunk_id);
+	TEST_EQUALS(0,    hdr->timestamp);
+	TEST_EQUALS(0,    hdr->timestamp_delta);
+	TEST_EQUALS(82,   hdr->length);
+	TEST_EQUALS(8,    hdr->type_id);
+	TEST_EQUALS(1,    hdr->stream_id);
 
-	msg = &dctest.msgv[2];
+	hdr = &dctest.hdrv[2];
 
-	TEST_EQUALS(0,    msg->hdr.format);
-	TEST_EQUALS(6,    msg->hdr.chunk_id);
-	TEST_EQUALS(0,    msg->hdr.timestamp);
-	TEST_EQUALS(0,    msg->hdr.timestamp_delta);
-	TEST_EQUALS(4,    msg->hdr.length);
-	TEST_EQUALS(9,    msg->hdr.type_id);
-	TEST_EQUALS(1,    msg->hdr.stream_id);
-	TEST_EQUALS(4,    msg->pos);
+	TEST_EQUALS(0,    hdr->format);
+	TEST_EQUALS(6,    hdr->chunk_id);
+	TEST_EQUALS(0,    hdr->timestamp);
+	TEST_EQUALS(0,    hdr->timestamp_delta);
+	TEST_EQUALS(4,    hdr->length);
+	TEST_EQUALS(9,    hdr->type_id);
+	TEST_EQUALS(1,    hdr->stream_id);
 
  out:
-	for (i=0; i<dctest.n_msg; i++) {
-		mem_deref(dctest.msgv[i].buf);
-	}
-
 	mem_deref(dechunk);
 
 	return err;
@@ -324,7 +317,6 @@ static int test_rtmp_dechunking2(void)
 	};
 	struct dechunk_test dctest = {0};
 	struct rtmp_dechunker *dechunk = NULL;
-	size_t i;
 	int err;
 
 	struct mbuf mb = {
@@ -334,7 +326,7 @@ static int test_rtmp_dechunking2(void)
 		.buf  = (void *)pkt
 	};
 
-	struct rtmp_message *msg;
+	struct rtmp_header *hdr;
 
 	re_printf("--- test dechunk ---\n");
 
@@ -355,42 +347,34 @@ static int test_rtmp_dechunking2(void)
 
 	TEST_EQUALS(3, dctest.n_msg);
 
+	hdr = &dctest.hdrv[0];
+	TEST_EQUALS(0,    hdr->format);
+	TEST_EQUALS(6,    hdr->chunk_id);
+	TEST_EQUALS(1000, hdr->timestamp);
+	TEST_EQUALS(0,    hdr->timestamp_delta);
+	TEST_EQUALS(4,    hdr->length);
+	TEST_EQUALS(8,    hdr->type_id);
+	TEST_EQUALS(400,  hdr->stream_id);
 
-	msg = &dctest.msgv[0];
-	TEST_EQUALS(0,    msg->hdr.format);
-	TEST_EQUALS(6,    msg->hdr.chunk_id);
-	TEST_EQUALS(1000, msg->hdr.timestamp);
-	TEST_EQUALS(0,    msg->hdr.timestamp_delta);
-	TEST_EQUALS(4,    msg->hdr.length);
-	TEST_EQUALS(8,    msg->hdr.type_id);
-	TEST_EQUALS(400,  msg->hdr.stream_id);
-	TEST_EQUALS(4,    msg->pos);
+	hdr = &dctest.hdrv[1];
+	TEST_EQUALS(1,    hdr->format);
+	TEST_EQUALS(6,    hdr->chunk_id);
+	TEST_EQUALS(1020, hdr->timestamp);
+	TEST_EQUALS(20,   hdr->timestamp_delta);
+	TEST_EQUALS(2,    hdr->length);
+	TEST_EQUALS(8,    hdr->type_id);
+	TEST_EQUALS(400,  hdr->stream_id);
 
-	msg = &dctest.msgv[1];
-	TEST_EQUALS(1,    msg->hdr.format);
-	TEST_EQUALS(6,    msg->hdr.chunk_id);
-	TEST_EQUALS(1020, msg->hdr.timestamp);
-	TEST_EQUALS(20,   msg->hdr.timestamp_delta);
-	TEST_EQUALS(2,    msg->hdr.length);
-	TEST_EQUALS(8,    msg->hdr.type_id);
-	TEST_EQUALS(400,  msg->hdr.stream_id);
-	TEST_EQUALS(2,    msg->pos);
-
-	msg = &dctest.msgv[2];
-	TEST_EQUALS(2,    msg->hdr.format);
-	TEST_EQUALS(6,    msg->hdr.chunk_id);
-	TEST_EQUALS(1040, msg->hdr.timestamp);
-	TEST_EQUALS(20,   msg->hdr.timestamp_delta);
-	TEST_EQUALS(2,    msg->hdr.length);
-	TEST_EQUALS(8,    msg->hdr.type_id);
-	TEST_EQUALS(400,  msg->hdr.stream_id);
-	TEST_EQUALS(2,    msg->pos);
+	hdr = &dctest.hdrv[2];
+	TEST_EQUALS(2,    hdr->format);
+	TEST_EQUALS(6,    hdr->chunk_id);
+	TEST_EQUALS(1040, hdr->timestamp);
+	TEST_EQUALS(20,   hdr->timestamp_delta);
+	TEST_EQUALS(2,    hdr->length);
+	TEST_EQUALS(8,    hdr->type_id);
+	TEST_EQUALS(400,  hdr->stream_id);
 
  out:
-	for (i=0; i<dctest.n_msg; i++) {
-		mem_deref(dctest.msgv[i].buf);
-	}
-
 	mem_deref(dechunk);
 
 	return err;
