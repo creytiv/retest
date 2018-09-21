@@ -933,7 +933,7 @@ static void audio_handler(uint32_t timestamp,
 	if (err)
 		endpoint_terminate(ep, err);
 }
-
+#define TS_OFFSET 100
 
 static void video_handler(uint32_t timestamp,
 			  const uint8_t *pld, size_t len, void *arg)
@@ -943,7 +943,7 @@ static void video_handler(uint32_t timestamp,
 
 	re_printf("stream: recv video (ts=%u, %zu bytes)\n", timestamp, len);
 
-	TEST_EQUALS(ep->n_video, timestamp);
+	TEST_EQUALS(TS_OFFSET + ep->n_video, timestamp);
 
 	++ep->n_video;
 
@@ -1097,7 +1097,7 @@ static void command_handler(struct rtmp_amf_message *msg, void *arg)
 			if (err)
 				goto error;
 
-			err = rtmp_send_video(ep->stream, i,
+			err = rtmp_send_video(ep->stream, TS_OFFSET + i,
 					      fake_video_packet,
 					      sizeof(fake_video_packet));
 			if (err)
