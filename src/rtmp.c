@@ -194,8 +194,8 @@ struct dechunk_test {
 };
 
 
-static int dechunk_msg_handler(const struct rtmp_header *hdr,
-			       const uint8_t *pld, size_t pld_len, void *arg)
+static int dechunk_handler(const struct rtmp_header *hdr,
+			   struct mbuf *mb, void *arg)
 {
 	struct dechunk_test *dctest = arg;
 
@@ -228,7 +228,7 @@ static int test_rtmp_dechunking(void)
 	int err;
 
 	err = rtmp_dechunker_alloc(&dechunk, 128,
-				   dechunk_msg_handler, &dctest);
+				   dechunk_handler, &dctest);
 	TEST_ERR(err);
 
 	for (i=0; i<ARRAY_SIZE(testv); i++) {
@@ -335,7 +335,7 @@ static int test_rtmp_dechunking2(void)
 	re_printf("--- test dechunk ---\n");
 
 	err = rtmp_dechunker_alloc(&dechunk, MAX_CHUNK_SIZE,
-				   dechunk_msg_handler, &dctest);
+				   dechunk_handler, &dctest);
 	TEST_ERR(err);
 
 	while (mbuf_get_left(&mb)) {
