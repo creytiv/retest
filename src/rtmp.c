@@ -186,36 +186,18 @@ static int test_rtmp_decode_ping_request(void)
 
 struct dechunk_test {
 	unsigned n_msg;
-
-	uint32_t last_chunk_id;
-	size_t   last_length;
-	uint32_t last_stream_id;
-
-	int err;
+	struct rtmp_message msgv[128];
 };
 
 
 static int dechunk_msg_handler(struct rtmp_message *msg, void *arg)
 {
 	struct dechunk_test *dctest = arg;
-	int err = 0;
-	(void)msg;
+
+	dctest->msgv[dctest->n_msg] = *msg;
+	dctest->msgv[dctest->n_msg].buf = mem_ref(msg->buf);
 
 	++dctest->n_msg;
-
-	TEST_EQUALS(0, msg->hdr.format);
-	TEST_ASSERT(msg->buf != NULL);
-	TEST_EQUALS(msg->hdr.length, msg->pos);
-	TEST_EQUALS(0, msg->hdr.timestamp);
-	/* XXX: compare timestamp_delta later */
-
-	dctest->last_chunk_id  = msg->hdr.chunk_id;
-	dctest->last_length    = msg->hdr.length;
-	dctest->last_stream_id = msg->hdr.stream_id;
-
- out:
-	if (err)
-		dctest->err = err;
 
 	return 0;
 }
@@ -237,10 +219,12 @@ static int test_rtmp_dechunking(void)
 	};
 	struct dechunk_test dctest = {0};
 	struct rtmp_dechunker *dechunk = NULL;
+	struct rtmp_message *msg;
 	size_t i;
 	int err;
 
-	err = rtmp_dechunker_alloc(&dechunk, dechunk_msg_handler, &dctest);
+	err = rtmp_dechunker_alloc(&dechunk, 128,
+				   dechunk_msg_handler, &dctest);
 	TEST_ERR(err);
 
 	for (i=0; i<ARRAY_SIZE(testv); i++) {
@@ -256,21 +240,159 @@ static int test_rtmp_dechunking(void)
 		err = rtmp_dechunker_receive(dechunk, &mb);
 		if (err)
 			goto out;
-
-		if (dctest.err) {
-			err = dctest.err;
-			goto out;
-		}
-
-		TEST_EQUALS(test->chunk_id,  dctest.last_chunk_id);
-		TEST_EQUALS(test->length,    dctest.last_length);
-		TEST_EQUALS(test->stream_id, dctest.last_stream_id);
 	}
 
 	TEST_EQUALS(ARRAY_SIZE(testv), dctest.n_msg);
 
+	msg = &dctest.msgv[0];
+
+	TEST_EQUALS(0,    msg->hdr.format);
+	TEST_EQUALS(2,    msg->hdr.chunk_id);
+	TEST_EQUALS(0,    msg->hdr.timestamp);
+	TEST_EQUALS(0,    msg->hdr.timestamp_delta);
+	TEST_EQUALS(4,    msg->hdr.length);
+	TEST_EQUALS(5,    msg->hdr.type_id);
+	TEST_EQUALS(0,    msg->hdr.stream_id);
+	TEST_EQUALS(4,    msg->pos);
+
+	msg = &dctest.msgv[1];
+
+	TEST_EQUALS(0,    msg->hdr.format);
+	TEST_EQUALS(6,    msg->hdr.chunk_id);
+	TEST_EQUALS(0,    msg->hdr.timestamp);
+	TEST_EQUALS(0,    msg->hdr.timestamp_delta);
+	TEST_EQUALS(82,   msg->hdr.length);
+	TEST_EQUALS(8,    msg->hdr.type_id);
+	TEST_EQUALS(1,    msg->hdr.stream_id);
+	TEST_EQUALS(82,   msg->pos);
+
+	msg = &dctest.msgv[2];
+
+	TEST_EQUALS(0,    msg->hdr.format);
+	TEST_EQUALS(6,    msg->hdr.chunk_id);
+	TEST_EQUALS(0,    msg->hdr.timestamp);
+	TEST_EQUALS(0,    msg->hdr.timestamp_delta);
+	TEST_EQUALS(4,    msg->hdr.length);
+	TEST_EQUALS(9,    msg->hdr.type_id);
+	TEST_EQUALS(1,    msg->hdr.stream_id);
+	TEST_EQUALS(4,    msg->pos);
+
  out:
+	for (i=0; i<dctest.n_msg; i++) {
+		mem_deref(dctest.msgv[i].buf);
+	}
+
 	mem_deref(dechunk);
+
+	return err;
+}
+
+
+#define MAX_CHUNK_SIZE 2
+static int test_rtmp_dechunking2(void)
+{
+	static const uint8_t pkt[] = {
+
+		/* Packet 1 (Type 0) */
+		0x06,
+
+		0x00, 0x03, 0xe8,     0x00, 0x00, 0x04,     0x08,
+		0x90, 0x01, 0x00, 0x00,
+
+		0xff, 0xff,
+
+		/* Packet 2 (Type 3) */
+		0xc6,
+
+		0xff, 0xff,
+
+		/* ----- ----- ----- ----- ----- ----- ----- */
+
+		/* Packet 3 (Type 1) */
+		0x46,
+
+		0x00, 0x00, 0x14,     0x00, 0x00, 0x02,     0x08,
+
+		0xff, 0xff,
+
+		/* Packet 4 (Type 2) */
+		0x86,
+
+		0x00, 0x00, 0x14,
+
+		0xff, 0xff,
+	};
+	struct dechunk_test dctest = {0};
+	struct rtmp_dechunker *dechunk = NULL;
+	size_t i;
+	int err;
+
+	struct mbuf mb = {
+		.pos  = 0,
+		.end = ARRAY_SIZE(pkt),
+		.size = ARRAY_SIZE(pkt),
+		.buf  = (void *)pkt
+	};
+
+	struct rtmp_message *msg;
+
+	re_printf("--- test dechunk ---\n");
+
+	err = rtmp_dechunker_alloc(&dechunk, MAX_CHUNK_SIZE,
+				   dechunk_msg_handler, &dctest);
+	TEST_ERR(err);
+
+	while (mbuf_get_left(&mb)) {
+
+		err = rtmp_dechunker_receive(dechunk, &mb);
+		if (err)
+			goto out;
+	}
+
+#if 1
+	re_printf("%H\n", rtmp_dechunker_debug, dechunk);
+#endif
+
+	TEST_EQUALS(3, dctest.n_msg);
+
+
+	msg = &dctest.msgv[0];
+	TEST_EQUALS(0,    msg->hdr.format);
+	TEST_EQUALS(6,    msg->hdr.chunk_id);
+	TEST_EQUALS(1000, msg->hdr.timestamp);
+	TEST_EQUALS(0,    msg->hdr.timestamp_delta);
+	TEST_EQUALS(4,    msg->hdr.length);
+	TEST_EQUALS(8,    msg->hdr.type_id);
+	TEST_EQUALS(400,  msg->hdr.stream_id);
+	TEST_EQUALS(4,    msg->pos);
+
+	msg = &dctest.msgv[1];
+	TEST_EQUALS(1,    msg->hdr.format);
+	TEST_EQUALS(6,    msg->hdr.chunk_id);
+	TEST_EQUALS(1020, msg->hdr.timestamp);
+	TEST_EQUALS(20,   msg->hdr.timestamp_delta);
+	TEST_EQUALS(2,    msg->hdr.length);
+	TEST_EQUALS(8,    msg->hdr.type_id);
+	TEST_EQUALS(400,  msg->hdr.stream_id);
+	TEST_EQUALS(2,    msg->pos);
+
+	msg = &dctest.msgv[2];
+	TEST_EQUALS(2,    msg->hdr.format);
+	TEST_EQUALS(6,    msg->hdr.chunk_id);
+	TEST_EQUALS(1040, msg->hdr.timestamp);
+	TEST_EQUALS(20,   msg->hdr.timestamp_delta);
+	TEST_EQUALS(2,    msg->hdr.length);
+	TEST_EQUALS(8,    msg->hdr.type_id);
+	TEST_EQUALS(400,  msg->hdr.stream_id);
+	TEST_EQUALS(2,    msg->pos);
+
+ out:
+	for (i=0; i<dctest.n_msg; i++) {
+		mem_deref(dctest.msgv[i].buf);
+	}
+
+	mem_deref(dechunk);
+
 	return err;
 }
 
@@ -1218,10 +1340,14 @@ int test_rtmp(void)
 		return err;
 
 	/* Test chunking */
+#if 1
 	err |= test_rtmp_dechunking();
+#endif
+	err |= test_rtmp_dechunking2();
 	if (err)
 		return err;
 
+#if 1
 	/* AMF Encode */
 	err  = test_rtmp_amf_encode_connect();
 	err |= test_rtmp_amf_encode_connect_result();
@@ -1236,7 +1362,6 @@ int test_rtmp(void)
 				    sizeof(amf_connect_result), 4, 11,
 				    "_result");
 
-#if 1
 	err |= test_rtmp_amf_decode(amf_connect, sizeof(amf_connect), 3, 10,
 				    "connect");
 	err |= test_rtmp_amf_decode(amf_result, sizeof(amf_result), 4, 11,
@@ -1247,14 +1372,16 @@ int test_rtmp(void)
 	err |= test_rtmp_amf_decode(amf_onmetadata,
 				    sizeof(amf_onmetadata), 2, 26,
 				    "onMetaData");
-#endif
 	if (err)
 		return err;
+#endif
 
+#if 1
 	/* Client/Server loop */
 	err = test_rtmp_client_server_conn(false);
 	if (err)
 		return err;
+#endif
 
 	return err;
 }
