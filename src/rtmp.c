@@ -805,6 +805,7 @@ static int test_rtmp_amf_decode(const uint8_t *buf, size_t len,
 {
 	struct rtmp_amf_message *msg = NULL;
 	struct mbuf *mb = NULL;
+	struct odict *dict;
 	const char *name;
 	bool ret;
 	int err;
@@ -817,8 +818,10 @@ static int test_rtmp_amf_decode(const uint8_t *buf, size_t len,
 	if (err)
 		goto out;
 
-	TEST_EQUALS(count,     odict_count(msg->dict, false));
-	TEST_EQUALS(count_all, odict_count(msg->dict, true));
+	dict = rtmp_amf_message_dict(msg);
+
+	TEST_EQUALS(count,     odict_count(dict, false));
+	TEST_EQUALS(count_all, odict_count(dict, true));
 
 	name = rtmp_amf_message_string(msg, 0);
 	TEST_STRCMP(command_name, str_len(command_name),
