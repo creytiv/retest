@@ -920,8 +920,6 @@ static void audio_handler(uint32_t timestamp,
 	struct rtmp_endpoint *ep = arg;
 	int err = 0;
 
-	re_printf("stream: recv audio (ts=%u, %zu bytes)\n", timestamp, len);
-
 	TEST_EQUALS(ep->n_audio, timestamp);
 
 	++ep->n_audio;
@@ -944,8 +942,6 @@ static void video_handler(uint32_t timestamp,
 {
 	struct rtmp_endpoint *ep = arg;
 	int err = 0;
-
-	re_printf("stream: recv video (ts=%u, %zu bytes)\n", timestamp, len);
 
 	TEST_EQUALS(TS_OFFSET + ep->n_video, timestamp);
 
