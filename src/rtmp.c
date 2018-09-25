@@ -27,6 +27,7 @@
 #define NUM_MEDIA_PACKETS 5
 
 
+#if 0
 /*
  * Various complete RTMP packets
  */
@@ -62,6 +63,8 @@ static const uint8_t rtmp_video_data[] = {
 
 	0x00, 0x00, 0x00, 0x01
 };
+#endif
+
 
 #if 0
 static const uint8_t rtmp_ping_request[] = {
@@ -202,6 +205,7 @@ struct dechunk_test {
 };
 
 
+#if 0
 static int dechunk_handler(const struct rtmp_header *hdr,
 			   struct mbuf *mb, void *arg)
 {
@@ -391,6 +395,7 @@ static int test_rtmp_dechunking2(void)
 
 	return err;
 }
+#endif
 
 
 static const uint8_t amf_connect[] = {
@@ -1384,13 +1389,13 @@ int test_rtmp(void)
 		return err;
 #endif
 
+#if 0
 	/* Test chunking */
-#if 1
 	err |= test_rtmp_dechunking();
-#endif
 	err |= test_rtmp_dechunking2();
 	if (err)
 		return err;
+#endif
 
 #if 1
 	/* AMF Encode */
