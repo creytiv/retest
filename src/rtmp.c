@@ -27,53 +27,6 @@
 #define NUM_MEDIA_PACKETS 5
 
 
-#if 0
-/*
- * Various complete RTMP packets
- */
-
-static const uint8_t rtmp_was[] = {
-	0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x05,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x26, 0x25, 0xa0
-};
-
-	/*
-	 * ffplay rtmp://184.72.239.149/vod/mp4:bigbuckbunny_450.mp4
-	 */
-static const uint8_t rtmp_audio_data[] = {
-	0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x08,
-	0x01, 0x00, 0x00, 0x00,
-
-	0xaf, 0x00, 0x11, 0x90, 0x08, 0xc4, 0x00, 0x00,
-	0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00
-};
-
-static const uint8_t rtmp_video_data[] = {
-	0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x09,
-	0x01, 0x00, 0x00, 0x00,
-
-	0x00, 0x00, 0x00, 0x01
-};
-#endif
-
-
-#if 0
-static const uint8_t rtmp_ping_request[] = {
-	0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x04,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00,
-	0x50, 0x2e
-};
-#endif
-
 /*
  * Helper functions
  */
@@ -93,205 +46,6 @@ static struct mbuf *mbuf_packet(const uint8_t *pkt, size_t len)
 
 	return mb;
 }
-
-
-struct dechunk_test {
-	unsigned n_msg;
-	struct rtmp_header hdrv[128];
-};
-
-
-#if 0
-static int dechunk_handler(const struct rtmp_header *hdr,
-			   struct mbuf *mb, void *arg)
-{
-	struct dechunk_test *dctest = arg;
-
-	dctest->hdrv[dctest->n_msg] = *hdr;
-
-	++dctest->n_msg;
-
-	return 0;
-}
-
-
-static int test_rtmp_dechunking(void)
-{
-	static const struct test {
-		uint32_t chunk_id;
-		size_t length;
-		uint32_t stream_id;
-
-		const uint8_t *pkt;
-		size_t size;
-	} testv[] = {
-		{ 2,  4, 0, rtmp_was,        ARRAY_SIZE(rtmp_was)        },
-		{ 6, 82, 1, rtmp_audio_data, ARRAY_SIZE(rtmp_audio_data) },
-		{ 6,  4, 1, rtmp_video_data, ARRAY_SIZE(rtmp_video_data) },
-	};
-	struct dechunk_test dctest = {0};
-	struct rtmp_dechunker *dechunk = NULL;
-	struct rtmp_header *hdr;
-	size_t i;
-	int err;
-
-	err = rtmp_dechunker_alloc(&dechunk, 128,
-				   dechunk_handler, &dctest);
-	TEST_ERR(err);
-
-	for (i=0; i<ARRAY_SIZE(testv); i++) {
-
-		const struct test *test = &testv[i];
-		struct mbuf mb = {
-			.pos  = 0,
-			.end  = test->size,
-			.size = test->size,
-			.buf  = (void *)test->pkt
-		};
-
-		err = rtmp_dechunker_receive(dechunk, &mb);
-		if (err)
-			goto out;
-	}
-
-	TEST_EQUALS(ARRAY_SIZE(testv), dctest.n_msg);
-
-	hdr = &dctest.hdrv[0];
-
-	TEST_EQUALS(0,    hdr->format);
-	TEST_EQUALS(2,    hdr->chunk_id);
-	TEST_EQUALS(0,    hdr->timestamp);
-	TEST_EQUALS(0,    hdr->timestamp_delta);
-	TEST_EQUALS(4,    hdr->length);
-	TEST_EQUALS(5,    hdr->type_id);
-	TEST_EQUALS(0,    hdr->stream_id);
-
-	hdr = &dctest.hdrv[1];
-
-	TEST_EQUALS(0,    hdr->format);
-	TEST_EQUALS(6,    hdr->chunk_id);
-	TEST_EQUALS(0,    hdr->timestamp);
-	TEST_EQUALS(0,    hdr->timestamp_delta);
-	TEST_EQUALS(82,   hdr->length);
-	TEST_EQUALS(8,    hdr->type_id);
-	TEST_EQUALS(1,    hdr->stream_id);
-
-	hdr = &dctest.hdrv[2];
-
-	TEST_EQUALS(0,    hdr->format);
-	TEST_EQUALS(6,    hdr->chunk_id);
-	TEST_EQUALS(0,    hdr->timestamp);
-	TEST_EQUALS(0,    hdr->timestamp_delta);
-	TEST_EQUALS(4,    hdr->length);
-	TEST_EQUALS(9,    hdr->type_id);
-	TEST_EQUALS(1,    hdr->stream_id);
-
- out:
-	mem_deref(dechunk);
-
-	return err;
-}
-
-
-#define MAX_CHUNK_SIZE 2
-static int test_rtmp_dechunking2(void)
-{
-	static const uint8_t pkt[] = {
-
-		/* Packet 1 (Type 0) */
-		0x06,
-
-		0x00, 0x03, 0xe8,     0x00, 0x00, 0x04,     0x08,
-		0x90, 0x01, 0x00, 0x00,
-
-		0xff, 0xff,
-
-		/* Packet 2 (Type 3) */
-		0xc6,
-
-		0xff, 0xff,
-
-		/* ----- ----- ----- ----- ----- ----- ----- */
-
-		/* Packet 3 (Type 1) */
-		0x46,
-
-		0x00, 0x00, 0x14,     0x00, 0x00, 0x02,     0x08,
-
-		0xff, 0xff,
-
-		/* Packet 4 (Type 2) */
-		0x86,
-
-		0x00, 0x00, 0x14,
-
-		0xff, 0xff,
-	};
-	struct dechunk_test dctest = {0};
-	struct rtmp_dechunker *dechunk = NULL;
-	int err;
-
-	struct mbuf mb = {
-		.pos  = 0,
-		.end = ARRAY_SIZE(pkt),
-		.size = ARRAY_SIZE(pkt),
-		.buf  = (void *)pkt
-	};
-
-	struct rtmp_header *hdr;
-
-	re_printf("--- test dechunk ---\n");
-
-	err = rtmp_dechunker_alloc(&dechunk, MAX_CHUNK_SIZE,
-				   dechunk_handler, &dctest);
-	TEST_ERR(err);
-
-	while (mbuf_get_left(&mb)) {
-
-		err = rtmp_dechunker_receive(dechunk, &mb);
-		if (err)
-			goto out;
-	}
-
-#if 1
-	re_printf("%H\n", rtmp_dechunker_debug, dechunk);
-#endif
-
-	TEST_EQUALS(3, dctest.n_msg);
-
-	hdr = &dctest.hdrv[0];
-	TEST_EQUALS(0,    hdr->format);
-	TEST_EQUALS(6,    hdr->chunk_id);
-	TEST_EQUALS(1000, hdr->timestamp);
-	TEST_EQUALS(0,    hdr->timestamp_delta);
-	TEST_EQUALS(4,    hdr->length);
-	TEST_EQUALS(8,    hdr->type_id);
-	TEST_EQUALS(400,  hdr->stream_id);
-
-	hdr = &dctest.hdrv[1];
-	TEST_EQUALS(1,    hdr->format);
-	TEST_EQUALS(6,    hdr->chunk_id);
-	TEST_EQUALS(1020, hdr->timestamp);
-	TEST_EQUALS(20,   hdr->timestamp_delta);
-	TEST_EQUALS(2,    hdr->length);
-	TEST_EQUALS(8,    hdr->type_id);
-	TEST_EQUALS(400,  hdr->stream_id);
-
-	hdr = &dctest.hdrv[2];
-	TEST_EQUALS(2,    hdr->format);
-	TEST_EQUALS(6,    hdr->chunk_id);
-	TEST_EQUALS(1040, hdr->timestamp);
-	TEST_EQUALS(20,   hdr->timestamp_delta);
-	TEST_EQUALS(2,    hdr->length);
-	TEST_EQUALS(8,    hdr->type_id);
-	TEST_EQUALS(400,  hdr->stream_id);
-
- out:
-	mem_deref(dechunk);
-
-	return err;
-}
-#endif
 
 
 static const uint8_t amf_connect[] = {
@@ -815,24 +569,6 @@ static bool endpoints_are_finished(const struct rtmp_endpoint *ep)
 }
 
 
-#if 0
-static void stream_ready_handler(void *arg)
-{
-	struct rtmp_endpoint *ep = arg;
-
-	++ep->n_ready;
-
-#if 0
-	/* Test complete ? */
-	if (endpoints_are_finished(ep)) {
-		re_cancel();
-	}
-#endif
-
-}
-#endif
-
-
 static void stream_command_handler(const struct rtmp_amf_message *msg,
 				   void *arg)
 {
@@ -852,8 +588,6 @@ static void audio_handler(uint32_t timestamp,
 	struct rtmp_endpoint *ep = arg;
 	int err = 0;
 
-	re_printf("recv audio pkt\n");
-
 	TEST_EQUALS(ep->n_audio, timestamp);
 
 	++ep->n_audio;
@@ -869,7 +603,10 @@ static void audio_handler(uint32_t timestamp,
 	if (err)
 		endpoint_terminate(ep, err);
 }
+
+
 #define TS_OFFSET 100
+
 
 static void video_handler(uint32_t timestamp,
 			  const uint8_t *pld, size_t len, void *arg)
@@ -1276,14 +1013,6 @@ int test_rtmp(void)
 {
 	int err = 0;
 
-#if 0
-	/* Test chunking */
-	err |= test_rtmp_dechunking();
-	err |= test_rtmp_dechunking2();
-	if (err)
-		return err;
-#endif
-
 #if 1
 	/* AMF Encode */
 	err  = test_rtmp_amf_encode_connect();
@@ -1313,12 +1042,10 @@ int test_rtmp(void)
 		return err;
 #endif
 
-#if 1
 	/* Client/Server loop */
 	err = test_rtmp_client_server_conn(false);
 	if (err)
 		return err;
-#endif
 
 	return err;
 }
