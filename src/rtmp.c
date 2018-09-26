@@ -95,110 +95,6 @@ static struct mbuf *mbuf_packet(const uint8_t *pkt, size_t len)
 }
 
 
-#if 0
-static int test_rtmp_decode_audio(void)
-{
-
-#define HDR_SIZE 12
-
-	struct rtmp_header hdr;
-	struct mbuf *mb;
-	int err;
-
-	mb = mbuf_packet(rtmp_audio_data, sizeof(rtmp_audio_data));
-	if (!mb)
-		return ENOMEM;
-
-	err = rtmp_header_decode(&hdr, mb);
-	TEST_ERR(err);
-
-	/* compare */
-	TEST_EQUALS(0,               hdr.format);
-	TEST_EQUALS(6,               hdr.chunk_id);
-	TEST_EQUALS(0,               hdr.timestamp);
-	/*TEST_EQUALS(0,               hdr.timestamp_delta);*/
-	TEST_EQUALS(82,              hdr.length);
-	TEST_EQUALS(RTMP_TYPE_AUDIO, hdr.type_id);
-
-	TEST_MEMCMP(rtmp_audio_data + HDR_SIZE,
-		    sizeof(rtmp_audio_data) - HDR_SIZE,
-		    mbuf_buf(mb), mbuf_get_left(mb));
-
- out:
-	mem_deref(mb);
-	return err;
-}
-
-
-static int test_rtmp_decode_window_ack_size(void)
-{
-	struct rtmp_header hdr;
-	struct mbuf *mb;
-	uint32_t value;
-	int err;
-
-	mb = mbuf_packet(rtmp_was, sizeof(rtmp_was));
-	if (!mb)
-		return ENOMEM;
-
-	err = rtmp_header_decode(&hdr, mb);
-	TEST_ERR(err);
-
-	/* compare */
-	TEST_EQUALS(0,                         hdr.format);
-	TEST_EQUALS(2,                         hdr.chunk_id);
-	TEST_EQUALS(0,                         hdr.timestamp);
-	TEST_EQUALS(4,                         hdr.length);
-	TEST_EQUALS(RTMP_TYPE_WINDOW_ACK_SIZE, hdr.type_id);
-	TEST_EQUALS(0,                         hdr.stream_id);
-
-	TEST_EQUALS(4, mbuf_get_left(mb));
-	value = ntohl(mbuf_read_u32(mb));
-
-	TEST_EQUALS(2500000, value);
-
- out:
-	mem_deref(mb);
-	return err;
-}
-
-
-static int test_rtmp_decode_ping_request(void)
-{
-	struct rtmp_header hdr;
-	struct mbuf *mb;
-	const void *p;
-	uint16_t value;
-	int err;
-
-	mb = mbuf_packet(rtmp_ping_request, sizeof(rtmp_ping_request));
-	if (!mb)
-		return ENOMEM;
-
-	err = rtmp_header_decode(&hdr, mb);
-	TEST_ERR(err);
-
-	/* compare */
-	TEST_EQUALS(0,                          hdr.format);
-	TEST_EQUALS(2,                          hdr.chunk_id);
-	TEST_EQUALS(0,                          hdr.timestamp);
-	TEST_EQUALS(6,                          hdr.length);
-	TEST_EQUALS(RTMP_TYPE_USER_CONTROL_MSG, hdr.type_id);
-	TEST_EQUALS(0,                          hdr.stream_id);
-
-	TEST_EQUALS(6, mbuf_get_left(mb));
-	p = mbuf_buf(mb);
-	value = ntohs( *(uint16_t *)p );
-
-	TEST_EQUALS(6, value);  /* Ping Request */
-
- out:
-	mem_deref(mb);
-	return err;
-}
-#endif
-
-
 struct dechunk_test {
 	unsigned n_msg;
 	struct rtmp_header hdrv[128];
@@ -1379,15 +1275,6 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 int test_rtmp(void)
 {
 	int err = 0;
-
-#if 0
-	/* Test packet decoding */
-	err |= test_rtmp_decode_audio();
-	err |= test_rtmp_decode_window_ack_size();
-	err |= test_rtmp_decode_ping_request();
-	if (err)
-		return err;
-#endif
 
 #if 0
 	/* Test chunking */
