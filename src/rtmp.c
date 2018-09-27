@@ -27,9 +27,7 @@
 #define NUM_MEDIA_PACKETS 5
 
 
-/*
- * Helper functions
- */
+#define TS_OFFSET 100
 
 
 struct rtmp_endpoint {
@@ -44,6 +42,7 @@ struct rtmp_endpoint {
 	unsigned n_close;
 	unsigned n_ready;
 	unsigned n_play;
+	unsigned n_deletestream;
 	unsigned n_audio;
 	unsigned n_video;
 	int err;
@@ -61,6 +60,7 @@ static const uint8_t fake_audio_packet[6] = {
 static const uint8_t fake_video_packet[8] = {
 	0xcb, 0x9c, 0xb5, 0x60, 0x7f, 0xe9, 0xbd, 0xe1
 };
+
 static const char *fake_stream_name = "sample.mp4";
 
 
@@ -110,6 +110,22 @@ static void stream_control_handler(enum rtmp_event_type event, void *arg)
 }
 
 
+static void test_done(struct rtmp_endpoint *ep)
+{
+	struct rtmp_endpoint *client;
+
+	re_printf("test is done -- shutdown\n");
+
+	if (ep->is_client)
+		client = ep;
+	else
+		client = ep->other;
+
+	/* Force destruction here to test robustness */
+	client->conn = mem_deref(client->conn);
+}
+
+
 static void audio_handler(uint32_t timestamp,
 			  const uint8_t *pld, size_t len, void *arg)
 {
@@ -125,10 +141,7 @@ static void audio_handler(uint32_t timestamp,
 	/* Test complete ? */
 	if (endpoints_are_finished(ep)) {
 
-		/* Force destruction here to test robustness */
-		ep->conn = mem_deref(ep->conn);
-
-		re_cancel();
+		test_done(ep);
 		return;
 	}
 
@@ -136,9 +149,6 @@ static void audio_handler(uint32_t timestamp,
 	if (err)
 		endpoint_terminate(ep, err);
 }
-
-
-#define TS_OFFSET 100
 
 
 static void video_handler(uint32_t timestamp,
@@ -156,10 +166,7 @@ static void video_handler(uint32_t timestamp,
 	/* Test complete ? */
 	if (endpoints_are_finished(ep)) {
 
-		/* Force destruction here to test robustness */
-		ep->conn = mem_deref(ep->conn);
-
-		re_cancel();
+		test_done(ep);
 		return;
 	}
 
@@ -262,7 +269,8 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 
 	name = rtmp_amf_message_string(msg, 0);
 
-	re_printf("got command:  %s\n", name);
+	re_printf("got command:  %s  [ %H ]\n",
+		  name, odict_debug, rtmp_amf_message_dict(msg));
 
 	++ep->n_cmd;
 
@@ -350,6 +358,29 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 				goto error;
 		}
 	}
+	else if (0 == str_casecmp(name, "deleteStream")) {
+
+		struct rtmp_stream *strm;
+		uint64_t stream_id;
+
+		++ep->n_deletestream;
+
+		if (!rtmp_amf_message_get_number(msg, &stream_id, 3)) {
+			err = EPROTO;
+			goto out;
+		}
+
+		TEST_EQUALS(42, stream_id);
+
+		strm = rtmp_stream_find(ep->conn, stream_id);
+		TEST_ASSERT(strm != NULL);
+
+		ep->stream = mem_deref(ep->stream);
+
+		/* re_main will be stopped when the
+		 * TCP connection is closed
+		 */
+	}
 	else {
 		DEBUG_NOTICE("rtmp: server: command not handled (%s)\n",
 			     name);
@@ -370,7 +401,7 @@ static void close_handler(int err, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
 
-	DEBUG_NOTICE("rtmp connection closed (%m)\n", err);
+	DEBUG_NOTICE("[ %s ] rtmp connection closed (%m)\n", ep->tag, err);
 
 	++ep->n_close;
 
@@ -528,14 +559,16 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 	TEST_EQUALS(1, cli->n_estab);
 	/*TEST_EQUALS(1, srv->n_estab);*/
 	TEST_EQUALS(0, cli->n_cmd);
-	TEST_EQUALS(3, srv->n_cmd);
+	TEST_EQUALS(4, srv->n_cmd);
 	TEST_EQUALS(0, cli->n_close);
-	TEST_EQUALS(0, srv->n_close);
+	TEST_EQUALS(1, srv->n_close);
 
 	TEST_EQUALS(1, cli->n_ready);
 	TEST_EQUALS(0, srv->n_ready);
 	TEST_EQUALS(0, cli->n_play);
 	TEST_EQUALS(1, srv->n_play);
+	TEST_EQUALS(0, cli->n_deletestream);
+	TEST_EQUALS(1, srv->n_deletestream);
 
 	/* play command */
 	TEST_EQUALS(5, cli->n_audio);
