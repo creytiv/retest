@@ -473,8 +473,10 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 
 	cli = rtmp_endpoint_alloc(true);
 	srv = rtmp_endpoint_alloc(false);
-	TEST_ASSERT(cli != NULL);
-	TEST_ASSERT(srv != NULL);
+	if (!cli || !srv) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	cli->fuzzing = fuzzing;
 	srv->fuzzing = fuzzing;
