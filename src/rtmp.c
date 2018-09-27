@@ -124,7 +124,12 @@ static void audio_handler(uint32_t timestamp,
 
 	/* Test complete ? */
 	if (endpoints_are_finished(ep)) {
+
+		/* Force destruction here to test robustness */
+		ep->conn = mem_deref(ep->conn);
+
 		re_cancel();
+		return;
 	}
 
  out:
@@ -150,7 +155,12 @@ static void video_handler(uint32_t timestamp,
 
 	/* Test complete ? */
 	if (endpoints_are_finished(ep)) {
+
+		/* Force destruction here to test robustness */
+		ep->conn = mem_deref(ep->conn);
+
 		re_cancel();
+		return;
 	}
 
  out:
@@ -503,6 +513,8 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 	err = re_main_timeout(1000);
 	if (err)
 		goto out;
+
+	re_printf("main loop done.\n");
 
 	if (cli->err) {
 		err = cli->err;
