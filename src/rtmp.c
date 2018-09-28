@@ -45,6 +45,7 @@ struct rtmp_endpoint {
 	unsigned n_deletestream;
 	unsigned n_audio;
 	unsigned n_video;
+	unsigned n_data;
 	int err;
 
 	struct tcp_helper *th;
@@ -82,7 +83,8 @@ static bool is_finished(const struct rtmp_endpoint *ep)
 
 		return ep->n_ready > 0 &&
 			ep->n_audio >= NUM_MEDIA_PACKETS &&
-			ep->n_video >= NUM_MEDIA_PACKETS;
+			ep->n_video >= NUM_MEDIA_PACKETS &&
+			ep->n_data >= 1;
 	}
 	else {
 		return ep->n_play > 0;
@@ -178,6 +180,28 @@ static void video_handler(uint32_t timestamp,
 
 static void stream_data_handler(const struct rtmp_amf_message *msg, void *arg)
 {
+	struct rtmp_endpoint *ep = arg;
+	const char *command;
+	bool ret;
+	bool value;
+	int err = 0;
+
+	++ep->n_data;
+
+	command = rtmp_amf_message_string(msg, 0);
+	TEST_STRCMP("|RtmpSampleAccess", 17, command, str_len(command));
+
+	ret = rtmp_amf_message_get_boolean(msg, &value, 1);
+	TEST_ASSERT(ret);
+	TEST_ASSERT(!value);
+
+	ret = rtmp_amf_message_get_boolean(msg, &value, 2);
+	TEST_ASSERT(ret);
+	TEST_ASSERT(!value);
+
+ out:
+	if (err)
+		endpoint_terminate(ep, err);
 }
 
 
@@ -269,9 +293,6 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 
 	name = rtmp_amf_message_string(msg, 0);
 
-	re_printf("got command:  %s  [ %H ]\n",
-		  name, odict_debug, rtmp_amf_message_dict(msg));
-
 	++ep->n_cmd;
 
 	if (0 == str_casecmp(name, "connect")) {
@@ -335,11 +356,19 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 		}
 		TEST_EQUALS(0, tid);
 
+
 		/* XXX: use a fixed stream name and compare */
 
 		stream_name = rtmp_amf_message_string(msg, 3);
 		TEST_STRCMP(fake_stream_name, strlen(fake_stream_name),
 			    stream_name, str_len(stream_name));
+
+		rtmp_amf_data(ep->conn, 42,
+				 "|RtmpSampleAccess",
+				 2,
+				   RTMP_AMF_TYPE_BOOLEAN, false,
+				   RTMP_AMF_TYPE_BOOLEAN, false);
+
 
 		/* Send some dummy media packets to client */
 
@@ -372,7 +401,7 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 
 		TEST_EQUALS(42, stream_id);
 
-		strm = rtmp_stream_find(ep->conn, stream_id);
+		strm = rtmp_stream_find(ep->conn, (uint32_t)stream_id);
 		TEST_ASSERT(strm != NULL);
 
 		ep->stream = mem_deref(ep->stream);
@@ -573,8 +602,10 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 	/* play command */
 	TEST_EQUALS(5, cli->n_audio);
 	TEST_EQUALS(5, cli->n_video);
+	TEST_EQUALS(1, cli->n_data);
 	TEST_EQUALS(0, srv->n_audio);
 	TEST_EQUALS(0, srv->n_video);
+	TEST_EQUALS(0, srv->n_data);
 
  out:
 	mem_deref(srv);
