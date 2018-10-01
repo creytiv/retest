@@ -313,8 +313,8 @@ int test_tls_certificate(void)
 {
 	struct tls *tls = NULL;
 	static const uint8_t test_fingerprint[20] =
-		"\xD4\x86\x12\xB4\x28\x27\x5A\x74\x07\xCA"
-		"\x09\x51\xA3\x1A\x79\x2A\x7E\x3C\xC3\x21";
+		"\xA5\xE3\x0A\x1E\xC1\xD4\x2B\xCB\xCF\x04"
+		"\xE7\x7A\x0F\x61\x74\x81\x66\xF9\x66\x7E";
 	uint8_t fp[20];
 	int err;
 
@@ -322,8 +322,8 @@ int test_tls_certificate(void)
 	if (err)
 		goto out;
 
-	err = tls_set_certificate(tls, test_certificate_rsa,
-				  strlen(test_certificate_rsa));
+	err = tls_set_certificate(tls, test_certificate_ecdsa,
+				  strlen(test_certificate_ecdsa));
 	TEST_EQUALS(0, err);
 
 	/* verify fingerprint of the certificate */

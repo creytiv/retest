@@ -314,8 +314,8 @@ static int agent_alloc(struct agent **agp, uint16_t lport,
 	if (err)
 		goto out;
 
-	err = tls_set_certificate(ag->tls, test_certificate_rsa,
-				  strlen(test_certificate_rsa));
+	err = tls_set_certificate(ag->tls, test_certificate_ecdsa,
+				  strlen(test_certificate_ecdsa));
 	if (err)
 		goto out;
 
