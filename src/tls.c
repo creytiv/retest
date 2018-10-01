@@ -189,11 +189,11 @@ static void server_conn_handler(const struct sa *peer, void *arg)
 }
 
 
-static int test_tls_base(enum tls_keytype keytype)
+static int test_tls_base(enum tls_keytype keytype, bool add_ca, int exp_verr)
 {
 	struct tls_test tt;
 	struct sa srv;
-	int err;
+	int err, verr;
 
 	memset(&tt, 0, sizeof(tt));
 
@@ -228,6 +228,17 @@ static int test_tls_base(enum tls_keytype keytype)
 		goto out;
 	}
 
+	if (add_ca) {
+		char cafile[256];
+
+		re_snprintf(cafile, sizeof(cafile), "%s/server-ecdsa.pem",
+			    test_datapath());
+
+		err = tls_add_ca(tt.tls, cafile);
+		if (err)
+			goto out;
+	}
+
 	err = tcp_listen(&tt.ts, &srv, server_conn_handler, &tt);
 	if (err)
 		goto out;
@@ -259,6 +270,9 @@ static int test_tls_base(enum tls_keytype keytype)
 	TEST_EQUALS(1, tt.recv_cli);
 	TEST_EQUALS(1, tt.recv_srv);
 
+	verr = tls_peer_verify(tt.sc_cli);
+	TEST_EQUALS(exp_verr, verr);
+
  out:
 	/* NOTE: close context first */
 	mem_deref(tt.tls);
@@ -275,13 +289,23 @@ static int test_tls_base(enum tls_keytype keytype)
 
 int test_tls(void)
 {
-	return test_tls_base(TLS_KEYTYPE_RSA);
+	return test_tls_base(TLS_KEYTYPE_RSA, false, EAUTH);
 }
 
 
 int test_tls_ec(void)
 {
-	return test_tls_base(TLS_KEYTYPE_EC);
+	int err;
+
+	err = test_tls_base(TLS_KEYTYPE_EC, false, EAUTH);
+	if (err)
+		return err;
+
+	err = test_tls_base(TLS_KEYTYPE_EC, true, 0);
+	if (err)
+		return err;
+
+	return err;
 }
 
 
