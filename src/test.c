@@ -148,7 +148,7 @@ static const struct test tests[] = {
 	TEST(test_telev),
 #ifdef USE_TLS
 	TEST(test_tls),
-	/*TEST(test_tls_ec),*/
+	TEST(test_tls_ec),
 	/*TEST(test_tls_selfsigned),*/
 	TEST(test_tls_certificate),
 #endif
