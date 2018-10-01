@@ -30,6 +30,9 @@
 #define TS_OFFSET 100
 
 
+#define DUMMY_STREAM_ID 42
+
+
 struct rtmp_endpoint {
 	struct rtmp_endpoint *other;
 	struct rtmp_conn *conn;
@@ -46,6 +49,7 @@ struct rtmp_endpoint {
 	unsigned n_audio;
 	unsigned n_video;
 	unsigned n_data;
+	unsigned n_begin;
 	int err;
 
 	struct tcp_helper *th;
@@ -107,7 +111,19 @@ static void stream_command_handler(const struct rtmp_amf_message *msg,
 static void stream_control_handler(enum rtmp_event_type event, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
-	(void)ep;
+
+	DEBUG_NOTICE("got control event:  event=%d\n", event);
+
+	switch (event) {
+
+	case RTMP_EVENT_STREAM_BEGIN:
+		++ep->n_begin;
+		break;
+
+	default:
+		break;
+	}
+
 }
 
 
@@ -321,7 +337,7 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 	}
 	else if (0 == str_casecmp(name, "createStream")) {
 
-		uint32_t stream_id = 42;
+		uint32_t stream_id = DUMMY_STREAM_ID;
 
 		err = rtmp_stream_alloc(&ep->stream, ep->conn, stream_id,
 					stream_command_handler,
@@ -355,14 +371,18 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 		}
 		TEST_EQUALS(0, tid);
 
-
-		/* XXX: use a fixed stream name and compare */
-
 		stream_name = rtmp_amf_message_string(msg, 3);
 		TEST_STRCMP(fake_stream_name, strlen(fake_stream_name),
 			    stream_name, str_len(stream_name));
 
-		rtmp_amf_data(ep->conn, 42,
+		/* Stream Begin */
+		err = rtmp_control(ep->conn, RTMP_TYPE_USER_CONTROL_MSG,
+				   RTMP_EVENT_STREAM_BEGIN,
+				   (uint32_t)DUMMY_STREAM_ID);
+		if (err)
+			goto error;
+
+		rtmp_amf_data(ep->conn, DUMMY_STREAM_ID,
 				 "|RtmpSampleAccess",
 				 2,
 				   RTMP_AMF_TYPE_BOOLEAN, false,
@@ -398,7 +418,7 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 			goto out;
 		}
 
-		TEST_EQUALS(42, stream_id);
+		TEST_EQUALS(DUMMY_STREAM_ID, stream_id);
 
 		strm = rtmp_stream_find(ep->conn, (uint32_t)stream_id);
 		TEST_ASSERT(strm != NULL);
@@ -605,6 +625,9 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 	TEST_EQUALS(0, srv->n_audio);
 	TEST_EQUALS(0, srv->n_video);
 	TEST_EQUALS(0, srv->n_data);
+
+	TEST_EQUALS(1, cli->n_begin);
+	TEST_EQUALS(0, srv->n_begin);
 
  out:
 	mem_deref(srv);
