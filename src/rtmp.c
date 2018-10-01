@@ -89,7 +89,6 @@ static bool is_finished(const struct rtmp_endpoint *ep)
 	else {
 		return ep->n_play > 0;
 	}
-
 }
 
 
@@ -565,7 +564,7 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 
 	re_snprintf(uri, sizeof(uri), "rtmp://%J/vod/foo", &srv_addr);
 
-	err = rtmp_connect(&cli->conn, uri, estab_handler,
+	err = rtmp_connect(&cli->conn, NULL, uri, estab_handler,
 			   command_handler, close_handler, cli);
 	if (err)
 		goto out;
