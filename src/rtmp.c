@@ -353,7 +353,7 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 
 		err = rtmp_amf_reply(ep->conn, 0, true, msg,
 					2,
-				RTMP_AMF_TYPE_NULL, NULL,
+				RTMP_AMF_TYPE_NULL,
 				RTMP_AMF_TYPE_NUMBER, (double)stream_id);
 		if (err) {
 			re_printf("rtmp: reply failed (%m)\n", err);
