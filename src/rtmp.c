@@ -105,6 +105,10 @@ static bool endpoints_are_finished(const struct rtmp_endpoint *ep)
 static void stream_command_handler(const struct rtmp_amf_message *msg,
 				   void *arg)
 {
+	struct rtmp_endpoint *ep = arg;
+
+	(void)msg;
+	(void)ep;
 }
 
 
@@ -123,7 +127,6 @@ static void stream_control_handler(enum rtmp_event_type event, void *arg)
 	default:
 		break;
 	}
-
 }
 
 
@@ -507,6 +510,7 @@ static void apply_fuzzing(struct rtmp_endpoint *ep, struct mbuf *mb)
 static bool helper_send_handler(int *err, struct mbuf *mb, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
+	(void)err;
 
 	apply_fuzzing(ep, mb);
 
@@ -518,6 +522,7 @@ static bool helper_recv_handler(int *err, struct mbuf *mb, bool *estab,
 				void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
+	(void)err;
 
 	apply_fuzzing(ep, mb);
 
