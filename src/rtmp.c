@@ -13,14 +13,6 @@
 #include <re_dbg.h>
 
 
-/*
- * TODO:
- *
- * - add testcase for RTMP publish
- *
- */
-
-
 #define WINDOW_ACK_SIZE 2500000
 
 
@@ -33,18 +25,26 @@
 #define DUMMY_STREAM_ID 42
 
 
+enum mode {
+	MODE_PLAY,
+	MODE_PUBLISH,
+};
+
+
 struct rtmp_endpoint {
 	struct rtmp_endpoint *other;
 	struct rtmp_conn *conn;
 	struct rtmp_stream *stream;
 	struct tcp_sock *ts;     /* server only */
 	const char *tag;
+	enum mode mode;
 	bool is_client;
 	unsigned n_estab;
 	unsigned n_cmd;
 	unsigned n_close;
 	unsigned n_ready;
 	unsigned n_play;
+	unsigned n_publish;
 	unsigned n_deletestream;
 	unsigned n_audio;
 	unsigned n_video;
@@ -81,24 +81,50 @@ static void endpoint_terminate(struct rtmp_endpoint *ep, int err)
 
 
 /* criteria for test to be finished */
-static bool is_finished(const struct rtmp_endpoint *ep)
+static bool client_is_finished(const struct rtmp_endpoint *ep)
 {
-	if (ep->is_client) {
+	switch (ep->mode) {
 
+	case MODE_PLAY:
 		return ep->n_ready > 0 &&
 			ep->n_audio >= NUM_MEDIA_PACKETS &&
-			ep->n_video >= NUM_MEDIA_PACKETS &&
-			ep->n_data >= 1;
+			ep->n_video >= NUM_MEDIA_PACKETS;
+
+	case MODE_PUBLISH:
+		return ep->n_ready > 0;
 	}
-	else {
+
+	return false;
+}
+
+
+static bool server_is_finished(const struct rtmp_endpoint *ep)
+{
+	switch (ep->mode) {
+
+	case MODE_PLAY:
 		return ep->n_play > 0;
+
+	case MODE_PUBLISH:
+		return ep->n_publish > 0 &&
+			ep->n_audio >= NUM_MEDIA_PACKETS &&
+			ep->n_video >= NUM_MEDIA_PACKETS;
 	}
+
+	return false;
 }
 
 
 static bool endpoints_are_finished(const struct rtmp_endpoint *ep)
 {
-	return is_finished(ep) && is_finished(ep->other);
+	if (ep->is_client) {
+		return client_is_finished(ep) &&
+			server_is_finished(ep->other);
+	}
+	else {
+		return client_is_finished(ep->other) &&
+			server_is_finished(ep);
+	}
 }
 
 
@@ -151,6 +177,8 @@ static void audio_handler(uint32_t timestamp,
 {
 	struct rtmp_endpoint *ep = arg;
 	int err = 0;
+
+	re_printf("recv audio .. \n");
 
 	TEST_EQUALS(ep->n_audio, timestamp);
 
@@ -234,9 +262,24 @@ static void stream_create_resp_handler(const struct rtmp_amf_message *msg,
 
 	++ep->n_ready;
 
-	err = rtmp_play(ep->stream, fake_stream_name);
-	if (err)
+	switch (ep->mode) {
+
+	case MODE_PLAY:
+		err = rtmp_play(ep->stream, fake_stream_name);
+		if (err)
+			goto error;
+		break;
+
+	case MODE_PUBLISH:
+		err = rtmp_publish(ep->stream, fake_stream_name);
+		if (err)
+			goto error;
+		break;
+
+	default:
+		err = EPROTO;
 		goto error;
+	}
 
 	return;
 
@@ -308,6 +351,8 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 	struct rtmp_endpoint *ep = arg;
 	const char *name;
 	int err = 0;
+
+	TEST_ASSERT(!ep->is_client);
 
 	name = rtmp_amf_message_string(msg, 0);
 
@@ -409,6 +454,49 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 				goto error;
 		}
 	}
+	else if (0 == str_casecmp(name, "publish")) {
+
+		struct rtmp_endpoint *ep_cli = ep->other;
+		const char *stream_name;
+		uint64_t tid;
+		uint32_t i;
+
+		++ep->n_publish;
+
+		if (!rtmp_amf_message_get_number(msg, &tid, 1)) {
+			err = EPROTO;
+			goto out;
+		}
+		TEST_EQUALS(0, tid);
+
+		stream_name = rtmp_amf_message_string(msg, 3);
+		TEST_STRCMP(fake_stream_name, strlen(fake_stream_name),
+			    stream_name, str_len(stream_name));
+
+
+		/* Stream Begin */
+		err = rtmp_control(ep->conn, RTMP_TYPE_USER_CONTROL_MSG,
+				   RTMP_EVENT_STREAM_BEGIN,
+				   (uint32_t)DUMMY_STREAM_ID);
+		if (err)
+			goto error;
+
+		/* Send some dummy media packets to server */
+		for (i=0; i<NUM_MEDIA_PACKETS; i++) {
+
+			err = rtmp_send_audio(ep_cli->stream, i,
+					      fake_audio_packet,
+					      sizeof(fake_audio_packet));
+			if (err)
+				goto error;
+
+			err = rtmp_send_video(ep_cli->stream, TS_OFFSET + i,
+					      fake_video_packet,
+					      sizeof(fake_video_packet));
+			if (err)
+				goto error;
+		}
+	}
 	else if (0 == str_casecmp(name, "deleteStream")) {
 
 		struct rtmp_stream *strm;
@@ -435,7 +523,7 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 	else {
 		DEBUG_NOTICE("rtmp: server: command not handled (%s)\n",
 			     name);
-		err = EPROTO;
+		err = ENOTSUP;
 		goto error;
 	}
 
@@ -469,7 +557,8 @@ static void endpoint_destructor(void *data)
 }
 
 
-static struct rtmp_endpoint *rtmp_endpoint_alloc(bool is_client)
+static struct rtmp_endpoint *rtmp_endpoint_alloc(enum mode mode,
+						 bool is_client)
 {
 	struct rtmp_endpoint *ep;
 
@@ -478,6 +567,7 @@ static struct rtmp_endpoint *rtmp_endpoint_alloc(bool is_client)
 		return NULL;
 
 	ep->is_client = is_client;
+	ep->mode = mode;
 
 	ep->tag = is_client ? "Client" : "Server";
 
@@ -560,15 +650,15 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 }
 
 
-static int test_rtmp_client_server_conn(bool fuzzing)
+static int test_rtmp_client_server_conn(enum mode mode, bool fuzzing)
 {
 	struct rtmp_endpoint *cli, *srv;
 	struct sa srv_addr;
 	char uri[256];
 	int err = 0;
 
-	cli = rtmp_endpoint_alloc(true);
-	srv = rtmp_endpoint_alloc(false);
+	cli = rtmp_endpoint_alloc(mode, true);
+	srv = rtmp_endpoint_alloc(mode, false);
 	if (!cli || !srv) {
 		err = ENOMEM;
 		goto out;
@@ -620,21 +710,33 @@ static int test_rtmp_client_server_conn(bool fuzzing)
 
 	TEST_EQUALS(1, cli->n_ready);
 	TEST_EQUALS(0, srv->n_ready);
-	TEST_EQUALS(0, cli->n_play);
-	TEST_EQUALS(1, srv->n_play);
 	TEST_EQUALS(0, cli->n_deletestream);
 	TEST_EQUALS(1, srv->n_deletestream);
-
-	/* play command */
-	TEST_EQUALS(5, cli->n_audio);
-	TEST_EQUALS(5, cli->n_video);
-	TEST_EQUALS(1, cli->n_data);
-	TEST_EQUALS(0, srv->n_audio);
-	TEST_EQUALS(0, srv->n_video);
-	TEST_EQUALS(0, srv->n_data);
-
 	TEST_EQUALS(1, cli->n_begin);
 	TEST_EQUALS(0, srv->n_begin);
+
+	switch (mode) {
+
+	case MODE_PLAY:
+		TEST_EQUALS(1, srv->n_play);
+		TEST_EQUALS(0, srv->n_publish);
+
+		TEST_EQUALS(5, cli->n_audio);
+		TEST_EQUALS(5, cli->n_video);
+		TEST_EQUALS(0, srv->n_audio);
+		TEST_EQUALS(0, srv->n_video);
+		break;
+
+	case MODE_PUBLISH:
+		TEST_EQUALS(0, srv->n_play);
+		TEST_EQUALS(1, srv->n_publish);
+
+		TEST_EQUALS(0, cli->n_audio);
+		TEST_EQUALS(0, cli->n_video);
+		TEST_EQUALS(5, srv->n_audio);
+		TEST_EQUALS(5, srv->n_video);
+		break;
+	}
 
  out:
 	mem_deref(srv);
@@ -648,8 +750,11 @@ int test_rtmp(void)
 {
 	int err = 0;
 
-	/* Client/Server loop */
-	err = test_rtmp_client_server_conn(false);
+	err = test_rtmp_client_server_conn(MODE_PLAY, false);
+	if (err)
+		return err;
+
+	err = test_rtmp_client_server_conn(MODE_PUBLISH, false);
 	if (err)
 		return err;
 
@@ -665,26 +770,9 @@ int test_rtmp_fuzzing(void)
 	for (i=0; i<32; i++) {
 
 		/* Client/Server loop */
-		e = test_rtmp_client_server_conn(true);
+		e = test_rtmp_client_server_conn(MODE_PLAY, true);
 
-		switch (e) {
-
-		case 0:
-		case EBADMSG:
-		case EINVAL:
-		case ENOENT:
-		case ENOSTR:
-		case EOVERFLOW:
-		case EPROTO:
-		case ERANGE:
-		case ETIMEDOUT:
-		case ENOMEM:
-			break;
-
-		default:
-			DEBUG_WARNING("unexpected fuzz error %d (%m)\n", e, e);
-			return e;
-		}
+		(void)e;  /* ignore result */
 	}
 
 	return err;
