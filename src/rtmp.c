@@ -523,6 +523,7 @@ static bool helper_recv_handler(int *err, struct mbuf *mb, bool *estab,
 {
 	struct rtmp_endpoint *ep = arg;
 	(void)err;
+	(void)estab;
 
 	apply_fuzzing(ep, mb);
 
@@ -534,6 +535,7 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
 	int err;
+	(void)peer;
 
 	err = rtmp_accept(&ep->conn, ep->ts, estab_handler,
 			  command_handler, close_handler, ep);
