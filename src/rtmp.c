@@ -87,11 +87,13 @@ static bool client_is_finished(const struct rtmp_endpoint *ep)
 
 	case MODE_PLAY:
 		return ep->n_ready > 0 &&
+			ep->n_begin > 0 &&
 			ep->n_audio >= NUM_MEDIA_PACKETS &&
 			ep->n_video >= NUM_MEDIA_PACKETS;
 
 	case MODE_PUBLISH:
-		return ep->n_ready > 0;
+		return ep->n_ready > 0 &&
+			ep->n_begin > 0;
 	}
 
 	return false;
@@ -138,24 +140,6 @@ static void stream_command_handler(const struct rtmp_amf_message *msg,
 }
 
 
-static void stream_control_handler(enum rtmp_event_type event, void *arg)
-{
-	struct rtmp_endpoint *ep = arg;
-
-	DEBUG_NOTICE("got control event:  event=%d\n", event);
-
-	switch (event) {
-
-	case RTMP_EVENT_STREAM_BEGIN:
-		++ep->n_begin;
-		break;
-
-	default:
-		break;
-	}
-}
-
-
 static void test_done(struct rtmp_endpoint *ep)
 {
 	struct rtmp_endpoint *client;
@@ -172,13 +156,39 @@ static void test_done(struct rtmp_endpoint *ep)
 }
 
 
+static void stream_control_handler(enum rtmp_event_type event, void *arg)
+{
+	struct rtmp_endpoint *ep = arg;
+
+	DEBUG_NOTICE("[ %s ] got control event:  event=%d\n",
+		     ep->tag, event);
+
+	switch (event) {
+
+	case RTMP_EVENT_STREAM_BEGIN:
+		++ep->n_begin;
+
+		/* Test complete ? */
+		if (endpoints_are_finished(ep)) {
+
+			test_done(ep);
+			return;
+		}
+		break;
+
+	default:
+		break;
+	}
+}
+
+
 static void audio_handler(uint32_t timestamp,
 			  const uint8_t *pld, size_t len, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
 	int err = 0;
 
-	re_printf("recv audio .. \n");
+	re_printf("recv audio (%u) \n", timestamp);
 
 	TEST_EQUALS(ep->n_audio, timestamp);
 
@@ -204,6 +214,8 @@ static void video_handler(uint32_t timestamp,
 {
 	struct rtmp_endpoint *ep = arg;
 	int err = 0;
+
+	re_printf("recv video (%u) \n", timestamp);
 
 	TEST_EQUALS(TS_OFFSET + ep->n_video, timestamp);
 
@@ -355,6 +367,8 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 	TEST_ASSERT(!ep->is_client);
 
 	name = rtmp_amf_message_string(msg, 0);
+
+	re_printf("  .. command: %s\n", name);
 
 	++ep->n_cmd;
 
