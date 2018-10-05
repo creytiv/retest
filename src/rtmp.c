@@ -477,6 +477,13 @@ static void estab_handler(void *arg)
 		struct test_stream *stream;
 
 		stream = mem_zalloc(sizeof(*stream), stream_destructor);
+		if (!stream) {
+			err = ENOMEM;
+			goto out;
+		}
+
+		TEST_ASSERT(ep->test_stream == NULL);
+		ep->test_stream = stream;
 
 		stream->ep = ep;
 
@@ -490,8 +497,6 @@ static void estab_handler(void *arg)
 		if (err)
 			goto out;
 
-		TEST_ASSERT(ep->test_stream == NULL);
-		ep->test_stream = stream;
 	}
 
  out:
@@ -574,6 +579,13 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 		uint32_t stream_id = DUMMY_STREAM_ID;
 
 		stream = mem_zalloc(sizeof(*stream), stream_destructor);
+		if (!stream) {
+			err = ENOMEM;
+			goto out;
+		}
+
+		TEST_ASSERT(ep->test_stream == NULL);
+		ep->test_stream = stream;
 
 		stream->ep = ep;
 		stream->id = DUMMY_STREAM_ID;
@@ -596,8 +608,6 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 			goto error;
 		}
 
-		TEST_ASSERT(ep->test_stream == NULL);
-		ep->test_stream = stream;
 	}
 	else if (0 == str_casecmp(name, "deleteStream")) {
 
