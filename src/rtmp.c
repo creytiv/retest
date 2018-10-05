@@ -31,16 +31,23 @@ enum mode {
 };
 
 
+struct test_stream {
+	struct rtmp_stream *stream;
+	struct rtmp_endpoint *ep;    /* pointer */
+	uint32_t id;
+};
+
 struct rtmp_endpoint {
 	struct rtmp_endpoint *other;
 	struct rtmp_conn *conn;
-	struct rtmp_stream *stream;
+	struct test_stream *test_stream;
 	struct tcp_sock *ts;     /* server only */
 	const char *tag;
 	enum mode mode;
 	bool is_client;
 	unsigned n_estab;
 	unsigned n_cmd;
+	unsigned n_stream_cmd;
 	unsigned n_close;
 	unsigned n_ready;
 	unsigned n_play;
@@ -67,6 +74,16 @@ static const uint8_t fake_video_packet[8] = {
 };
 
 static const char *fake_stream_name = "sample.mp4";
+
+
+static void stream_destructor(void *data)
+{
+	struct test_stream *stream = data;
+
+	re_printf("### test stream destroy (%p)\n", stream);
+
+	mem_deref(stream->stream);
+}
 
 
 static void endpoint_terminate(struct rtmp_endpoint *ep, int err)
@@ -133,10 +150,128 @@ static bool endpoints_are_finished(const struct rtmp_endpoint *ep)
 static void stream_command_handler(const struct rtmp_amf_message *msg,
 				   void *arg)
 {
-	struct rtmp_endpoint *ep = arg;
+	struct test_stream *stream = arg;
+	struct rtmp_endpoint *ep = stream->ep;
+	const char *name;
+	int err = 0;
+
+
+	name = rtmp_amf_message_string(msg, 0);
+
+	DEBUG_NOTICE("[%s] stream command: %s\n", ep->tag, name);
+
+	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
 
 	(void)msg;
 	(void)ep;
+
+	++ep->n_stream_cmd;
+
+	if (0 == str_casecmp(name, "play")) {
+
+		const char *stream_name;
+		uint64_t tid;
+		uint32_t i;
+
+		++ep->n_play;
+
+		if (!rtmp_amf_message_get_number(msg, &tid, 1)) {
+			err = EPROTO;
+			goto out;
+		}
+		TEST_EQUALS(0, tid);
+
+		stream_name = rtmp_amf_message_string(msg, 3);
+		TEST_STRCMP(fake_stream_name, strlen(fake_stream_name),
+			    stream_name, str_len(stream_name));
+
+		/* Stream Begin */
+		err = rtmp_control(ep->conn, RTMP_TYPE_USER_CONTROL_MSG,
+				   RTMP_EVENT_STREAM_BEGIN,
+				   (uint32_t)DUMMY_STREAM_ID);
+		if (err)
+			goto out;
+
+		rtmp_amf_data(ep->conn, DUMMY_STREAM_ID,
+				 "|RtmpSampleAccess",
+				 2,
+				   RTMP_AMF_TYPE_BOOLEAN, false,
+				   RTMP_AMF_TYPE_BOOLEAN, false);
+
+
+		/* Send some dummy media packets to client */
+
+		for (i=0; i<NUM_MEDIA_PACKETS; i++) {
+
+			err = rtmp_send_audio(stream->stream, i,
+					      fake_audio_packet,
+					      sizeof(fake_audio_packet));
+			if (err)
+				goto out;
+
+			err = rtmp_send_video(stream->stream, TS_OFFSET + i,
+					      fake_video_packet,
+					      sizeof(fake_video_packet));
+			if (err)
+				goto out;
+		}
+	}
+	else if (0 == str_casecmp(name, "publish")) {
+
+		struct rtmp_endpoint *ep_cli = ep->other;
+		struct test_stream *stream_cli = ep_cli->test_stream;
+		const char *stream_name;
+		uint64_t tid;
+		uint32_t i;
+
+		++ep->n_publish;
+
+		if (!rtmp_amf_message_get_number(msg, &tid, 1)) {
+			err = EPROTO;
+			goto out;
+		}
+		TEST_EQUALS(0, tid);
+
+		stream_name = rtmp_amf_message_string(msg, 3);
+		TEST_STRCMP(fake_stream_name, strlen(fake_stream_name),
+			    stream_name, str_len(stream_name));
+
+
+		/* Stream Begin */
+		err = rtmp_control(ep->conn, RTMP_TYPE_USER_CONTROL_MSG,
+				   RTMP_EVENT_STREAM_BEGIN,
+				   (uint32_t)DUMMY_STREAM_ID);
+		if (err)
+			goto error;
+
+		/* Send some dummy media packets to server */
+		for (i=0; i<NUM_MEDIA_PACKETS; i++) {
+
+			err = rtmp_send_audio(stream_cli->stream, i,
+					      fake_audio_packet,
+					      sizeof(fake_audio_packet));
+			if (err)
+				goto error;
+
+			err = rtmp_send_video(stream_cli->stream,
+					      TS_OFFSET + i,
+					      fake_video_packet,
+					      sizeof(fake_video_packet));
+			if (err)
+				goto error;
+		}
+	}
+	else {
+		DEBUG_NOTICE("rtmp: server: command not handled (%s)\n",
+			     name);
+		err = ENOTSUP;
+		goto error;
+	}
+
+ out:
+ error:
+	if (err)
+		endpoint_terminate(ep, err);
 }
 
 
@@ -152,13 +287,20 @@ static void test_done(struct rtmp_endpoint *ep)
 		client = ep->other;
 
 	/* Force destruction here to test robustness */
+
+	client->test_stream = mem_deref(client->test_stream);
+
 	client->conn = mem_deref(client->conn);
 }
 
 
 static void stream_control_handler(enum rtmp_event_type event, void *arg)
 {
-	struct rtmp_endpoint *ep = arg;
+	struct test_stream *stream = arg;
+	struct rtmp_endpoint *ep = stream->ep;
+	int err = 0;
+
+	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
 
 	DEBUG_NOTICE("[ %s ] got control event:  event=%d\n",
 		     ep->tag, event);
@@ -179,14 +321,21 @@ static void stream_control_handler(enum rtmp_event_type event, void *arg)
 	default:
 		break;
 	}
+
+ out:
+	if (err)
+		endpoint_terminate(ep, err);
 }
 
 
 static void audio_handler(uint32_t timestamp,
 			  const uint8_t *pld, size_t len, void *arg)
 {
-	struct rtmp_endpoint *ep = arg;
+	struct test_stream *stream = arg;
+	struct rtmp_endpoint *ep = stream->ep;
 	int err = 0;
+
+	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
 
 	re_printf("recv audio (%u) \n", timestamp);
 
@@ -212,8 +361,11 @@ static void audio_handler(uint32_t timestamp,
 static void video_handler(uint32_t timestamp,
 			  const uint8_t *pld, size_t len, void *arg)
 {
-	struct rtmp_endpoint *ep = arg;
+	struct test_stream *stream = arg;
+	struct rtmp_endpoint *ep = stream->ep;
 	int err = 0;
+
+	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
 
 	re_printf("recv video (%u) \n", timestamp);
 
@@ -238,11 +390,14 @@ static void video_handler(uint32_t timestamp,
 
 static void stream_data_handler(const struct rtmp_amf_message *msg, void *arg)
 {
-	struct rtmp_endpoint *ep = arg;
+	struct test_stream *stream = arg;
+	struct rtmp_endpoint *ep = stream->ep;
 	const char *command;
 	bool ret;
 	bool value;
 	int err = 0;
+
+	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
 
 	++ep->n_data;
 
@@ -266,37 +421,45 @@ static void stream_data_handler(const struct rtmp_amf_message *msg, void *arg)
 static void stream_create_resp_handler(const struct rtmp_amf_message *msg,
 				       void *arg)
 {
-	struct rtmp_endpoint *ep = arg;
+	struct test_stream *stream = arg;
+	struct rtmp_endpoint *ep = stream->ep;
+	uint64_t stream_id;
 	int err;
 
-	re_printf("create stream resp: %H\n",
+	re_printf("[%s] create stream resp: %H\n", ep->tag,
 		  odict_debug, rtmp_amf_message_dict(msg));
 
 	++ep->n_ready;
 
+	/* the stream-id was assigned by the server */
+	if (!rtmp_amf_message_get_number(msg, &stream_id, 3)) {
+		err = EPROTO;
+		goto out;
+	}
+	stream->id = (uint32_t)stream_id;
+
 	switch (ep->mode) {
 
 	case MODE_PLAY:
-		err = rtmp_play(ep->stream, fake_stream_name);
+		err = rtmp_play(stream->stream, fake_stream_name);
 		if (err)
-			goto error;
+			goto out;
 		break;
 
 	case MODE_PUBLISH:
-		err = rtmp_publish(ep->stream, fake_stream_name);
+		err = rtmp_publish(stream->stream, fake_stream_name);
 		if (err)
-			goto error;
+			goto out;
 		break;
 
 	default:
 		err = EPROTO;
-		goto error;
+		goto out;
 	}
 
-	return;
-
- error:
-	endpoint_terminate(ep, err);
+ out:
+	if (err)
+		endpoint_terminate(ep, err);
 }
 
 
@@ -311,21 +474,29 @@ static void estab_handler(void *arg)
 
 	if (ep->is_client) {
 
-		err = rtmp_stream_create(&ep->stream, ep->conn,
+		struct test_stream *stream;
+
+		stream = mem_zalloc(sizeof(*stream), stream_destructor);
+
+		stream->ep = ep;
+
+		err = rtmp_stream_create(&stream->stream, ep->conn,
 					 stream_create_resp_handler,
 					 stream_command_handler,
 					 stream_control_handler,
 					 audio_handler,
 					 video_handler, stream_data_handler,
-					 ep);
+					 stream);
 		if (err)
-			goto error;
+			goto out;
+
+		TEST_ASSERT(ep->test_stream == NULL);
+		ep->test_stream = stream;
 	}
 
-	return;
-
- error:
-	endpoint_terminate(ep, err);
+ out:
+	if (err)
+		endpoint_terminate(ep, err);
 }
 
 
@@ -399,13 +570,19 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 	}
 	else if (0 == str_casecmp(name, "createStream")) {
 
+		struct test_stream *stream;
 		uint32_t stream_id = DUMMY_STREAM_ID;
 
-		err = rtmp_stream_alloc(&ep->stream, ep->conn, stream_id,
+		stream = mem_zalloc(sizeof(*stream), stream_destructor);
+
+		stream->ep = ep;
+		stream->id = DUMMY_STREAM_ID;
+
+		err = rtmp_stream_alloc(&stream->stream, ep->conn, stream_id,
 					stream_command_handler,
 					stream_control_handler, audio_handler,
 					video_handler, stream_data_handler,
-					ep);
+					stream);
 		if (err) {
 			goto error;
 		}
@@ -418,98 +595,9 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 			re_printf("rtmp: reply failed (%m)\n", err);
 			goto error;
 		}
-	}
-	else if (0 == str_casecmp(name, "play")) {
 
-		const char *stream_name;
-		uint64_t tid;
-		uint32_t i;
-
-		++ep->n_play;
-
-		if (!rtmp_amf_message_get_number(msg, &tid, 1)) {
-			err = EPROTO;
-			goto out;
-		}
-		TEST_EQUALS(0, tid);
-
-		stream_name = rtmp_amf_message_string(msg, 3);
-		TEST_STRCMP(fake_stream_name, strlen(fake_stream_name),
-			    stream_name, str_len(stream_name));
-
-		/* Stream Begin */
-		err = rtmp_control(ep->conn, RTMP_TYPE_USER_CONTROL_MSG,
-				   RTMP_EVENT_STREAM_BEGIN,
-				   (uint32_t)DUMMY_STREAM_ID);
-		if (err)
-			goto error;
-
-		rtmp_amf_data(ep->conn, DUMMY_STREAM_ID,
-				 "|RtmpSampleAccess",
-				 2,
-				   RTMP_AMF_TYPE_BOOLEAN, false,
-				   RTMP_AMF_TYPE_BOOLEAN, false);
-
-
-		/* Send some dummy media packets to client */
-
-		for (i=0; i<NUM_MEDIA_PACKETS; i++) {
-
-			err = rtmp_send_audio(ep->stream, i,
-					      fake_audio_packet,
-					      sizeof(fake_audio_packet));
-			if (err)
-				goto error;
-
-			err = rtmp_send_video(ep->stream, TS_OFFSET + i,
-					      fake_video_packet,
-					      sizeof(fake_video_packet));
-			if (err)
-				goto error;
-		}
-	}
-	else if (0 == str_casecmp(name, "publish")) {
-
-		struct rtmp_endpoint *ep_cli = ep->other;
-		const char *stream_name;
-		uint64_t tid;
-		uint32_t i;
-
-		++ep->n_publish;
-
-		if (!rtmp_amf_message_get_number(msg, &tid, 1)) {
-			err = EPROTO;
-			goto out;
-		}
-		TEST_EQUALS(0, tid);
-
-		stream_name = rtmp_amf_message_string(msg, 3);
-		TEST_STRCMP(fake_stream_name, strlen(fake_stream_name),
-			    stream_name, str_len(stream_name));
-
-
-		/* Stream Begin */
-		err = rtmp_control(ep->conn, RTMP_TYPE_USER_CONTROL_MSG,
-				   RTMP_EVENT_STREAM_BEGIN,
-				   (uint32_t)DUMMY_STREAM_ID);
-		if (err)
-			goto error;
-
-		/* Send some dummy media packets to server */
-		for (i=0; i<NUM_MEDIA_PACKETS; i++) {
-
-			err = rtmp_send_audio(ep_cli->stream, i,
-					      fake_audio_packet,
-					      sizeof(fake_audio_packet));
-			if (err)
-				goto error;
-
-			err = rtmp_send_video(ep_cli->stream, TS_OFFSET + i,
-					      fake_video_packet,
-					      sizeof(fake_video_packet));
-			if (err)
-				goto error;
-		}
+		TEST_ASSERT(ep->test_stream == NULL);
+		ep->test_stream = stream;
 	}
 	else if (0 == str_casecmp(name, "deleteStream")) {
 
@@ -528,7 +616,7 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 		strm = rtmp_stream_find(ep->conn, (uint32_t)stream_id);
 		TEST_ASSERT(strm != NULL);
 
-		ep->stream = mem_deref(ep->stream);
+		ep->test_stream = mem_deref(ep->test_stream);
 
 		/* re_main will be stopped when the
 		 * TCP connection is closed
@@ -566,6 +654,7 @@ static void endpoint_destructor(void *data)
 {
 	struct rtmp_endpoint *ep = data;
 
+	mem_deref(ep->test_stream);
 	mem_deref(ep->conn);
 	mem_deref(ep->ts);
 }
@@ -718,7 +807,11 @@ static int test_rtmp_client_server_conn(enum mode mode, bool fuzzing)
 	TEST_EQUALS(1, cli->n_estab);
 	/*TEST_EQUALS(1, srv->n_estab);*/
 	TEST_EQUALS(0, cli->n_cmd);
-	TEST_EQUALS(4, srv->n_cmd);
+	TEST_EQUALS(3, srv->n_cmd);
+
+	TEST_EQUALS(0, cli->n_stream_cmd);
+	TEST_EQUALS(1, srv->n_stream_cmd);
+
 	TEST_EQUALS(0, cli->n_close);
 	TEST_EQUALS(1, srv->n_close);
 
@@ -768,9 +861,11 @@ int test_rtmp(void)
 	if (err)
 		return err;
 
+#if 1
 	err = test_rtmp_client_server_conn(MODE_PUBLISH, false);
 	if (err)
 		return err;
+#endif
 
 	return err;
 }
