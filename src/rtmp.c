@@ -337,8 +337,6 @@ static void audio_handler(uint32_t timestamp,
 
 	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
 
-	re_printf("recv audio (%u) \n", timestamp);
-
 	TEST_EQUALS(ep->n_audio, timestamp);
 
 	++ep->n_audio;
@@ -366,8 +364,6 @@ static void video_handler(uint32_t timestamp,
 	int err = 0;
 
 	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
-
-	re_printf("recv video (%u) \n", timestamp);
 
 	TEST_EQUALS(TS_OFFSET + ep->n_video, timestamp);
 
