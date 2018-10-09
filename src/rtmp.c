@@ -147,7 +147,7 @@ static bool endpoints_are_finished(const struct rtmp_endpoint *ep)
 }
 
 
-static void stream_command_handler(const struct rtmp_amf_message *msg,
+static void stream_command_handler(const struct odict *msg,
 				   void *arg)
 {
 	struct test_stream *stream = arg;
@@ -155,8 +155,7 @@ static void stream_command_handler(const struct rtmp_amf_message *msg,
 	const char *name;
 	int err = 0;
 
-
-	name = rtmp_amf_message_string(msg, 0);
+	name = odict_string(msg, "0");
 
 	DEBUG_NOTICE("[%s] stream command: %s\n", ep->tag, name);
 
@@ -175,13 +174,13 @@ static void stream_command_handler(const struct rtmp_amf_message *msg,
 
 		++ep->n_play;
 
-		if (!rtmp_amf_message_get_number(msg, &tid, 1)) {
+		if (!odict_get_number(msg, &tid, "1")) {
 			err = EPROTO;
 			goto out;
 		}
 		TEST_EQUALS(0, tid);
 
-		stream_name = rtmp_amf_message_string(msg, 3);
+		stream_name = odict_string(msg, "3");
 		TEST_STRCMP(fake_stream_name, strlen(fake_stream_name),
 			    stream_name, str_len(stream_name));
 
@@ -226,13 +225,13 @@ static void stream_command_handler(const struct rtmp_amf_message *msg,
 
 		++ep->n_publish;
 
-		if (!rtmp_amf_message_get_number(msg, &tid, 1)) {
+		if (!odict_get_number(msg, &tid, "1")) {
 			err = EPROTO;
 			goto out;
 		}
 		TEST_EQUALS(0, tid);
 
-		stream_name = rtmp_amf_message_string(msg, 3);
+		stream_name = odict_string(msg, "3");
 		TEST_STRCMP(fake_stream_name, strlen(fake_stream_name),
 			    stream_name, str_len(stream_name));
 
@@ -384,7 +383,7 @@ static void video_handler(uint32_t timestamp,
 }
 
 
-static void stream_data_handler(const struct rtmp_amf_message *msg, void *arg)
+static void stream_data_handler(const struct odict *msg, void *arg)
 {
 	struct test_stream *stream = arg;
 	struct rtmp_endpoint *ep = stream->ep;
@@ -397,14 +396,14 @@ static void stream_data_handler(const struct rtmp_amf_message *msg, void *arg)
 
 	++ep->n_data;
 
-	command = rtmp_amf_message_string(msg, 0);
+	command = odict_string(msg, "0");
 	TEST_STRCMP("|RtmpSampleAccess", 17, command, str_len(command));
 
-	ret = rtmp_amf_message_get_boolean(msg, &value, 1);
+	ret = odict_get_boolean(msg, &value, "1");
 	TEST_ASSERT(ret);
 	TEST_ASSERT(!value);
 
-	ret = rtmp_amf_message_get_boolean(msg, &value, 2);
+	ret = odict_get_boolean(msg, &value, "2");
 	TEST_ASSERT(ret);
 	TEST_ASSERT(!value);
 
@@ -414,7 +413,7 @@ static void stream_data_handler(const struct rtmp_amf_message *msg, void *arg)
 }
 
 
-static void stream_create_resp_handler(const struct rtmp_amf_message *msg,
+static void stream_create_resp_handler(const struct odict *msg,
 				       void *arg)
 {
 	struct test_stream *stream = arg;
@@ -423,12 +422,12 @@ static void stream_create_resp_handler(const struct rtmp_amf_message *msg,
 	int err;
 
 	re_printf("[%s] create stream resp: %H\n", ep->tag,
-		  odict_debug, rtmp_amf_message_dict(msg));
+		  odict_debug, msg);
 
 	++ep->n_ready;
 
 	/* the stream-id was assigned by the server */
-	if (!rtmp_amf_message_get_number(msg, &stream_id, 3)) {
+	if (!odict_get_number(msg, &stream_id, "3")) {
 		err = EPROTO;
 		goto out;
 	}
@@ -503,7 +502,7 @@ static void estab_handler(void *arg)
 
 /* Server */
 static int server_send_reply(struct rtmp_conn *conn,
-			     const struct rtmp_amf_message *req)
+			     const struct odict *req)
 {
 	const char *code = "NetConnection.Connect.Success";
 	const char *descr = "Connection succeeded.";
@@ -530,7 +529,7 @@ static int server_send_reply(struct rtmp_conn *conn,
 }
 
 
-static void command_handler(const struct rtmp_amf_message *msg, void *arg)
+static void command_handler(const struct odict *msg, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
 	const char *name;
@@ -538,7 +537,7 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 
 	TEST_ASSERT(!ep->is_client);
 
-	name = rtmp_amf_message_string(msg, 0);
+	name = odict_string(msg, "0");
 
 	re_printf("  .. command: %s\n", name);
 
@@ -612,7 +611,7 @@ static void command_handler(const struct rtmp_amf_message *msg, void *arg)
 
 		++ep->n_deletestream;
 
-		if (!rtmp_amf_message_get_number(msg, &stream_id, 3)) {
+		if (!odict_get_number(msg, &stream_id, "3")) {
 			err = EPROTO;
 			goto out;
 		}
