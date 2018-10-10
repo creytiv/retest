@@ -52,6 +52,7 @@ struct rtmp_endpoint {
 	unsigned n_ready;
 	unsigned n_play;
 	unsigned n_publish;
+	unsigned n_publish_start;
 	unsigned n_deletestream;
 	unsigned n_audio;
 	unsigned n_video;
@@ -108,7 +109,8 @@ static bool client_is_finished(const struct rtmp_endpoint *ep)
 
 	case MODE_PUBLISH:
 		return ep->n_ready > 0 &&
-			ep->n_begin > 0;
+			ep->n_begin > 0 &&
+			ep->n_publish_start > 0;
 	}
 
 	return false;
@@ -142,6 +144,33 @@ static bool endpoints_are_finished(const struct rtmp_endpoint *ep)
 		return client_is_finished(ep->other) &&
 			server_is_finished(ep);
 	}
+}
+
+
+static int send_media(struct test_stream *stream_cli)
+{
+	unsigned i;
+	int err = 0;
+
+	/* Send some dummy media packets to server */
+	for (i=0; i<NUM_MEDIA_PACKETS; i++) {
+
+		err = rtmp_send_audio(stream_cli->stream, i,
+				      fake_audio_packet,
+				      sizeof(fake_audio_packet));
+		if (err)
+			goto error;
+
+		err = rtmp_send_video(stream_cli->stream,
+				      TS_OFFSET + i,
+				      fake_video_packet,
+				      sizeof(fake_video_packet));
+		if (err)
+			goto error;
+	}
+
+ error:
+	return err;
 }
 
 
@@ -215,11 +244,9 @@ static void stream_command_handler(const struct odict *msg,
 	}
 	else if (0 == str_casecmp(name, "publish")) {
 
-		struct rtmp_endpoint *ep_cli = ep->other;
-		struct test_stream *stream_cli = ep_cli->test_stream;
 		const char *stream_name;
+		const char *code = "NetStream.Publish.Start";
 		uint64_t tid;
-		uint32_t i;
 
 		++ep->n_publish;
 
@@ -233,7 +260,6 @@ static void stream_command_handler(const struct odict *msg,
 		TEST_STRCMP(fake_stream_name, strlen(fake_stream_name),
 			    stream_name, str_len(stream_name));
 
-
 		/* Stream Begin */
 		err = rtmp_control(ep->conn, RTMP_TYPE_USER_CONTROL_MSG,
 				   RTMP_EVENT_STREAM_BEGIN,
@@ -241,26 +267,50 @@ static void stream_command_handler(const struct odict *msg,
 		if (err)
 			goto error;
 
-		/* Send some dummy media packets to server */
-		for (i=0; i<NUM_MEDIA_PACKETS; i++) {
+		err = rtmp_amf_command(ep->conn, stream->id, "onStatus",
+			       3,
+			       RTMP_AMF_TYPE_NUMBER, (double)0,
+			       RTMP_AMF_TYPE_NULL,
+			       RTMP_AMF_TYPE_OBJECT, 2,
+			           RTMP_AMF_TYPE_STRING, "level", "status",
+			           RTMP_AMF_TYPE_STRING, "code", code);
+		if (err)
+			goto error;
+	}
+	else if (0 == str_casecmp(name, "onStatus")) {
 
-			err = rtmp_send_audio(stream_cli->stream, i,
-					      fake_audio_packet,
-					      sizeof(fake_audio_packet));
-			if (err)
-				goto error;
+		const struct odict_entry *entry;
+		struct odict *obj;
+		const char *level;
 
-			err = rtmp_send_video(stream_cli->stream,
-					      TS_OFFSET + i,
-					      fake_video_packet,
-					      sizeof(fake_video_packet));
+		entry = odict_lookup(msg, "3");
+
+		obj = entry->u.odict;
+
+		DEBUG_NOTICE("[ %s ] got status code\n", ep->tag);
+
+		level = odict_string(obj, "level");
+		if (0 == str_casecmp(level, "status")) {
+
+			const char *code = odict_string(obj, "code");
+			const char *exp_code = "NetStream.Publish.Start";
+
+			++ep->n_publish_start;
+
+			TEST_STRCMP(exp_code, str_len(exp_code),
+				    code, str_len(code));
+
+			err = send_media(stream);
 			if (err)
-				goto error;
+				goto out;
+		}
+		else {
+			DEBUG_WARNING("unsupported level %s\n", level);
 		}
 	}
 	else {
-		DEBUG_NOTICE("rtmp: server: command not handled (%s)\n",
-			     name);
+		DEBUG_NOTICE("[ %s ] stream: command not handled (%s)\n",
+			     ep->tag, name);
 		err = ENOTSUP;
 		goto error;
 	}
@@ -623,8 +673,8 @@ static void command_handler(const struct odict *msg, void *arg)
 		 */
 	}
 	else {
-		DEBUG_NOTICE("rtmp: server: command not handled (%s)\n",
-			     name);
+		DEBUG_NOTICE("[ %s ] command not handled (%s)\n",
+			     ep->tag, name);
 		err = ENOTSUP;
 		goto error;
 	}
@@ -810,7 +860,7 @@ static int test_rtmp_client_server_conn(enum mode mode, bool fuzzing)
 	TEST_EQUALS(0, cli->n_cmd);
 	TEST_EQUALS(3, srv->n_cmd);
 
-	TEST_EQUALS(0, cli->n_stream_cmd);
+	/*TEST_EQUALS(1, cli->n_stream_cmd);*/
 	TEST_EQUALS(1, srv->n_stream_cmd);
 
 	TEST_EQUALS(0, cli->n_close);
