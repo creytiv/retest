@@ -80,8 +80,6 @@ static void stream_destructor(void *data)
 {
 	struct test_stream *stream = data;
 
-	re_printf("### test stream destroy (%p)\n", stream);
-
 	mem_deref(stream->stream);
 }
 
@@ -157,7 +155,7 @@ static void stream_command_handler(const struct odict *msg,
 
 	name = odict_string(msg, "0");
 
-	DEBUG_NOTICE("[%s] stream command: %s\n", ep->tag, name);
+	DEBUG_INFO("[%s] stream command: %s\n", ep->tag, name);
 
 	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
 
@@ -278,8 +276,6 @@ static void test_done(struct rtmp_endpoint *ep)
 {
 	struct rtmp_endpoint *client;
 
-	re_printf("test is done -- shutdown\n");
-
 	if (ep->is_client)
 		client = ep;
 	else
@@ -301,8 +297,8 @@ static void stream_control_handler(enum rtmp_event_type event, void *arg)
 
 	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
 
-	DEBUG_NOTICE("[ %s ] got control event:  event=%d\n",
-		     ep->tag, event);
+	DEBUG_INFO("[ %s ] got control event:  event=%d (%s)\n",
+		     ep->tag, event, rtmp_event_name(event));
 
 	switch (event) {
 
@@ -413,16 +409,17 @@ static void stream_data_handler(const struct odict *msg, void *arg)
 }
 
 
-static void stream_create_resp_handler(const struct odict *msg,
-				       void *arg)
+static void stream_create_resp_handler(const struct odict *msg, void *arg)
 {
 	struct test_stream *stream = arg;
 	struct rtmp_endpoint *ep = stream->ep;
 	uint64_t stream_id;
 	int err;
 
+#if 0
 	re_printf("[%s] create stream resp: %H\n", ep->tag,
 		  odict_debug, msg);
+#endif
 
 	++ep->n_ready;
 
@@ -539,8 +536,6 @@ static void command_handler(const struct odict *msg, void *arg)
 
 	name = odict_string(msg, "0");
 
-	re_printf("  .. command: %s\n", name);
-
 	++ep->n_cmd;
 
 	if (0 == str_casecmp(name, "connect")) {
@@ -647,7 +642,10 @@ static void close_handler(int err, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
 
-	DEBUG_NOTICE("[ %s ] rtmp connection closed (%m)\n", ep->tag, err);
+	if (err) {
+		DEBUG_NOTICE("[ %s ] rtmp connection closed (%m)\n",
+			     ep->tag, err);
+	}
 
 	++ep->n_close;
 
@@ -797,8 +795,6 @@ static int test_rtmp_client_server_conn(enum mode mode, bool fuzzing)
 	err = re_main_timeout(1000);
 	if (err)
 		goto out;
-
-	re_printf("main loop done.\n");
 
 	if (cli->err) {
 		err = cli->err;
