@@ -19,7 +19,8 @@
 #define NUM_MEDIA_PACKETS 5
 
 
-#define TS_OFFSET 100
+/* Force testing of Extended Timestamp */
+#define TS_OFFSET 0x01000000
 
 
 #define DUMMY_STREAM_ID 42
@@ -339,7 +340,8 @@ static void test_done(struct rtmp_endpoint *ep)
 }
 
 
-static void stream_control_handler(enum rtmp_event_type event, void *arg)
+static void stream_control_handler(enum rtmp_event_type event, uint32_t value,
+				   void *arg)
 {
 	struct test_stream *stream = arg;
 	struct rtmp_endpoint *ep = stream->ep;
