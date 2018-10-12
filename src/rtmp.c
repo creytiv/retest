@@ -219,11 +219,13 @@ static void stream_command_handler(const struct odict *msg,
 		if (err)
 			goto out;
 
-		rtmp_amf_data(ep->conn, DUMMY_STREAM_ID,
-				 "|RtmpSampleAccess",
-				 2,
-				   RTMP_AMF_TYPE_BOOLEAN, false,
-				   RTMP_AMF_TYPE_BOOLEAN, false);
+		err = rtmp_amf_data(ep->conn, DUMMY_STREAM_ID,
+				    "|RtmpSampleAccess",
+				    2,
+				        RTMP_AMF_TYPE_BOOLEAN, false,
+				        RTMP_AMF_TYPE_BOOLEAN, false);
+		if (err)
+			goto out;
 
 
 		/* Send some dummy media packets to client */
