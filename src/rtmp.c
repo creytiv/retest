@@ -463,7 +463,8 @@ static void stream_data_handler(const struct odict *msg, void *arg)
 }
 
 
-static void stream_create_resp_handler(const struct odict *msg, void *arg)
+static void stream_create_resp_handler(bool success,
+				       const struct odict *msg, void *arg)
 {
 	struct test_stream *stream = arg;
 	struct rtmp_endpoint *ep = stream->ep;
@@ -474,6 +475,8 @@ static void stream_create_resp_handler(const struct odict *msg, void *arg)
 	re_printf("[%s] create stream resp: %H\n", ep->tag,
 		  odict_debug, msg);
 #endif
+
+	TEST_ASSERT(success);
 
 	++ep->n_ready;
 
