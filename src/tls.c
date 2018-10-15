@@ -189,11 +189,11 @@ static void server_conn_handler(const struct sa *peer, void *arg)
 }
 
 
-static int test_tls_base(enum tls_keytype keytype)
+static int test_tls_base(enum tls_keytype keytype, bool add_ca, int exp_verr)
 {
 	struct tls_test tt;
 	struct sa srv;
-	int err;
+	int err, verr;
 
 	memset(&tt, 0, sizeof(tt));
 
@@ -228,6 +228,17 @@ static int test_tls_base(enum tls_keytype keytype)
 		goto out;
 	}
 
+	if (add_ca) {
+		char cafile[256];
+
+		re_snprintf(cafile, sizeof(cafile), "%s/server-ecdsa.pem",
+			    test_datapath());
+
+		err = tls_add_ca(tt.tls, cafile);
+		if (err)
+			goto out;
+	}
+
 	err = tcp_listen(&tt.ts, &srv, server_conn_handler, &tt);
 	if (err)
 		goto out;
@@ -259,6 +270,9 @@ static int test_tls_base(enum tls_keytype keytype)
 	TEST_EQUALS(1, tt.recv_cli);
 	TEST_EQUALS(1, tt.recv_srv);
 
+	verr = tls_peer_verify(tt.sc_cli);
+	TEST_EQUALS(exp_verr, verr);
+
  out:
 	/* NOTE: close context first */
 	mem_deref(tt.tls);
@@ -275,13 +289,23 @@ static int test_tls_base(enum tls_keytype keytype)
 
 int test_tls(void)
 {
-	return test_tls_base(TLS_KEYTYPE_RSA);
+	return test_tls_base(TLS_KEYTYPE_RSA, false, EAUTH);
 }
 
 
 int test_tls_ec(void)
 {
-	return test_tls_base(TLS_KEYTYPE_EC);
+	int err;
+
+	err = test_tls_base(TLS_KEYTYPE_EC, false, EAUTH);
+	if (err)
+		return err;
+
+	err = test_tls_base(TLS_KEYTYPE_EC, true, 0);
+	if (err)
+		return err;
+
+	return err;
 }
 
 
@@ -313,8 +337,8 @@ int test_tls_certificate(void)
 {
 	struct tls *tls = NULL;
 	static const uint8_t test_fingerprint[20] =
-		"\xD4\x86\x12\xB4\x28\x27\x5A\x74\x07\xCA"
-		"\x09\x51\xA3\x1A\x79\x2A\x7E\x3C\xC3\x21";
+		"\xA5\xE3\x0A\x1E\xC1\xD4\x2B\xCB\xCF\x04"
+		"\xE7\x7A\x0F\x61\x74\x81\x66\xF9\x66\x7E";
 	uint8_t fp[20];
 	int err;
 
@@ -322,8 +346,8 @@ int test_tls_certificate(void)
 	if (err)
 		goto out;
 
-	err = tls_set_certificate(tls, test_certificate_rsa,
-				  strlen(test_certificate_rsa));
+	err = tls_set_certificate(tls, test_certificate_ecdsa,
+				  strlen(test_certificate_ecdsa));
 	TEST_EQUALS(0, err);
 
 	/* verify fingerprint of the certificate */

@@ -93,8 +93,8 @@ int sip_server_alloc(struct sip_server **srvp)
 	if (err)
 		goto out;
 
-	err = tls_set_certificate(tls, test_certificate_rsa,
-				  strlen(test_certificate_rsa));
+	err = tls_set_certificate(tls, test_certificate_ecdsa,
+				  strlen(test_certificate_ecdsa));
 	if (err)
 		goto out;
 
