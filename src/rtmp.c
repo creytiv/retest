@@ -342,7 +342,7 @@ static void test_done(struct rtmp_endpoint *ep)
 }
 
 
-static void stream_control_handler(enum rtmp_event_type event, uint32_t value,
+static void stream_control_handler(enum rtmp_event_type event, struct mbuf *mb,
 				   void *arg)
 {
 	struct test_stream *stream = arg;
@@ -545,7 +545,6 @@ static void estab_handler(void *arg)
 					 stream);
 		if (err)
 			goto out;
-
 	}
 
  out:
@@ -654,7 +653,6 @@ static void command_handler(const struct odict *msg, void *arg)
 			re_printf("rtmp: reply failed (%m)\n", err);
 			goto error;
 		}
-
 	}
 	else if (0 == str_casecmp(name, "deleteStream")) {
 
