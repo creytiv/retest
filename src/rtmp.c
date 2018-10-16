@@ -160,18 +160,17 @@ static int send_media(struct test_stream *stream_cli)
 				      fake_audio_packet,
 				      sizeof(fake_audio_packet));
 		if (err)
-			goto error;
+			return err;
 
 		err = rtmp_send_video(stream_cli->stream,
 				      TS_OFFSET + i,
 				      fake_video_packet,
 				      sizeof(fake_video_packet));
 		if (err)
-			goto error;
+			return err;
 	}
 
- error:
-	return err;
+	return 0;
 }
 
 
@@ -268,7 +267,7 @@ static void stream_command_handler(const struct odict *msg,
 				   RTMP_EVENT_STREAM_BEGIN,
 				   (uint32_t)DUMMY_STREAM_ID);
 		if (err)
-			goto error;
+			goto out;
 
 		err = rtmp_amf_command(ep->conn, stream->id, "onStatus",
 			       3,
@@ -278,7 +277,7 @@ static void stream_command_handler(const struct odict *msg,
 			           RTMP_AMF_TYPE_STRING, "level", "status",
 			           RTMP_AMF_TYPE_STRING, "code", code);
 		if (err)
-			goto error;
+			goto out;
 	}
 	else if (0 == str_casecmp(name, "onStatus")) {
 
@@ -315,11 +314,10 @@ static void stream_command_handler(const struct odict *msg,
 		DEBUG_NOTICE("[ %s ] stream: command not handled (%s)\n",
 			     ep->tag, name);
 		err = ENOTSUP;
-		goto error;
+		goto out;
 	}
 
  out:
- error:
 	if (err)
 		endpoint_terminate(ep, err);
 }
@@ -788,7 +786,7 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 	int err;
 	(void)peer;
 
-	err = rtmp_accept(&ep->conn, ep->ts, estab_handler,
+	err = rtmp_accept(&ep->conn, ep->ts, NULL,
 			  command_handler, close_handler, ep);
 	if (err)
 		goto error;
@@ -861,7 +859,7 @@ static int test_rtmp_client_server_conn(enum mode mode, bool fuzzing)
 	}
 
 	TEST_EQUALS(1, cli->n_estab);
-	/*TEST_EQUALS(1, srv->n_estab);*/
+	TEST_EQUALS(0, srv->n_estab);
 	TEST_EQUALS(0, cli->n_cmd);
 	TEST_EQUALS(3, srv->n_cmd);
 
@@ -917,11 +915,9 @@ int test_rtmp(void)
 	if (err)
 		return err;
 
-#if 1
 	err = test_rtmp_client_server_conn(MODE_PUBLISH, false);
 	if (err)
 		return err;
-#endif
 
 	return err;
 }
