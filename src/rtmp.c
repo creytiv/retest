@@ -61,8 +61,7 @@ struct rtmp_endpoint {
 	unsigned n_begin;
 	int err;
 
-	struct tcp_helper *th;
-	size_t packet_count;
+	struct fuzz *fuzz;
 	bool fuzzing;
 };
 
@@ -710,6 +709,7 @@ static void endpoint_destructor(void *data)
 {
 	struct rtmp_endpoint *ep = data;
 
+	mem_deref(ep->fuzz);
 	mem_deref(ep->test_stream);
 	mem_deref(ep->conn);
 	mem_deref(ep->ts);
@@ -734,52 +734,6 @@ static struct rtmp_endpoint *rtmp_endpoint_alloc(enum mode mode,
 }
 
 
-static void apply_fuzzing(struct rtmp_endpoint *ep, struct mbuf *mb)
-{
-	const size_t len = mbuf_get_left(mb);
-	size_t pos;
-	bool flip;
-	unsigned bit;
-
-	++ep->packet_count;
-
-	pos = rand_u16() % len;
-	bit = rand_u16() % 8;
-
-	/* percent change of corrupt packet */
-	flip = ((rand_u16() % 100) < 33);
-
-	if (flip) {
-		/* flip a random bit */
-		mbuf_buf(mb)[pos] ^= 1<<bit;
-	}
-}
-
-
-static bool helper_send_handler(int *err, struct mbuf *mb, void *arg)
-{
-	struct rtmp_endpoint *ep = arg;
-	(void)err;
-
-	apply_fuzzing(ep, mb);
-
-	return false;
-}
-
-
-static bool helper_recv_handler(int *err, struct mbuf *mb, bool *estab,
-				void *arg)
-{
-	struct rtmp_endpoint *ep = arg;
-	(void)err;
-	(void)estab;
-
-	apply_fuzzing(ep, mb);
-
-	return false;
-}
-
-
 static void tcp_conn_handler(const struct sa *peer, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
@@ -793,10 +747,9 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 
 	/* Enable fuzzing on the server */
 	if (ep->fuzzing) {
-		err = tcp_register_helper(&ep->th, rtmp_conn_tcpconn(ep->conn),
-					  -1000,
-					  0, helper_send_handler,
-					  helper_recv_handler, ep);
+
+		err = fuzz_register_tcpconn(&ep->fuzz,
+					    rtmp_conn_tcpconn(ep->conn));
 		if (err)
 			goto error;
 	}
