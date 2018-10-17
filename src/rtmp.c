@@ -740,8 +740,8 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 	int err;
 	(void)peer;
 
-	err = rtmp_accept(&ep->conn, ep->ts, NULL,
-			  command_handler, close_handler, ep);
+	err = rtmp_accept(&ep->conn, ep->ts, command_handler,
+			  close_handler, ep);
 	if (err)
 		goto error;
 
