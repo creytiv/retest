@@ -13,9 +13,6 @@
 #include <re_dbg.h>
 
 
-#define WINDOW_ACK_SIZE 2500000
-
-
 #define NUM_MEDIA_PACKETS 5
 
 
@@ -593,13 +590,16 @@ static void command_handler(const struct odict *msg, void *arg)
 
 	if (0 == str_casecmp(name, "connect")) {
 
+		uint32_t window_ack_size = 32;
+		uint8_t limit_type = 2;         /* Dynamic */
+
 		err = rtmp_control(ep->conn, RTMP_TYPE_WINDOW_ACK_SIZE,
-				   (uint32_t)WINDOW_ACK_SIZE);
+				   (uint32_t)window_ack_size);
 		if (err)
 			goto error;
 
 		err = rtmp_control(ep->conn, RTMP_TYPE_SET_PEER_BANDWIDTH,
-				   (uint32_t)WINDOW_ACK_SIZE, 2);
+				   (uint32_t)window_ack_size, limit_type);
 		if (err)
 			goto error;
 
@@ -885,6 +885,8 @@ int test_rtmp_fuzzing(void)
 
 		/* Client/Server loop */
 		e = test_rtmp_client_server_conn(MODE_PLAY, true);
+
+		e = test_rtmp_client_server_conn(MODE_PUBLISH, true);
 
 		(void)e;  /* ignore result */
 	}
