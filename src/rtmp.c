@@ -465,11 +465,6 @@ static void stream_create_resp_handler(bool success,
 	uint64_t stream_id;
 	int err;
 
-#if 0
-	re_printf("[%s] create stream resp: %H\n", ep->tag,
-		  odict_debug, msg);
-#endif
-
 	TEST_ASSERT(success);
 
 	++ep->n_ready;
@@ -596,24 +591,24 @@ static void command_handler(const struct odict *msg, void *arg)
 		err = rtmp_control(ep->conn, RTMP_TYPE_WINDOW_ACK_SIZE,
 				   (uint32_t)window_ack_size);
 		if (err)
-			goto error;
+			goto out;
 
 		err = rtmp_control(ep->conn, RTMP_TYPE_SET_PEER_BANDWIDTH,
 				   (uint32_t)window_ack_size, limit_type);
 		if (err)
-			goto error;
+			goto out;
 
 		/* Stream Begin */
 		err = rtmp_control(ep->conn, RTMP_TYPE_USER_CONTROL_MSG,
 				   RTMP_EVENT_STREAM_BEGIN,
 				   RTMP_CONTROL_STREAM_ID);
 		if (err)
-			goto error;
+			goto out;
 
 		err = server_send_reply(ep->conn, msg);
 		if (err) {
 			re_printf("rtmp: reply failed (%m)\n", err);
-			goto error;
+			goto out;
 		}
 	}
 	else if (0 == str_casecmp(name, "createStream")) {
@@ -639,7 +634,7 @@ static void command_handler(const struct odict *msg, void *arg)
 					video_handler, stream_data_handler,
 					stream);
 		if (err) {
-			goto error;
+			goto out;
 		}
 
 		err = rtmp_amf_reply(ep->conn, 0, true, msg,
@@ -648,7 +643,7 @@ static void command_handler(const struct odict *msg, void *arg)
 				RTMP_AMF_TYPE_NUMBER, (double)stream_id);
 		if (err) {
 			re_printf("rtmp: reply failed (%m)\n", err);
-			goto error;
+			goto out;
 		}
 	}
 	else if (0 == str_casecmp(name, "deleteStream")) {
@@ -678,13 +673,10 @@ static void command_handler(const struct odict *msg, void *arg)
 		DEBUG_NOTICE("[ %s ] command not handled (%s)\n",
 			     ep->tag, name);
 		err = ENOTSUP;
-		goto error;
+		goto out;
 	}
 
-	return;
-
  out:
- error:
 	if (err)
 		endpoint_terminate(ep, err);
 }
@@ -743,7 +735,7 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 	err = rtmp_accept(&ep->conn, ep->ts, command_handler,
 			  close_handler, ep);
 	if (err)
-		goto error;
+		goto out;
 
 	/* Enable fuzzing on the server */
 	if (ep->fuzzing) {
@@ -751,12 +743,10 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 		err = fuzz_register_tcpconn(&ep->fuzz,
 					    rtmp_conn_tcpconn(ep->conn));
 		if (err)
-			goto error;
+			goto out;
 	}
 
-	return;
-
- error:
+ out:
 	if (err)
 		endpoint_terminate(ep, err);
 }
