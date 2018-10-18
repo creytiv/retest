@@ -73,3 +73,4 @@ SRCS	+= mock/stunsrv.c
 SRCS	+= mock/turnsrv.c
 SRCS	+= mock/nat.c
 SRCS	+= mock/tcpsrv.c
+SRCS	+= mock/fuzz.c

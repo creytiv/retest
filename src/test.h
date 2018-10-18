@@ -388,3 +388,12 @@ struct sip_server {
 int sip_server_alloc(struct sip_server **srvp);
 int sip_server_uri(struct sip_server *srv, char *uri, size_t sz,
 		   enum sip_transp tp);
+
+
+/*
+ * Packet fuzzing
+ */
+
+struct fuzz;
+
+int fuzz_register_tcpconn(struct fuzz **fuzzp, struct tcp_conn *tc);
