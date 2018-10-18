@@ -66,7 +66,6 @@ SRCS	+= cert.c
 endif
 
 SRCS	+= util.c
-SRCS	+= fuzz.c
 
 # Mock servers
 SRCS	+= mock/pf.c
@@ -75,3 +74,4 @@ SRCS	+= mock/stunsrv.c
 SRCS	+= mock/turnsrv.c
 SRCS	+= mock/nat.c
 SRCS	+= mock/tcpsrv.c
+SRCS	+= mock/fuzz.c

@@ -1,5 +1,5 @@
 /**
- * @file fuzz.c Packet fuzzing
+ * @file mock/fuzz.c Packet fuzzing
  *
  * Copyright (C) 2010 Creytiv.com
  */
@@ -8,7 +8,7 @@
 #include "test.h"
 
 
-#define DEBUG_MODULE "fuzz"
+#define DEBUG_MODULE "mock/fuzz"
 #define DEBUG_LEVEL 5
 #include <re_dbg.h>
 
