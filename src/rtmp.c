@@ -57,9 +57,6 @@ struct rtmp_endpoint {
 	unsigned n_data;
 	unsigned n_begin;
 	int err;
-
-	struct fuzz *fuzz;
-	bool fuzzing;
 };
 
 
@@ -702,7 +699,6 @@ static void endpoint_destructor(void *data)
 {
 	struct rtmp_endpoint *ep = data;
 
-	mem_deref(ep->fuzz);
 	mem_deref(ep->test_stream);
 	mem_deref(ep->conn);
 	mem_deref(ep->ts);
@@ -738,22 +734,13 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 	if (err)
 		goto out;
 
-	/* Enable fuzzing on the server */
-	if (ep->fuzzing) {
-
-		err = fuzz_register_tcpconn(&ep->fuzz,
-					    rtmp_conn_tcpconn(ep->conn));
-		if (err)
-			goto out;
-	}
-
  out:
 	if (err)
 		endpoint_terminate(ep, err);
 }
 
 
-static int test_rtmp_client_server_conn(enum mode mode, bool fuzzing)
+static int test_rtmp_client_server_conn(enum mode mode)
 {
 	struct rtmp_endpoint *cli, *srv;
 	struct sa srv_addr;
@@ -766,9 +753,6 @@ static int test_rtmp_client_server_conn(enum mode mode, bool fuzzing)
 		err = ENOMEM;
 		goto out;
 	}
-
-	cli->fuzzing = fuzzing;
-	srv->fuzzing = fuzzing;
 
 	cli->other = srv;
 	srv->other = cli;
@@ -855,32 +839,15 @@ int test_rtmp(void)
 {
 	int err = 0;
 
-	err = test_rtmp_client_server_conn(MODE_PLAY, false);
+#if 0
+	err = test_rtmp_client_server_conn(MODE_PLAY);
 	if (err)
 		return err;
+#endif
 
-	err = test_rtmp_client_server_conn(MODE_PUBLISH, false);
+	err = test_rtmp_client_server_conn(MODE_PUBLISH);
 	if (err)
 		return err;
-
-	return err;
-}
-
-
-int test_rtmp_fuzzing(void)
-{
-	int err = 0, e;
-	int i;
-
-	for (i=0; i<32; i++) {
-
-		/* Client/Server loop */
-		e = test_rtmp_client_server_conn(MODE_PLAY, true);
-
-		e = test_rtmp_client_server_conn(MODE_PUBLISH, true);
-
-		(void)e;  /* ignore result */
-	}
 
 	return err;
 }

@@ -170,7 +170,6 @@ int test_odict(void);
 int test_odict_array(void);
 int test_remain(void);
 int test_rtmp(void);
-int test_rtmp_fuzzing(void);
 int test_rtp(void);
 int test_rtcp_encode(void);
 int test_rtcp_encode_afb(void);
