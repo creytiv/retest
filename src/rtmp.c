@@ -342,6 +342,7 @@ static void stream_control_handler(enum rtmp_event_type event, struct mbuf *mb,
 	struct test_stream *stream = arg;
 	struct rtmp_endpoint *ep = stream->ep;
 	int err = 0;
+	(void)mb;
 
 	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
 
