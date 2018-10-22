@@ -583,16 +583,10 @@ static void command_handler(const struct odict *msg, void *arg)
 
 	if (0 == str_casecmp(name, "connect")) {
 
-		uint32_t window_ack_size = 32;
-		uint8_t limit_type = 2;         /* Dynamic */
+		uint32_t window_ack_size = 32000;
 
 		err = rtmp_control(ep->conn, RTMP_TYPE_WINDOW_ACK_SIZE,
 				   (uint32_t)window_ack_size);
-		if (err)
-			goto out;
-
-		err = rtmp_control(ep->conn, RTMP_TYPE_SET_PEER_BANDWIDTH,
-				   (uint32_t)window_ack_size, limit_type);
 		if (err)
 			goto out;
 
