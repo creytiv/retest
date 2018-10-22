@@ -55,7 +55,6 @@ struct rtmp_endpoint {
 	unsigned n_audio;
 	unsigned n_video;
 	unsigned n_data;
-	unsigned n_begin;
 	int err;
 };
 
@@ -97,13 +96,11 @@ static bool client_is_finished(const struct rtmp_endpoint *ep)
 
 	case MODE_PLAY:
 		return ep->n_ready > 0 &&
-			ep->n_begin > 0 &&
 			ep->n_audio >= NUM_MEDIA_PACKETS &&
 			ep->n_video >= NUM_MEDIA_PACKETS;
 
 	case MODE_PUBLISH:
 		return ep->n_ready > 0 &&
-			ep->n_begin > 0 &&
 			ep->n_publish_start > 0;
 	}
 
@@ -204,13 +201,6 @@ static void stream_command_handler(const struct odict *msg,
 		TEST_STRCMP(fake_stream_name, strlen(fake_stream_name),
 			    stream_name, str_len(stream_name));
 
-		/* Stream Begin */
-		err = rtmp_control(ep->conn, RTMP_TYPE_USER_CONTROL_MSG,
-				   RTMP_EVENT_STREAM_BEGIN,
-				   (uint32_t)DUMMY_STREAM_ID);
-		if (err)
-			goto out;
-
 		err = rtmp_amf_data(ep->conn, DUMMY_STREAM_ID,
 				    "|RtmpSampleAccess",
 				    2,
@@ -218,7 +208,6 @@ static void stream_command_handler(const struct odict *msg,
 				        RTMP_AMF_TYPE_BOOLEAN, false);
 		if (err)
 			goto out;
-
 
 		/* Send some dummy media packets to client */
 
@@ -254,13 +243,6 @@ static void stream_command_handler(const struct odict *msg,
 		stream_name = odict_string(msg, "3");
 		TEST_STRCMP(fake_stream_name, strlen(fake_stream_name),
 			    stream_name, str_len(stream_name));
-
-		/* Stream Begin */
-		err = rtmp_control(ep->conn, RTMP_TYPE_USER_CONTROL_MSG,
-				   RTMP_EVENT_STREAM_BEGIN,
-				   (uint32_t)DUMMY_STREAM_ID);
-		if (err)
-			goto out;
 
 		err = rtmp_amf_command(ep->conn, stream->id, "onStatus",
 			       3,
@@ -347,17 +329,6 @@ static void stream_control_handler(enum rtmp_event_type event, struct mbuf *mb,
 		     ep->tag, event, rtmp_event_name(event));
 
 	switch (event) {
-
-	case RTMP_EVENT_STREAM_BEGIN:
-		++ep->n_begin;
-
-		/* Test complete ? */
-		if (endpoints_are_finished(ep)) {
-
-			test_done(ep);
-			return;
-		}
-		break;
 
 	default:
 		break;
@@ -590,13 +561,6 @@ static void command_handler(const struct odict *msg, void *arg)
 		if (err)
 			goto out;
 
-		/* Stream Begin */
-		err = rtmp_control(ep->conn, RTMP_TYPE_USER_CONTROL_MSG,
-				   RTMP_EVENT_STREAM_BEGIN,
-				   RTMP_CONTROL_STREAM_ID);
-		if (err)
-			goto out;
-
 		err = server_send_reply(ep->conn, msg);
 		if (err) {
 			re_printf("rtmp: reply failed (%m)\n", err);
@@ -797,8 +761,6 @@ static int test_rtmp_client_server_conn(enum mode mode)
 	TEST_EQUALS(0, srv->n_ready);
 	TEST_EQUALS(0, cli->n_deletestream);
 	TEST_EQUALS(1, srv->n_deletestream);
-	TEST_EQUALS(1, cli->n_begin);
-	TEST_EQUALS(0, srv->n_begin);
 
 	switch (mode) {
 
