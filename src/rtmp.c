@@ -81,7 +81,7 @@ static void stream_destructor(void *data)
 static void endpoint_terminate(struct rtmp_endpoint *ep, int err)
 {
 	if (err) {
-		DEBUG_WARNING("[ %s ] terminate: %m\n", ep->tag, err);
+		DEBUG_INFO("[ %s ] terminate: %m\n", ep->tag, err);
 	}
 
 	ep->err = err;
@@ -643,7 +643,7 @@ static void close_handler(int err, void *arg)
 	struct rtmp_endpoint *ep = arg;
 
 	if (err) {
-		DEBUG_NOTICE("[ %s ] rtmp connection closed (%m)\n",
+		DEBUG_INFO("[ %s ] rtmp connection closed (%m)\n",
 			     ep->tag, err);
 	}
 
@@ -719,7 +719,8 @@ static int test_rtmp_client_server_conn(enum mode mode)
 	TEST_ERR(err);
 
 	err = tcp_listen(&srv->ts, &srv_addr, tcp_conn_handler, srv);
-	TEST_ERR(err);
+	if (err)
+		goto out;
 
 	err = tcp_local_get(srv->ts, &srv_addr);
 	TEST_ERR(err);
