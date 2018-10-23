@@ -264,8 +264,6 @@ static void stream_command_handler(const struct odict *msg,
 
 		obj = entry->u.odict;
 
-		DEBUG_NOTICE("[ %s ] got status code\n", ep->tag);
-
 		level = odict_string(obj, "level");
 		if (0 == str_casecmp(level, "status")) {
 
