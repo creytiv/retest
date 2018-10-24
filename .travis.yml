@@ -5,7 +5,7 @@ before_install:
     - sudo apt-get -y install libssl-dev
 
 install:
-    - git clone -b rtmp_protocol https://github.com/creytiv/re.git
+    - git clone https://github.com/creytiv/re.git
     - git clone https://github.com/creytiv/rem.git
     - cd re && make && sudo make install && cd ..
     - cd rem && make && sudo make install && cd ..
@@ -15,5 +15,4 @@ install:
 script: 
     - make EXTRA_CFLAGS=-Werror
     - ./retest -r
-    - ./retest -o
     - python2 ccheck.py
