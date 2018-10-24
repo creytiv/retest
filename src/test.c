@@ -105,6 +105,7 @@ static const struct test tests[] = {
 	TEST(test_odict),
 	TEST(test_odict_array),
 	TEST(test_remain),
+	TEST(test_rtmp),
 	TEST(test_rtp),
 	TEST(test_rtcp_encode),
 	TEST(test_rtcp_encode_afb),
