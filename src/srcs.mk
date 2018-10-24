@@ -62,7 +62,7 @@ SRCS	+= tls.c
 SRCS	+= dtls.c
 
 SRCS	+= combo/dtls_turn.c
-SRCS	+= cert.c
+SRCS	+= mock/cert.c
 endif
 
 SRCS	+= util.c
