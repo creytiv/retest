@@ -792,15 +792,21 @@ static int test_rtmp_client_server_conn(enum mode mode)
 }
 
 
-int test_rtmp(void)
+int test_rtmp_play(void)
 {
 	int err = 0;
 
-#if 0
 	err = test_rtmp_client_server_conn(MODE_PLAY);
 	if (err)
 		return err;
-#endif
+
+	return err;
+}
+
+
+int test_rtmp_publish(void)
+{
+	int err = 0;
 
 	err = test_rtmp_client_server_conn(MODE_PUBLISH);
 	if (err)
