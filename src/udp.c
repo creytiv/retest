@@ -124,7 +124,7 @@ static bool udp_helper_send(int *err, struct sa *dst,
 
 	/* Append a fake protocol trailer */
 	mb->pos = mb->end;
-	*err = mbuf_write_str(mb, "XXXX");
+	*err = mbuf_write_str(mb, "ABCD");
 
 	mb->pos = pos;
 
