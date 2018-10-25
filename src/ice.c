@@ -567,13 +567,7 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 
 		if (agent->use_turn) {
 
-#if 0
-			/* XXX: turn disabled for now */
-			err = icem_gather_relay(agent->icem,
-						&agent->turn->laddr,
-						"username", "password");
-			++agent->n_cand;
-#endif
+			re_printf("turn disabled\n");
 		}
 		else {
 			err = icem_gather_srflx(agent,
@@ -993,16 +987,6 @@ int test_ice_cand(void)
 int test_ice_loop(void)
 {
 	return _test_ice_loop(ICE_MODE_FULL, false, ICE_MODE_FULL, false);
-}
-
-
-int test_ice_loop_turn(void)
-{
-#if 0
-	/* XXX: disabled until after merge is complete */
-	return _test_ice_loop(ICE_MODE_FULL, true,  ICE_MODE_FULL, true);
-#endif
-	return 0;
 }
 
 
