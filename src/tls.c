@@ -80,6 +80,7 @@ static void client_estab_handler(void *arg)
 
 		TEST_ASSERT(NULL == strstr(cipher, "ECDSA"));
 	}
+#if 0
 	else if (tt->keytype == TLS_KEYTYPE_EC) {
 
 		if (NULL == strstr(cipher, "ECDH")) {
@@ -88,6 +89,7 @@ static void client_estab_handler(void *arg)
 			goto out;
 		}
 	}
+#endif
 
 	tt->estab_cli = true;
 	can_send(tt);
