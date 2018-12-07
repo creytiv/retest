@@ -164,8 +164,7 @@ static int send_media(struct test_stream *stream_cli)
 }
 
 
-static void stream_command_handler(const struct odict *msg,
-				   void *arg)
+static void stream_command_handler(const struct odict *msg, void *arg)
 {
 	struct test_stream *stream = arg;
 	struct rtmp_endpoint *ep = stream->ep;
@@ -177,9 +176,6 @@ static void stream_command_handler(const struct odict *msg,
 	DEBUG_INFO("[%s] stream command: %s\n", ep->tag, name);
 
 	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
-
-	(void)msg;
-	(void)ep;
 
 	++ep->n_stream_cmd;
 
