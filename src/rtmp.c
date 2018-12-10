@@ -765,8 +765,10 @@ static int test_rtmp_client_server_conn(enum mode mode)
 
 		TEST_EQUALS(NUM_MEDIA_PACKETS, cli->n_audio);
 		TEST_EQUALS(NUM_MEDIA_PACKETS, cli->n_video);
+		TEST_EQUALS(1,                 cli->n_data);
 		TEST_EQUALS(0, srv->n_audio);
 		TEST_EQUALS(0, srv->n_video);
+		TEST_EQUALS(0, srv->n_data);
 		break;
 
 	case MODE_PUBLISH:
@@ -775,8 +777,10 @@ static int test_rtmp_client_server_conn(enum mode mode)
 
 		TEST_EQUALS(0, cli->n_audio);
 		TEST_EQUALS(0, cli->n_video);
+		TEST_EQUALS(0, cli->n_data);
 		TEST_EQUALS(NUM_MEDIA_PACKETS, srv->n_audio);
 		TEST_EQUALS(NUM_MEDIA_PACKETS, srv->n_video);
+		TEST_EQUALS(0,                 srv->n_data);
 		break;
 	}
 
