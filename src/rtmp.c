@@ -271,6 +271,10 @@ static void stream_command_handler(const struct odict *msg, void *arg)
 			TEST_STRCMP(exp_code, str_len(exp_code),
 				    code, str_len(code));
 
+			err = rtmp_meta(stream->stream);
+			if (err)
+				goto out;
+
 			err = send_media(stream);
 			if (err)
 				goto out;
@@ -404,15 +408,37 @@ static void stream_data_handler(const struct odict *msg, void *arg)
 	++ep->n_data;
 
 	command = odict_string(msg, "0");
-	TEST_STRCMP("|RtmpSampleAccess", 17, command, str_len(command));
 
-	ret = odict_get_boolean(msg, &value, "1");
-	TEST_ASSERT(ret);
-	TEST_ASSERT(!value);
+	if (ep->is_client) {
 
-	ret = odict_get_boolean(msg, &value, "2");
-	TEST_ASSERT(ret);
-	TEST_ASSERT(!value);
+		TEST_STRCMP("|RtmpSampleAccess", 17,
+			    command, str_len(command));
+
+		ret = odict_get_boolean(msg, &value, "1");
+		TEST_ASSERT(ret);
+		TEST_ASSERT(!value);
+
+		ret = odict_get_boolean(msg, &value, "2");
+		TEST_ASSERT(ret);
+		TEST_ASSERT(!value);
+	}
+	else {
+		const struct odict_entry *e;
+		uint64_t num;
+
+		TEST_STRCMP("@setDataFrame", 13, command, str_len(command));
+
+		e = odict_get_type(msg, ODICT_OBJECT, "2");
+		TEST_ASSERT(e != NULL);
+
+		ret = odict_get_number(e->u.odict, &num, "audiocodecid");
+		TEST_ASSERT(ret);
+		TEST_EQUALS(10ULL, num);
+
+		ret = odict_get_number(e->u.odict, &num, "videocodecid");
+		TEST_ASSERT(ret);
+		TEST_EQUALS(7ULL, num);
+	}
 
  out:
 	if (err)
@@ -780,7 +806,7 @@ static int test_rtmp_client_server_conn(enum mode mode)
 		TEST_EQUALS(0, cli->n_data);
 		TEST_EQUALS(NUM_MEDIA_PACKETS, srv->n_audio);
 		TEST_EQUALS(NUM_MEDIA_PACKETS, srv->n_video);
-		TEST_EQUALS(0,                 srv->n_data);
+		TEST_EQUALS(1,                 srv->n_data);
 		break;
 	}
 
