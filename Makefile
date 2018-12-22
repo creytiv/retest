@@ -46,7 +46,7 @@ ifneq ($(LIBREM_PATH),)
 LIBS	+= -L$(LIBREM_PATH)
 endif
 
-LIBS	+= -lrem -lm
+LIBS	+= -lrem -lm -lutil
 
 
 include src/srcs.mk

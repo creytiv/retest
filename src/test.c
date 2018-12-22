@@ -103,6 +103,7 @@ static const struct test tests[] = {
 	TEST(test_natbd),
 	TEST(test_odict),
 	TEST(test_odict_array),
+	TEST(test_pty),
 	TEST(test_remain),
 	TEST(test_rtmp_play),
 	TEST(test_rtmp_publish),

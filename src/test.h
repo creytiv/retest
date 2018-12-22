@@ -167,6 +167,7 @@ int test_mqueue(void);
 int test_natbd(void);
 int test_odict(void);
 int test_odict_array(void);
+int test_pty(void);
 int test_remain(void);
 int test_rtmp_play(void);
 int test_rtmp_publish(void);
