@@ -31,8 +31,36 @@ static void abort_test(struct pty_test *test, int err)
 static void pty_hdlr(int flags, void *arg)
 {
 	struct pty_test *test = arg;
-	if (flags & FD_EXCEPT)
-		abort_test(test, 0);
+	int err;
+	DEBUG_INFO("flags: %d\n", flags);
+
+	if (flags & FD_EXCEPT) {
+		err = 0;
+		goto out;
+	}
+
+	if (flags & FD_READ) {
+		char buffer[128];
+		ssize_t length = read(test->pty, buffer, sizeof(buffer));
+		switch (length) {
+			case -1:
+				err = errno;
+				if (err == EIO) {
+					err = 0;
+				}
+				break;
+			case 0:
+				err = 0;
+				break;
+			default:
+				err = EBADMSG;
+				break;
+		}
+		DEBUG_INFO("read size: %ld\n", length);
+	}
+
+ out:
+	abort_test(test, err);
 }
 
 
@@ -58,6 +86,10 @@ int test_pty(void)
 		char *args[] = {"sh", "-c", "exit", NULL};
 		execvp(args[0], args);
 	}
+
+	err = net_sockopt_blocking_set(test.pty, false);
+	if (err)
+		goto out;
 
 	err = fd_listen(test.pty, FD_READ, pty_hdlr, &test);
 	if (err)
