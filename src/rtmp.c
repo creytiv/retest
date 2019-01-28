@@ -23,6 +23,9 @@
 #define DUMMY_STREAM_ID 42
 
 
+#define CHUNK_SIZE 4096
+
+
 enum mode {
 	MODE_PLAY,
 	MODE_PUBLISH,
@@ -59,11 +62,11 @@ struct rtmp_endpoint {
 };
 
 
-static const uint8_t fake_audio_packet[6] = {
+static const uint8_t fake_audio_packet[CHUNK_SIZE + 6] = {
 	0x5b, 0xb2, 0xfb, 0x11, 0x46, 0xe9
 };
 
-static const uint8_t fake_video_packet[8] = {
+static const uint8_t fake_video_packet[CHUNK_SIZE + 8] = {
 	0xcb, 0x9c, 0xb5, 0x60, 0x7f, 0xe9, 0xbd, 0xe1
 };
 
