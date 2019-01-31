@@ -13,11 +13,11 @@
 #include <re_dbg.h>
 
 
-#define NUM_MEDIA_PACKETS 2
+#define NUM_MEDIA_PACKETS 4
 
 
 /* Force testing of Extended Timestamp */
-#define TS_OFFSET 0x01000000
+#define TS_OFFSET 0x00fffffe
 
 
 #define DUMMY_STREAM_ID 42
