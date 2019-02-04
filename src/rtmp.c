@@ -535,8 +535,7 @@ static void estab_handler(void *arg)
 
 
 /* Server */
-static int server_send_reply(struct rtmp_conn *conn,
-			     const struct odict *req)
+static int server_send_reply(struct rtmp_conn *conn, const struct odict *req)
 {
 	const char *code = "NetConnection.Connect.Success";
 	const char *descr = "Connection succeeded.";
@@ -648,7 +647,7 @@ static void command_handler(const struct odict *msg, void *arg)
 		 * TCP connection is closed
 		 */
 
-		re_cancel();
+		endpoint_terminate(ep, 0);
 	}
 	else {
 		DEBUG_NOTICE("[ %s ] command not handled (%s)\n",
@@ -775,11 +774,9 @@ static int test_rtmp_client_server_conn(enum mode mode)
 	TEST_EQUALS(0, cli->n_cmd);
 	TEST_EQUALS(3, srv->n_cmd);
 
-	/*TEST_EQUALS(1, cli->n_stream_cmd);*/
 	TEST_EQUALS(1, srv->n_stream_cmd);
 
 	TEST_EQUALS(0, cli->n_close);
-	/*TEST_EQUALS(1, srv->n_close);*/
 
 	TEST_EQUALS(1, cli->n_ready);
 	TEST_EQUALS(0, srv->n_ready);
