@@ -30,7 +30,6 @@ SRCS	+= mbuf.c
 SRCS	+= md5.c
 SRCS	+= mem.c
 SRCS	+= mqueue.c
-SRCS	+= natbd.c
 SRCS	+= odict.c
 SRCS	+= remain.c
 SRCS	+= rtmp.c

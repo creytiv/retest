@@ -164,7 +164,6 @@ int test_mem(void);
 int test_mem_reallocarray(void);
 int test_mem_secure(void);
 int test_mqueue(void);
-int test_natbd(void);
 int test_odict(void);
 int test_odict_array(void);
 int test_remain(void);

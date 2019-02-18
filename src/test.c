@@ -100,7 +100,6 @@ static const struct test tests[] = {
 	TEST(test_mem_reallocarray),
 	TEST(test_mem_secure),
 	TEST(test_mqueue),
-	TEST(test_natbd),
 	TEST(test_odict),
 	TEST(test_odict_array),
 	TEST(test_remain),
