@@ -37,6 +37,7 @@ struct test {
 #define TEST(a) {a, #a}
 
 static const struct test tests[] = {
+	TEST(test_aac),
 	TEST(test_aes),
 	TEST(test_aes_gcm),
 	TEST(test_aubuf),

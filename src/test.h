@@ -105,6 +105,7 @@
 
 
 /* Module API */
+int test_aac(void);
 int test_aes(void);
 int test_aes_gcm(void);
 int test_aubuf(void);

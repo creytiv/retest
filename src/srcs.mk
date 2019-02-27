@@ -4,6 +4,7 @@
 # Copyright (C) 2010 Creytiv.com
 #
 
+SRCS	+= aac.c
 SRCS	+= aes.c
 SRCS	+= aubuf.c
 SRCS	+= auresamp.c
