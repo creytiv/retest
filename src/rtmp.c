@@ -32,19 +32,14 @@ enum mode {
 };
 
 
-struct test_stream {
-	struct rtmp_stream *stream;
-	struct rtmp_endpoint *ep;    /* pointer */
-	uint32_t id;
-};
-
 struct rtmp_endpoint {
 	struct rtmp_endpoint *other;
 	struct rtmp_conn *conn;
-	struct test_stream *test_stream;
+	struct rtmp_stream *stream;
 	struct tcp_sock *ts;     /* server only */
 	const char *tag;
 	enum mode mode;
+	uint32_t stream_id;
 	bool is_client;
 	unsigned n_estab;
 	unsigned n_cmd;
@@ -71,14 +66,6 @@ static const uint8_t fake_video_packet[CHUNK_SIZE + 8] = {
 };
 
 static const char *fake_stream_name = "sample.mp4";
-
-
-static void stream_destructor(void *data)
-{
-	struct test_stream *stream = data;
-
-	mem_deref(stream->stream);
-}
 
 
 static void endpoint_terminate(struct rtmp_endpoint *ep, int err)
@@ -141,7 +128,7 @@ static bool endpoints_are_finished(const struct rtmp_endpoint *ep)
 }
 
 
-static int send_media(struct test_stream *stream_cli)
+static int send_media(struct rtmp_endpoint *ep_cli)
 {
 	unsigned i;
 	int err = 0;
@@ -149,13 +136,13 @@ static int send_media(struct test_stream *stream_cli)
 	/* Send some dummy media packets to server */
 	for (i=0; i<NUM_MEDIA_PACKETS; i++) {
 
-		err = rtmp_send_audio(stream_cli->stream, i,
+		err = rtmp_send_audio(ep_cli->stream, i,
 				      fake_audio_packet,
 				      sizeof(fake_audio_packet));
 		if (err)
 			return err;
 
-		err = rtmp_send_video(stream_cli->stream,
+		err = rtmp_send_video(ep_cli->stream,
 				      TS_OFFSET + i,
 				      fake_video_packet,
 				      sizeof(fake_video_packet));
@@ -169,8 +156,7 @@ static int send_media(struct test_stream *stream_cli)
 
 static void stream_command_handler(const struct odict *msg, void *arg)
 {
-	struct test_stream *stream = arg;
-	struct rtmp_endpoint *ep = stream->ep;
+	struct rtmp_endpoint *ep = arg;
 	const char *name;
 	int err = 0;
 
@@ -178,7 +164,7 @@ static void stream_command_handler(const struct odict *msg, void *arg)
 
 	DEBUG_INFO("[%s] stream command: %s\n", ep->tag, name);
 
-	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
+	TEST_EQUALS(DUMMY_STREAM_ID, ep->stream_id);
 
 	++ep->n_stream_cmd;
 
@@ -212,13 +198,13 @@ static void stream_command_handler(const struct odict *msg, void *arg)
 
 		for (i=0; i<NUM_MEDIA_PACKETS; i++) {
 
-			err = rtmp_send_audio(stream->stream, i,
+			err = rtmp_send_audio(ep->stream, i,
 					      fake_audio_packet,
 					      sizeof(fake_audio_packet));
 			if (err)
 				goto out;
 
-			err = rtmp_send_video(stream->stream, TS_OFFSET + i,
+			err = rtmp_send_video(ep->stream, TS_OFFSET + i,
 					      fake_video_packet,
 					      sizeof(fake_video_packet));
 			if (err)
@@ -243,7 +229,7 @@ static void stream_command_handler(const struct odict *msg, void *arg)
 		TEST_STRCMP(fake_stream_name, strlen(fake_stream_name),
 			    stream_name, str_len(stream_name));
 
-		err = rtmp_amf_command(ep->conn, stream->id, "onStatus",
+		err = rtmp_amf_command(ep->conn, ep->stream_id, "onStatus",
 			       3,
 			       RTMP_AMF_TYPE_NUMBER, (double)0,
 			       RTMP_AMF_TYPE_NULL,
@@ -274,11 +260,11 @@ static void stream_command_handler(const struct odict *msg, void *arg)
 			TEST_STRCMP(exp_code, str_len(exp_code),
 				    code, str_len(code));
 
-			err = rtmp_meta(stream->stream);
+			err = rtmp_meta(ep->stream);
 			if (err)
 				goto out;
 
-			err = send_media(stream);
+			err = send_media(ep);
 			if (err)
 				goto out;
 		}
@@ -310,7 +296,7 @@ static void test_done(struct rtmp_endpoint *ep)
 
 	/* Force destruction here to test robustness */
 
-	client->test_stream = mem_deref(client->test_stream);
+	client->stream = mem_deref(client->stream);
 
 	client->conn = mem_deref(client->conn);
 }
@@ -319,12 +305,11 @@ static void test_done(struct rtmp_endpoint *ep)
 static void stream_control_handler(enum rtmp_event_type event, struct mbuf *mb,
 				   void *arg)
 {
-	struct test_stream *stream = arg;
-	struct rtmp_endpoint *ep = stream->ep;
+	struct rtmp_endpoint *ep = arg;
 	int err = 0;
 	(void)mb;
 
-	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
+	TEST_EQUALS(DUMMY_STREAM_ID, ep->stream_id);
 
 	DEBUG_INFO("[ %s ] got control event:  event=%d (%s)\n",
 		     ep->tag, event, rtmp_event_name(event));
@@ -344,11 +329,10 @@ static void stream_control_handler(enum rtmp_event_type event, struct mbuf *mb,
 static void audio_handler(uint32_t timestamp,
 			  const uint8_t *pld, size_t len, void *arg)
 {
-	struct test_stream *stream = arg;
-	struct rtmp_endpoint *ep = stream->ep;
+	struct rtmp_endpoint *ep = arg;
 	int err = 0;
 
-	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
+	TEST_EQUALS(DUMMY_STREAM_ID, ep->stream_id);
 
 	TEST_EQUALS(ep->n_audio, timestamp);
 
@@ -372,11 +356,10 @@ static void audio_handler(uint32_t timestamp,
 static void video_handler(uint32_t timestamp,
 			  const uint8_t *pld, size_t len, void *arg)
 {
-	struct test_stream *stream = arg;
-	struct rtmp_endpoint *ep = stream->ep;
+	struct rtmp_endpoint *ep = arg;
 	int err = 0;
 
-	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
+	TEST_EQUALS(DUMMY_STREAM_ID, ep->stream_id);
 
 	TEST_EQUALS(TS_OFFSET + ep->n_video, timestamp);
 
@@ -399,14 +382,13 @@ static void video_handler(uint32_t timestamp,
 
 static void stream_data_handler(const struct odict *msg, void *arg)
 {
-	struct test_stream *stream = arg;
-	struct rtmp_endpoint *ep = stream->ep;
+	struct rtmp_endpoint *ep = arg;
 	const char *command;
 	bool ret;
 	bool value;
 	int err = 0;
 
-	TEST_EQUALS(DUMMY_STREAM_ID, stream->id);
+	TEST_EQUALS(DUMMY_STREAM_ID, ep->stream_id);
 
 	++ep->n_data;
 
@@ -452,8 +434,7 @@ static void stream_data_handler(const struct odict *msg, void *arg)
 static void stream_create_resp_handler(bool success,
 				       const struct odict *msg, void *arg)
 {
-	struct test_stream *stream = arg;
-	struct rtmp_endpoint *ep = stream->ep;
+	struct rtmp_endpoint *ep = arg;
 	uint64_t stream_id;
 	int err;
 
@@ -466,18 +447,18 @@ static void stream_create_resp_handler(bool success,
 		err = EPROTO;
 		goto out;
 	}
-	stream->id = (uint32_t)stream_id;
+	ep->stream_id = (uint32_t)stream_id;
 
 	switch (ep->mode) {
 
 	case MODE_PLAY:
-		err = rtmp_play(stream->stream, fake_stream_name);
+		err = rtmp_play(ep->stream, fake_stream_name);
 		if (err)
 			goto out;
 		break;
 
 	case MODE_PUBLISH:
-		err = rtmp_publish(stream->stream, fake_stream_name);
+		err = rtmp_publish(ep->stream, fake_stream_name);
 		if (err)
 			goto out;
 		break;
@@ -504,26 +485,15 @@ static void estab_handler(void *arg)
 
 	if (ep->is_client) {
 
-		struct test_stream *stream;
+		TEST_ASSERT(ep->stream == NULL);
 
-		stream = mem_zalloc(sizeof(*stream), stream_destructor);
-		if (!stream) {
-			err = ENOMEM;
-			goto out;
-		}
-
-		TEST_ASSERT(ep->test_stream == NULL);
-		ep->test_stream = stream;
-
-		stream->ep = ep;
-
-		err = rtmp_stream_create(&stream->stream, ep->conn,
+		err = rtmp_stream_create(&ep->stream, ep->conn,
 					 stream_create_resp_handler,
 					 stream_command_handler,
 					 stream_control_handler,
 					 audio_handler,
 					 video_handler, stream_data_handler,
-					 stream);
+					 ep);
 		if (err)
 			goto out;
 	}
@@ -591,26 +561,17 @@ static void command_handler(const struct odict *msg, void *arg)
 	}
 	else if (0 == str_casecmp(name, "createStream")) {
 
-		struct test_stream *stream;
 		uint32_t stream_id = DUMMY_STREAM_ID;
 
-		stream = mem_zalloc(sizeof(*stream), stream_destructor);
-		if (!stream) {
-			err = ENOMEM;
-			goto out;
-		}
+		TEST_ASSERT(ep->stream == NULL);
 
-		TEST_ASSERT(ep->test_stream == NULL);
-		ep->test_stream = stream;
+		ep->stream_id = stream_id;
 
-		stream->ep = ep;
-		stream->id = DUMMY_STREAM_ID;
-
-		err = rtmp_stream_alloc(&stream->stream, ep->conn, stream_id,
+		err = rtmp_stream_alloc(&ep->stream, ep->conn, stream_id,
 					stream_command_handler,
 					stream_control_handler, audio_handler,
 					video_handler, stream_data_handler,
-					stream);
+					ep);
 		if (err) {
 			goto out;
 		}
@@ -626,7 +587,6 @@ static void command_handler(const struct odict *msg, void *arg)
 	}
 	else if (0 == str_casecmp(name, "deleteStream")) {
 
-		struct rtmp_stream *strm;
 		uint64_t stream_id;
 
 		++ep->n_deletestream;
@@ -638,10 +598,8 @@ static void command_handler(const struct odict *msg, void *arg)
 
 		TEST_EQUALS(DUMMY_STREAM_ID, stream_id);
 
-		strm = rtmp_stream_find(ep->conn, (uint32_t)stream_id);
-		TEST_ASSERT(strm != NULL);
-
-		ep->test_stream = mem_deref(ep->test_stream);
+		if (stream_id == ep->stream_id)
+			ep->stream = mem_deref(ep->stream);
 
 		/* re_main will be stopped when the
 		 * TCP connection is closed
@@ -681,7 +639,7 @@ static void endpoint_destructor(void *data)
 {
 	struct rtmp_endpoint *ep = data;
 
-	mem_deref(ep->test_stream);
+	mem_deref(ep->stream);
 	mem_deref(ep->conn);
 	mem_deref(ep->ts);
 }
