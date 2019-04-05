@@ -547,8 +547,6 @@ static void command_handler(const struct odict *msg, void *arg)
 
 	name = odict_string(msg, "0");
 
-	re_printf("command: %s\n", name);
-
 	++ep->n_cmd;
 
 	if (0 == str_casecmp(name, "connect")) {
@@ -631,12 +629,14 @@ static void close_handler(int err, void *arg)
 {
 	struct rtmp_endpoint *ep = arg;
 
-	DEBUG_NOTICE("[ %s ] rtmp connection closed (%m)\n",
-		     ep->tag, err);
+	if (err) {
+		DEBUG_INFO("[ %s ] rtmp connection closed (%m)\n",
+			   ep->tag, err);
+	}
 
 	++ep->n_close;
 
-	endpoint_terminate(ep, 0);
+	endpoint_terminate(ep, err);
 }
 
 
@@ -695,8 +695,6 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 	struct rtmp_endpoint *ep = arg;
 	int err;
 	(void)peer;
-
-	re_printf("incoming TCP connect from %J\n", peer);
 
 	err = rtmp_accept(&ep->conn, ep->ts, command_handler,
 			  close_handler, ep);
@@ -773,9 +771,7 @@ static int test_rtmp_client_server_conn(enum mode mode, bool secure)
 	TEST_EQUALS(1, cli->n_estab);
 	TEST_EQUALS(0, srv->n_estab);
 	TEST_EQUALS(0, cli->n_cmd);
-#if 1
 	TEST_EQUALS(3, srv->n_cmd);
-#endif
 
 	TEST_EQUALS(1, srv->n_stream_cmd);
 
@@ -783,10 +779,8 @@ static int test_rtmp_client_server_conn(enum mode mode, bool secure)
 
 	TEST_EQUALS(1, cli->n_ready);
 	TEST_EQUALS(0, srv->n_ready);
-#if 1
 	TEST_EQUALS(0, cli->n_deletestream);
 	TEST_EQUALS(1, srv->n_deletestream);
-#endif
 
 	switch (mode) {
 
