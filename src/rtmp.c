@@ -74,7 +74,7 @@ static const char *fake_stream_name = "sample.mp4";
 static void endpoint_terminate(struct rtmp_endpoint *ep, int err)
 {
 	if (err) {
-		DEBUG_WARNING("[ %s ] terminate: %m\n", ep->tag, err);
+		DEBUG_INFO("[ %s ] terminate: %m\n", ep->tag, err);
 	}
 
 	ep->err = err;
@@ -165,7 +165,7 @@ static void stream_command_handler(const struct odict *msg, void *arg)
 
 	name = odict_string(msg, "0");
 
-	DEBUG_NOTICE("[%s] stream command: %s\n", ep->tag, name);
+	DEBUG_INFO("[%s] stream command: %s\n", ep->tag, name);
 
 	TEST_EQUALS(DUMMY_STREAM_ID, ep->stream_id);
 
@@ -301,13 +301,9 @@ static void test_done(struct rtmp_endpoint *ep)
 
 	client->stream = mem_deref(client->stream);
 
+#if 0
 	client->conn = mem_deref(client->conn);
-
-	/* re_main will be stopped when the
-	 * TCP connection is closed
-	 */
-
-	endpoint_terminate(ep, 0);
+#endif
 }
 
 
@@ -777,8 +773,8 @@ static int test_rtmp_client_server_conn(enum mode mode, bool secure)
 	TEST_EQUALS(1, cli->n_estab);
 	TEST_EQUALS(0, srv->n_estab);
 	TEST_EQUALS(0, cli->n_cmd);
-#if 0
-	TEST_EQUALS(2, srv->n_cmd);
+#if 1
+	TEST_EQUALS(3, srv->n_cmd);
 #endif
 
 	TEST_EQUALS(1, srv->n_stream_cmd);
@@ -787,7 +783,7 @@ static int test_rtmp_client_server_conn(enum mode mode, bool secure)
 
 	TEST_EQUALS(1, cli->n_ready);
 	TEST_EQUALS(0, srv->n_ready);
-#if 0
+#if 1
 	TEST_EQUALS(0, cli->n_deletestream);
 	TEST_EQUALS(1, srv->n_deletestream);
 #endif
