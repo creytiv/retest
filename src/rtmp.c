@@ -631,7 +631,7 @@ static void close_handler(int err, void *arg)
 
 	if (err) {
 		DEBUG_INFO("[ %s ] rtmp connection closed (%m)\n",
-			   ep->tag, err);
+			 ep->tag, err);
 	}
 
 	++ep->n_close;
@@ -646,10 +646,8 @@ static void endpoint_destructor(void *data)
 
 	mem_deref(ep->stream);
 	mem_deref(ep->conn);
-
 	mem_deref(ep->sc);
 	mem_deref(ep->tls);
-
 	mem_deref(ep->ts);
 }
 
@@ -749,7 +747,6 @@ static int test_rtmp_client_server_conn(enum mode mode, bool secure)
 
 	err = rtmp_connect(&cli->conn, NULL, uri, estab_handler,
 			   command_handler, close_handler, cli);
-	TEST_EQUALS(0, err);
 	if (err)
 		goto out;
 
