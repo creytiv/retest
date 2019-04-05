@@ -297,8 +297,6 @@ static void test_done(struct rtmp_endpoint *ep)
 	/* Force destruction here to test robustness */
 
 	client->stream = mem_deref(client->stream);
-
-	client->conn = mem_deref(client->conn);
 }
 
 
