@@ -701,9 +701,7 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 	if (err)
 		goto out;
 
-	if (ep->secure) {
-
-		re_printf("enable TLS on server\n");
+	if (ep->tls) {
 
 		err = tls_start_tcp(&ep->sc, ep->tls,
 				    rtmp_conn_tcpconn(ep->conn), 0);
@@ -841,11 +839,11 @@ int test_rtmp_publish(void)
 }
 
 
-int test_rtmps_play(void)
+int test_rtmps_publish(void)
 {
 	int err = 0;
 
-	err = test_rtmp_client_server_conn(MODE_PLAY, true);
+	err = test_rtmp_client_server_conn(MODE_PUBLISH, true);
 	if (err)
 		return err;
 
