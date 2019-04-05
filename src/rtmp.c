@@ -43,7 +43,6 @@ struct rtmp_endpoint {
 	enum mode mode;
 	uint32_t stream_id;
 	bool is_client;
-	bool secure;
 	unsigned n_estab;
 	unsigned n_cmd;
 	unsigned n_stream_cmd;
@@ -631,7 +630,7 @@ static void close_handler(int err, void *arg)
 
 	if (err) {
 		DEBUG_INFO("[ %s ] rtmp connection closed (%m)\n",
-			 ep->tag, err);
+			     ep->tag, err);
 	}
 
 	++ep->n_close;
@@ -663,7 +662,6 @@ static struct rtmp_endpoint *rtmp_endpoint_alloc(enum mode mode,
 		return NULL;
 
 	ep->is_client = is_client;
-	ep->secure = secure;
 	ep->mode = mode;
 
 	if (secure && !is_client) {
