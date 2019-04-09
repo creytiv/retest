@@ -8,6 +8,11 @@
 #include "test.h"
 
 
+#define DEBUG_MODULE "dns"
+#define DEBUG_LEVEL 5
+#include <re_dbg.h>
+
+
 enum {NUM_TESTS = 32};
 
 
@@ -231,26 +236,54 @@ int test_dns_rr(void)
 /* Testcase to reproduce dname_decode looping error */
 int test_dns_dname(void)
 {
-	static const uint8_t dname[] =
-		"\xc0\x00\x00\x0c\x00\x01\x00\x00"
-		"\x0e\x10\x00\x27\x25\x32\x4a\x57"
-		"\x4d\x6e\x38\x37\x74\x58\x36\x43"
-		"\x55\x41\x59\x77\x54\x70\x53\x61"
-		"\x4c\x4c\x62\x67\x43\x72\x6e\x34"
-		"\x75\x42\x4e\x36\x42\x36\x59\x57"
-		"\x52\x4e\x00";
-	struct mbuf mb;
-	char *name;
-	int err;
+	static struct test {
+		const char *str;
+	} testv[] = {
+		{
+			"c000000c000100000e10002725324a57"
+			"4d6e3837745836435541597754705361"
+			"4c4c626743726e3475424e3642365957"
+			"524e00"
+		},
+		{
+			"31203700a22c9f17ea75de16785277fa"
+			"db1094a7782b65a177715e45ffc59f9a"
+			"73143748aaaf99aede63325c1f48e7fa"
+			"56f9da"
+		},
+	};
+	struct mbuf *mb;
+	char *name = NULL;
+	size_t i;
+	int err = 0;
 
-	mb.buf = (uint8_t *)dname;
-	mb.pos = 0;
-	mb.end = mb.size = sizeof(dname) - 1;
+	mb = mbuf_alloc(4096);
+	if (!mb)
+		return ENOMEM;
 
-	/* Expect EINVAL */
-	err = dns_dname_decode(&mb, &name, 0);
-	if (err != EINVAL)
-		return err ? err : EINVAL;
+	for (i=0; i<ARRAY_SIZE(testv); i++) {
 
-	return 0;
+		const struct test *test = &testv[i];
+		const size_t size = str_len(test->str) / 2;
+		int e;
+
+		err = str_hex(mb->buf, size, test->str);
+		if (err)
+			goto out;
+
+		mb->pos = 0;
+		mb->end = size;
+		mb->size = size;
+
+		/* Expect EINVAL */
+		e = dns_dname_decode(mb, &name, 0);
+		TEST_EQUALS(EINVAL, e);
+
+		name = mem_deref(name);
+	}
+
+ out:
+	mem_deref(mb);
+
+	return err;
 }
