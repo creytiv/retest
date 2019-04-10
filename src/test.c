@@ -159,7 +159,6 @@ static const struct test tests[] = {
 	TEST(test_turn_tcp),
 	TEST(test_udp),
 	TEST(test_uri),
-	TEST(test_uri_cmp),
 	TEST(test_uri_encode),
 	TEST(test_uri_headers),
 	TEST(test_uri_user),
