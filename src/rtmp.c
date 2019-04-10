@@ -660,14 +660,22 @@ static struct rtmp_endpoint *rtmp_endpoint_alloc(enum mode mode,
 
 	if (secure) {
 
-		err = tls_alloc(&ep->tls, TLS_METHOD_SSLV23, NULL, NULL);
+		char path[256];
+
+		re_snprintf(path, sizeof(path), "%s/server-ecdsa.pem",
+			    test_datapath());
+
+		err = tls_alloc(&ep->tls, TLS_METHOD_SSLV23,
+				is_client ? NULL : path, NULL);
 		if (err)
 			goto out;
 
-		if (!is_client) {
-			err = tls_set_certificate(ep->tls,
-					  test_certificate_ecdsa,
-					  strlen(test_certificate_ecdsa));
+		/* Client: Add the server's certificate as a CA cert.
+		 *         This is required for authentication to work.
+		 */
+		if (is_client) {
+
+			err = tls_add_ca(ep->tls, path);
 			if (err)
 				goto out;
 		}
