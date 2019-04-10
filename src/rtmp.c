@@ -38,7 +38,6 @@ struct rtmp_endpoint {
 	struct rtmp_stream *stream;
 	struct tcp_sock *ts;     /* server only */
 	struct tls *tls;
-	struct tls_conn *sc;
 	const char *tag;
 	enum mode mode;
 	uint32_t stream_id;
@@ -641,7 +640,6 @@ static void endpoint_destructor(void *data)
 
 	mem_deref(ep->stream);
 	mem_deref(ep->conn);
-	mem_deref(ep->sc);
 	mem_deref(ep->tls);
 	mem_deref(ep->ts);
 }
@@ -660,16 +658,19 @@ static struct rtmp_endpoint *rtmp_endpoint_alloc(enum mode mode,
 	ep->is_client = is_client;
 	ep->mode = mode;
 
-	if (secure && !is_client) {
+	if (secure) {
 
 		err = tls_alloc(&ep->tls, TLS_METHOD_SSLV23, NULL, NULL);
 		if (err)
 			goto out;
 
-		err = tls_set_certificate(ep->tls, test_certificate_ecdsa,
+		if (!is_client) {
+			err = tls_set_certificate(ep->tls,
+					  test_certificate_ecdsa,
 					  strlen(test_certificate_ecdsa));
-		if (err)
-			goto out;
+			if (err)
+				goto out;
+		}
 	}
 
 	ep->tag = is_client ? "Client" : "Server";
@@ -688,18 +689,10 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 	int err;
 	(void)peer;
 
-	err = rtmp_accept(&ep->conn, ep->ts, command_handler,
+	err = rtmp_accept(&ep->conn, ep->ts, ep->tls, command_handler,
 			  close_handler, ep);
 	if (err)
 		goto out;
-
-	if (ep->tls) {
-
-		err = tls_start_tcp(&ep->sc, ep->tls,
-				    rtmp_conn_tcpconn(ep->conn), 0);
-		if (err)
-			goto out;
-	}
 
  out:
 	if (err)
@@ -739,7 +732,7 @@ static int test_rtmp_client_server_conn(enum mode mode, bool secure)
 
 	re_printf("connecting to: %s\n", uri);
 
-	err = rtmp_connect(&cli->conn, NULL, uri, estab_handler,
+	err = rtmp_connect(&cli->conn, NULL, uri, cli->tls, estab_handler,
 			   command_handler, close_handler, cli);
 	if (err)
 		goto out;
