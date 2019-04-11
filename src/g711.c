@@ -102,7 +102,12 @@ static const signed short _st_ulaw2linear16[256] = {
 int test_g711_alaw(void)
 {
 	uint32_t i;
+	uint8_t val;
 	int n = 0;
+	int err = 0;
+
+	val = g711_pcm2alaw(-32768);
+	TEST_EQUALS(42, val);
 
 	for (i=0; i<256; i++) {
 		uint8_t alaw = i, alaw2;
@@ -127,14 +132,20 @@ int test_g711_alaw(void)
 		DEBUG_WARNING("alaw: error samples: %d\n", n);
 	}
 
-	return n ? EINVAL : 0;
+out:
+	return n ? EINVAL : err;
 }
 
 
 int test_g711_ulaw(void)
 {
 	uint32_t i;
+	uint8_t val;
 	int n = 0;
+	int err = 0;
+
+	val = g711_pcm2ulaw(-32768);
+	TEST_EQUALS(0, val);
 
 	for (i=0; i<256; i++) {
 		uint8_t ulaw = i, ulaw2;
@@ -158,6 +169,6 @@ int test_g711_ulaw(void)
 	if (n) {
 		DEBUG_WARNING("ulaw: error samples: %d\n", n);
 	}
-
-	return n ? EINVAL : 0;
+out:
+	return n ? EINVAL : err;
 }
