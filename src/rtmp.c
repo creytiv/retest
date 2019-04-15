@@ -658,6 +658,7 @@ static struct rtmp_endpoint *rtmp_endpoint_alloc(enum mode mode,
 	ep->is_client = is_client;
 	ep->mode = mode;
 
+#ifdef USE_TLS
 	if (secure) {
 
 		char path[256];
@@ -680,6 +681,7 @@ static struct rtmp_endpoint *rtmp_endpoint_alloc(enum mode mode,
 				goto out;
 		}
 	}
+#endif
 
 	ep->tag = is_client ? "Client" : "Server";
 
@@ -831,6 +833,7 @@ int test_rtmp_publish(void)
 }
 
 
+#ifdef USE_TLS
 int test_rtmps_publish(void)
 {
 	int err = 0;
@@ -841,3 +844,4 @@ int test_rtmps_publish(void)
 
 	return err;
 }
+#endif

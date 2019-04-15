@@ -171,7 +171,9 @@ int test_odict_array(void);
 int test_remain(void);
 int test_rtmp_play(void);
 int test_rtmp_publish(void);
+#ifdef USE_TLS
 int test_rtmps_publish(void);
+#endif
 int test_rtp(void);
 int test_rtcp_encode(void);
 int test_rtcp_encode_afb(void);

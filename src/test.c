@@ -107,7 +107,9 @@ static const struct test tests[] = {
 	TEST(test_remain),
 	TEST(test_rtmp_play),
 	TEST(test_rtmp_publish),
+#ifdef USE_TLS
 	TEST(test_rtmps_publish),
+#endif
 	TEST(test_rtp),
 	TEST(test_rtcp_encode),
 	TEST(test_rtcp_encode_afb),
