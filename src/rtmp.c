@@ -658,9 +658,9 @@ static struct rtmp_endpoint *rtmp_endpoint_alloc(enum mode mode,
 	ep->is_client = is_client;
 	ep->mode = mode;
 
-#ifdef USE_TLS
 	if (secure) {
 
+#ifdef USE_TLS
 		char path[256];
 
 		re_snprintf(path, sizeof(path), "%s/rtmp.pem",
@@ -680,8 +680,11 @@ static struct rtmp_endpoint *rtmp_endpoint_alloc(enum mode mode,
 			if (err)
 				goto out;
 		}
-	}
+#else
+		err = ENOSYS;
+		goto out;
 #endif
+	}
 
 	ep->tag = is_client ? "Client" : "Server";
 
