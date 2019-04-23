@@ -22,6 +22,7 @@
 
 struct data {
 	pthread_t tid;
+	pthread_mutex_t mutex;
 	bool thread_started;
 	bool thread_exited;
 	unsigned tmr_called;
@@ -34,6 +35,8 @@ static void tmr_handler(void *arg)
 	struct data *data = arg;
 	int err = 0;
 
+	pthread_mutex_lock(&data->mutex);
+
 	/* verify that timer is called from the new thread */
 	TEST_ASSERT(0 != pthread_equal(data->tid, pthread_self()));
 
@@ -42,6 +45,9 @@ static void tmr_handler(void *arg)
  out:
 	if (err)
 		data->err = err;
+
+	pthread_mutex_unlock(&data->mutex);
+
 	re_cancel();
 }
 
@@ -90,16 +96,24 @@ static int test_remain_thread(void)
 
 	memset(&data, 0, sizeof(data));
 
+	pthread_mutex_init(&data.mutex, NULL);
+
 	err = pthread_create(&data.tid, NULL, thread_handler, &data);
 	if (err)
 		return err;
 
 	/* wait for timer to be called */
 	for (i=0; i<500; i++) {
-		if (data.tmr_called)
+
+		pthread_mutex_lock(&data.mutex);
+
+		if (data.tmr_called || data.err) {
+			pthread_mutex_unlock(&data.mutex);
 			break;
-		if (data.err)
-			break;
+		}
+
+		pthread_mutex_unlock(&data.mutex);
+
 		sys_msleep(1);
 	}
 
