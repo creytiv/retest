@@ -184,6 +184,9 @@ static char datapath[256] = "./data";
 #endif
 
 
+static uint32_t timeout_override;
+
+
 static const struct test *find_test(const char *name)
 {
 	size_t i;
@@ -552,6 +555,8 @@ int test_reg(const char *name, bool verbose)
 {
 	int err;
 
+	timeout_override = 10000;
+
 	(void)re_fprintf(stderr, "regular tests:       ");
 	err = test_unit(name, verbose);
 	if (err)
@@ -613,6 +618,8 @@ int test_multithread(void)
 	size_t test_index=0;
 	size_t i;
 	int err = 0;
+
+	timeout_override = 10000;
 
 	memset(threadv, 0, sizeof(threadv));
 
@@ -768,6 +775,9 @@ int re_main_timeout(uint32_t timeout_ms)
 	int err = 0;
 
 	tmr_init(&tmr);
+
+	if (timeout_override != 0)
+		timeout_ms = timeout_override;
 
 #ifdef TEST_TIMEOUT
 	timeout_ms = TEST_TIMEOUT;
