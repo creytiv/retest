@@ -743,8 +743,6 @@ static int test_rtmp_client_server_conn(enum mode mode, bool secure)
 	re_snprintf(uri, sizeof(uri), "rtmp%s://%J/vod/foo",
 		    secure ? "s" : "", &srv_addr);
 
-	re_printf("connecting to: %s\n", uri);
-
 	err = rtmp_connect(&cli->conn, NULL, uri, cli->tls, estab_handler,
 			   command_handler, close_handler, cli);
 	if (err)
