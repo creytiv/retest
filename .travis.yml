@@ -14,7 +14,7 @@ addons:
             libssl-dev
 
 install:
-    - git clone -b rtmp_add_tls https://github.com/creytiv/re.git
+    - git clone https://github.com/creytiv/re.git
     - git clone https://github.com/creytiv/rem.git
     - cd re && make && sudo PATH="$PATH" make install && cd ..
     - cd rem && make && sudo PATH="$PATH" make install && cd ..
