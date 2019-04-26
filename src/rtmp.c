@@ -37,6 +37,7 @@ struct rtmp_endpoint {
 	struct rtmp_conn *conn;
 	struct rtmp_stream *stream;
 	struct tcp_sock *ts;     /* server only */
+	struct tls *tls;
 	const char *tag;
 	enum mode mode;
 	uint32_t stream_id;
@@ -639,14 +640,16 @@ static void endpoint_destructor(void *data)
 
 	mem_deref(ep->stream);
 	mem_deref(ep->conn);
+	mem_deref(ep->tls);
 	mem_deref(ep->ts);
 }
 
 
 static struct rtmp_endpoint *rtmp_endpoint_alloc(enum mode mode,
-						 bool is_client)
+						 bool is_client, bool secure)
 {
 	struct rtmp_endpoint *ep;
+	int err = 0;
 
 	ep = mem_zalloc(sizeof(*ep), endpoint_destructor);
 	if (!ep)
@@ -655,7 +658,39 @@ static struct rtmp_endpoint *rtmp_endpoint_alloc(enum mode mode,
 	ep->is_client = is_client;
 	ep->mode = mode;
 
+	if (secure) {
+
+#ifdef USE_TLS
+		char path[256];
+
+		re_snprintf(path, sizeof(path), "%s/rtmp.pem",
+			    test_datapath());
+
+		err = tls_alloc(&ep->tls, TLS_METHOD_SSLV23,
+				is_client ? NULL : path, NULL);
+		if (err)
+			goto out;
+
+		/* Client: Add the server's certificate as a CA cert.
+		 *         This is required for authentication to work.
+		 */
+		if (is_client) {
+
+			err = tls_add_ca(ep->tls, path);
+			if (err)
+				goto out;
+		}
+#else
+		err = ENOSYS;
+		goto out;
+#endif
+	}
+
 	ep->tag = is_client ? "Client" : "Server";
+
+ out:
+	if (err)
+		return mem_deref(ep);
 
 	return ep;
 }
@@ -667,7 +702,7 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 	int err;
 	(void)peer;
 
-	err = rtmp_accept(&ep->conn, ep->ts, command_handler,
+	err = rtmp_accept(&ep->conn, ep->ts, ep->tls, command_handler,
 			  close_handler, ep);
 	if (err)
 		goto out;
@@ -678,15 +713,15 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 }
 
 
-static int test_rtmp_client_server_conn(enum mode mode)
+static int test_rtmp_client_server_conn(enum mode mode, bool secure)
 {
 	struct rtmp_endpoint *cli, *srv;
 	struct sa srv_addr;
 	char uri[256];
 	int err = 0;
 
-	cli = rtmp_endpoint_alloc(mode, true);
-	srv = rtmp_endpoint_alloc(mode, false);
+	cli = rtmp_endpoint_alloc(mode, true, secure);
+	srv = rtmp_endpoint_alloc(mode, false, secure);
 	if (!cli || !srv) {
 		err = ENOMEM;
 		goto out;
@@ -705,9 +740,10 @@ static int test_rtmp_client_server_conn(enum mode mode)
 	err = tcp_local_get(srv->ts, &srv_addr);
 	TEST_ERR(err);
 
-	re_snprintf(uri, sizeof(uri), "rtmp://%J/vod/foo", &srv_addr);
+	re_snprintf(uri, sizeof(uri), "rtmp%s://%J/vod/foo",
+		    secure ? "s" : "", &srv_addr);
 
-	err = rtmp_connect(&cli->conn, NULL, uri, estab_handler,
+	err = rtmp_connect(&cli->conn, NULL, uri, cli->tls, estab_handler,
 			   command_handler, close_handler, cli);
 	if (err)
 		goto out;
@@ -778,7 +814,7 @@ int test_rtmp_play(void)
 {
 	int err = 0;
 
-	err = test_rtmp_client_server_conn(MODE_PLAY);
+	err = test_rtmp_client_server_conn(MODE_PLAY, false);
 	if (err)
 		return err;
 
@@ -790,9 +826,23 @@ int test_rtmp_publish(void)
 {
 	int err = 0;
 
-	err = test_rtmp_client_server_conn(MODE_PUBLISH);
+	err = test_rtmp_client_server_conn(MODE_PUBLISH, false);
 	if (err)
 		return err;
 
 	return err;
 }
+
+
+#ifdef USE_TLS
+int test_rtmps_publish(void)
+{
+	int err = 0;
+
+	err = test_rtmp_client_server_conn(MODE_PUBLISH, true);
+	if (err)
+		return err;
+
+	return err;
+}
+#endif
