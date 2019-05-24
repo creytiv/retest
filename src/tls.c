@@ -258,6 +258,13 @@ static int test_tls_base(enum tls_keytype keytype, bool add_ca, int exp_verr)
 	if (err)
 		goto out;
 
+	if (exp_verr == 0) {
+
+		err = tls_set_verify_server(tt.sc_cli, "127.0.0.1");
+		if (err)
+			goto out;
+	}
+
 	err = re_main_timeout(800);
 	if (err)
 		goto out;
