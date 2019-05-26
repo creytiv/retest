@@ -36,6 +36,7 @@ static int sipstack_fixture(struct sip **sipp)
 	struct sa laddr, laddrs;
 	struct sip *sip = NULL;
 	struct tls *tls = NULL;
+	char cafile[256];
 	int err;
 
 	(void)sa_set_str(&laddr, "127.0.0.1", LOCAL_PORT);
@@ -53,6 +54,13 @@ static int sipstack_fixture(struct sip **sipp)
 #ifdef USE_TLS
 	/* TLS-context for client -- no certificate needed */
 	err = tls_alloc(&tls, TLS_METHOD_SSLV23, NULL, NULL);
+	if (err)
+		goto out;
+
+	re_snprintf(cafile, sizeof(cafile), "%s/server-ecdsa.pem",
+		    test_datapath());
+
+	err = tls_add_ca(tls, cafile);
 	if (err)
 		goto out;
 
