@@ -36,7 +36,9 @@ static int sipstack_fixture(struct sip **sipp)
 	struct sa laddr, laddrs;
 	struct sip *sip = NULL;
 	struct tls *tls = NULL;
+#ifdef USE_TLS
 	char cafile[256];
+#endif
 	int err;
 
 	(void)sa_set_str(&laddr, "127.0.0.1", LOCAL_PORT);
