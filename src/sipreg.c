@@ -133,7 +133,10 @@ static int reg_test(enum sip_transp tp)
 	if (err)
 		goto out;
 
-	TEST_ERR(test.err);
+	if (test.err) {
+		err = test.err;
+		goto out;
+	}
 
 	TEST_ASSERT(srv->n_register_req > 0);
 	TEST_ASSERT(test.n_resp > 0);
