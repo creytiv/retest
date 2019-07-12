@@ -79,6 +79,10 @@ static int mkrr(struct dnsrr *rr, uint16_t type)
 		err |= mkstr(&rr->rdata.mx.exchange);
 		break;
 
+	case DNS_TYPE_TXT:
+		err |= mkstr(&rr->rdata.txt.data);
+		break;
+
 	case DNS_TYPE_AAAA:
 		rand_bytes(rr->rdata.aaaa.addr, 16);
 		break;
@@ -175,7 +179,9 @@ int test_dns_rr(void)
 	static const uint16_t typev[] = {
 		DNS_TYPE_A,    DNS_TYPE_NS,  DNS_TYPE_CNAME,
 		DNS_TYPE_SOA,  DNS_TYPE_PTR, DNS_TYPE_MX,
-		DNS_TYPE_AAAA, DNS_TYPE_SRV, DNS_TYPE_NAPTR};
+		DNS_TYPE_AAAA, DNS_TYPE_SRV, DNS_TYPE_NAPTR,
+		DNS_TYPE_TXT
+	};
 
 	mb = mbuf_alloc(512);
 	if (!mb)
