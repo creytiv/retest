@@ -31,6 +31,7 @@ endif
 BINDIR	:= $(PREFIX)/bin
 CFLAGS	+= -Isrc -I$(LIBRE_INC)
 CFLAGS  += -I$(LIBREM_PATH)/include -I$(SYSROOT)/local/include/rem
+CFLAGS  += -I/usr/local/include/rem
 CXXFLAGS	+= -Isrc -I$(LIBRE_INC)
 CXXFLAGS  += -I$(LIBREM_PATH)/include -I$(SYSROOT)/local/include/rem
 
