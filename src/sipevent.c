@@ -318,7 +318,7 @@ static int agent_alloc(struct agent **agp, const char *name)
 	if (!ag)
 		return ENOMEM;
 
-	str_ncpy(ag->name, name, sizeof(name));
+	str_ncpy(ag->name, name, sizeof(ag->name));
 
 	err = sip_alloc(&ag->sip, NULL, 32, 32, 32,
 			name, exit_handler, ag);

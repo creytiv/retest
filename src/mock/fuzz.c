@@ -36,6 +36,9 @@ static void apply_fuzzing(struct fuzz *fuzz, struct mbuf *mb)
 	bool flip;
 	unsigned bit;
 
+	if (len == 0)
+		return;
+
 	++fuzz->packet_count;
 
 	pos = rand_u16() % len;

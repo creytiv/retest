@@ -116,9 +116,6 @@ static int attr_add(struct attrs *attrs, const char *name,
 	va_list ap;
 	int r, err = 0;
 
-	if (!attrs || !name)
-		return EINVAL;
-
 	TEST_ASSERT(attrs->attrc <= ARRAY_SIZE(attrs->attrv));
 
 	TEST_ASSERT(strlen(name) < sizeof(attr->name));

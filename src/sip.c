@@ -18,9 +18,6 @@ static int sip_addr_encode(const struct sip_addr *addr, struct mbuf *mb)
 	bool anglebr = addr->dname.p || addr->uri.params.p;
 	int err;
 
-	if (!addr || !mb)
-		return EINVAL;
-
 	if (addr->dname.p) {
 		err = mbuf_printf(mb, "\"%r\" ", &addr->dname);
 		if (err)

@@ -142,11 +142,6 @@ static void turnc_handler(int err, uint16_t scode, const char *reason,
 	TEST_SACMP(&tt->turnsrv->relay, relay_addr, SA_ALL);
 	TEST_SACMP(&tt->cli, mapped_addr, SA_ALL);
 
-	if (err) {
-		complete_test(tt, err);
-		return;
-	}
-
 	/* Permission is needed for sending data */
 	err = turnc_add_perm(tt->turnc, &tt->peer, NULL, NULL);
 	if (err)
