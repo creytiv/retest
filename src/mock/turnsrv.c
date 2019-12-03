@@ -231,6 +231,7 @@ static void process_msg(struct turnserver *turn, int proto, void *sock,
 		peer = stun_msg_attr(msg, STUN_ATTR_XOR_PEER_ADDR);
 		if (!chnr || !peer) {
 			DEBUG_WARNING("CHANBIND: missing chnr/peer attrib\n");
+			goto out;
 		}
 
 		TEST_ASSERT(turn->chanc < ARRAY_SIZE(turn->chanv));

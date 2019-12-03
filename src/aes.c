@@ -242,7 +242,7 @@ int test_aes_gcm(void)
 
 		const struct test *test = &testv[i];
 		uint8_t test_vector[MSG_LEN] = {0};
-		uint8_t cipher_text[MSG_LEN];
+		uint8_t cipher_text[MSG_LEN] = {0};
 		uint8_t tag_ref[TAG_LEN];
 		uint8_t out[MSG_LEN];
 		uint8_t clear[MSG_LEN];

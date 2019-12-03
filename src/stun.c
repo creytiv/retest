@@ -461,7 +461,7 @@ static int test_stun_request(int proto, bool natted)
 
 		sa_set_port(&public_addr, sa_port(&laddr));
 	}
-	else {
+	else if (proto == IPPROTO_UDP) {
 		public_addr = laddr;
 	}
 

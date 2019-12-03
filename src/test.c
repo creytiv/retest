@@ -409,7 +409,7 @@ static int testcase_perf(const struct test *test, double *usec_avgp)
 
 	/* dry run */
 	usec_start = tmr_microseconds();
-	for (i=0; i<DRYRUN_MAX; i++) {
+	for (i = 1; i <= DRYRUN_MAX; i++) {
 
 		err = test->exec();
 		if (err)
@@ -421,7 +421,7 @@ static int testcase_perf(const struct test *test, double *usec_avgp)
 			break;
 	}
 
-	usec_avg = 1.0 * (usec_stop - usec_start) / i;
+	usec_avg = 1.0 * (usec_stop - usec_start) / (double)i;
 
 	n = usec_avg ? (REPEATS_USEC / usec_avg) : 0;
 	n = min(REPEATS_MAX, max(n, REPEATS_MIN));

@@ -289,9 +289,6 @@ int test_sdp_all(void)
 	if (!sa_cmp(sdp_media_raddr(audio), &ref, SA_ALL))
 		goto out;
 
-	if (!rc)
-		goto out;
-
 	if (0 != strcmp(rc->id, ref_pt))
 		goto out;
 

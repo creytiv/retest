@@ -385,9 +385,9 @@ static int test_json_verify_decode(void)
 		/* check with native JSON decoder */
 		err = json_decode_odict(&dict, DICT_BSIZE,
 					t->str, str_len(t->str), MAX_LEVELS);
-		TEST_ERR(err);
 		if (err)
 			goto out;
+
 		TEST_EQUALS(t->num,       odict_count(dict, false));
 		TEST_EQUALS(t->num_total, odict_count(dict, true));
 

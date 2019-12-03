@@ -29,7 +29,7 @@ int test_jbuf(void)
 		return err;
 
 	for (i=0; i<ARRAY_SIZE(frv); i++) {
-		frv[i] = mem_alloc(sizeof(frv[0]), NULL);
+		frv[i] = mem_alloc(32, NULL);
 		if (!frv[i]) {
 			err = ENOMEM;
 			goto out;

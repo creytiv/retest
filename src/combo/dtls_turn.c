@@ -224,20 +224,11 @@ static void turnc_handler(int err, uint16_t scode, const char *reason,
 	/* Public address must be updated */
 	ag->addr = *relay_addr;
 
-
 	if (are_turn_ready(ag)) {
 
 		agent_permchan(ag);
 		agent_permchan(ag->peer);
 	}
-
-
-	if (err)
-		goto out;
-
- out:
-	if (err)
-		complete_test(ag, err);
 }
 
 
