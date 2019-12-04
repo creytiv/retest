@@ -673,17 +673,23 @@ int test_multithread(void)
 
 void test_listcases(void)
 {
-	size_t i, n;
+	size_t i, n, nh;
 
 	n = ARRAY_SIZE(tests);
+	nh = (n+1)/2;
 
 	(void)re_printf("\n%u test cases:\n", n);
 
-	for (i=0; i<(n+1)/2; i++) {
+	for (i=0; i<nh; i++) {
 
-		(void)re_printf("    %-32s    %s\n",
-				tests[i].name,
-				(i+(n+1)/2) < n ? tests[i+(n+1)/2].name : "");
+		size_t ih = i + nh;
+
+		re_printf("    %-32s", tests[i].name);
+
+		if (ih < n)
+			re_printf("    %s", tests[ih].name);
+
+		re_printf("\n");
 	}
 
 	(void)re_printf("\n");
