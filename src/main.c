@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	bool do_all = true;    /* run all tests is default */
 	bool do_list = false;
 	bool do_thread = false;
-	bool ansi = true;
+	enum dbg_flags flags;
 	bool verbose = false;
 	const char *name = NULL;
 	enum poll_method method = poll_method_best();
@@ -173,9 +173,12 @@ int main(int argc, char *argv[])
 
 	/* Initialise debugging */
 #if defined(WIN32)
-	ansi = false;
+	flags = 0;
+#else
+	flags = DBG_ANSI;
 #endif
-	dbg_init(DBG_INFO, ansi ? DBG_ANSI : 0);
+
+	dbg_init(DBG_INFO, flags);
 
 	/* Initialise library */
 	err = libre_init();

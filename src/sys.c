@@ -113,7 +113,7 @@ int test_sys_rand(void)
 	volatile uint16_t u16 = rand_u16();
 	volatile uint32_t u32 = rand_u32();
 	volatile uint64_t u64 = rand_u64();
-	volatile char ch      = rand_char();
+	char ch      = rand_char();
 
 	(void)u16;
 	(void)u32;
