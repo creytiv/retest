@@ -1031,12 +1031,13 @@ static int test_unencrypted_srtcp(void)
 	v = ntohl(mbuf_read_u32(mb1));
 	ep = (v >> 31) & 1;
 
+	mb1->pos = 0;
+
 	/* verify that RTCP packet is not encrypted */
 	TEST_ASSERT(ep == false);
 	TEST_MEMCMP(mb2->buf, mb2->end, mb1->buf, mb1->end - 4 - tag_len);
 
 	/* rx */
-	mb1->pos = 0;
 	err = srtcp_decrypt(srtp, mb1);
 	if (err)
 		goto out;
