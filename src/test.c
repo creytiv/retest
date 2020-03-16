@@ -74,6 +74,7 @@ static const struct test tests[] = {
 	TEST(test_g711_alaw),
 	TEST(test_g711_ulaw),
 	TEST(test_h264),
+	TEST(test_h264_sps),
 	TEST(test_hash),
 	TEST(test_hmac_sha1),
 	TEST(test_hmac_sha256),
