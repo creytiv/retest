@@ -169,7 +169,11 @@ static int sps_decode(struct sps *sps, const uint8_t *p, size_t len)
 		sps->log2_max_pic_order_cnt_lsb
 			= get_ue_golomb(p, &offset) + 4;
 	}
+	else if (sps->pic_order_cnt_type == 2) {
+	}
 	else {
+		re_printf("sps: WARNING: unknown pic_order_cnt_type (%u)\n",
+			  sps->pic_order_cnt_type);
 		return ENOTSUP;
 	}
 
@@ -245,6 +249,18 @@ int test_h264_sps(void)
 				0x4d, 0x40, 0x40, 0x41, 0x80, 0x80},
 			.sps = {
 				 66,30,0,5,0,6,1,0,22,18
+			 }
+		},
+
+		/* rv
+		 * sps:0 profile:66/52 poc:2 ref:1 120x68 FRM 8B8
+		 * crop:0/0/0/8 VUI 420 1/360 b8 reo:0
+		 */
+		{
+			.buf = {0x42, 0xc0, 0x34, 0xda, 0x01, 0xe0, 0x08,
+				0x9f, 0x96, 0x10, 0x00, 0x00, 0x03, 0x00},
+			.sps = {
+				 66,52,0,4,2,6,1,0,120,68
 			 }
 		},
 
