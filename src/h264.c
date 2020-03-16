@@ -71,11 +71,11 @@ struct sps {
 	uint8_t level_idc;
 	unsigned seq_parameter_set_id;
 
-	unsigned log2_max_frame_num_minus4;
+	unsigned log2_max_frame_num;
 	unsigned pic_order_cnt_type;
 
 	/* pic_order_cnt_type=0 */
-	unsigned log2_max_pic_order_cnt_lsb_minus4;
+	unsigned log2_max_pic_order_cnt_lsb;
 
 	unsigned max_num_ref_frames;
 	unsigned gaps_in_frame_num_value_allowed_flag;
@@ -166,8 +166,8 @@ static int sps_decode(struct sps *sps, const uint8_t *p, size_t len)
 
 	if (sps->pic_order_cnt_type == 0) {
 
-		sps->log2_max_pic_order_cnt_lsb_minus4
-			= get_ue_golomb(p, &offset);
+		sps->log2_max_pic_order_cnt_lsb
+			= get_ue_golomb(p, &offset) + 4;
 	}
 	else {
 		return ENOTSUP;
@@ -182,7 +182,7 @@ static int sps_decode(struct sps *sps, const uint8_t *p, size_t len)
 	/* success */
 	sps->profile_idc = profile_idc;
 	sps->seq_parameter_set_id = seq_parameter_set_id;
-	sps->log2_max_frame_num_minus4 = log2_max_frame_num_minus4;
+	sps->log2_max_frame_num = log2_max_frame_num_minus4 + 4;
 
 	re_printf("done. offset=%u bits\n", offset);
 
@@ -204,12 +204,12 @@ static void sps_print(const struct sps *sps)
 	re_printf("seq_parameter_set_id %u\n", sps->seq_parameter_set_id);
 	re_printf("\n");
 
-	re_printf("log2_max_frame_num_minus4         %u\n",
-		  sps->log2_max_frame_num_minus4);
-	re_printf("pic_order_cnt_type                %u\n",
+	re_printf("log2_max_frame_num         %u\n",
+		  sps->log2_max_frame_num);
+	re_printf("pic_order_cnt_type         %u\n",
 		  sps->pic_order_cnt_type);
-	re_printf("log2_max_pic_order_cnt_lsb_minus4 %u\n",
-		  sps->log2_max_pic_order_cnt_lsb_minus4);
+	re_printf("log2_max_pic_order_cnt_lsb %u\n",
+		  sps->log2_max_pic_order_cnt_lsb);
 	re_printf("\n");
 
 
@@ -236,7 +236,7 @@ int test_h264_sps(void)
 		{
 			.buf = {0x42, 0x00, 0x0a, 0xf8, 0x41, 0xa2},
 			.sps = {
-				 66,10,0,0,0,0,0,0,7,5
+				 66,10,0,4,0,4,0,0,7,5
 			 }
 		},
 
@@ -244,7 +244,7 @@ int test_h264_sps(void)
 			.buf = {0x42, 0x00, 0x1e, 0xab, 0x40, 0xb0, 0x4b,
 				0x4d, 0x40, 0x40, 0x41, 0x80, 0x80},
 			.sps = {
-				 66,30,0,1,0,2,1,0,21,17
+				 66,30,0,5,0,6,1,0,21,17
 			 }
 		},
 
@@ -267,14 +267,14 @@ int test_h264_sps(void)
 		TEST_EQUALS(ref.seq_parameter_set_id,
 			    sps.seq_parameter_set_id);
 
-		TEST_EQUALS(ref.log2_max_frame_num_minus4,
-			    sps.log2_max_frame_num_minus4);
+		TEST_EQUALS(ref.log2_max_frame_num,
+			    sps.log2_max_frame_num);
 
 		TEST_EQUALS(ref.pic_order_cnt_type,
 			    sps.pic_order_cnt_type);
 
-		TEST_EQUALS(ref.log2_max_pic_order_cnt_lsb_minus4,
-			    sps.log2_max_pic_order_cnt_lsb_minus4);
+		TEST_EQUALS(ref.log2_max_pic_order_cnt_lsb,
+			    sps.log2_max_pic_order_cnt_lsb);
 
 		TEST_EQUALS(ref.max_num_ref_frames,
 			    sps.max_num_ref_frames);
