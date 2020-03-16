@@ -79,8 +79,8 @@ struct sps {
 
 	unsigned max_num_ref_frames;
 	unsigned gaps_in_frame_num_value_allowed_flag;
-	unsigned pic_width_in_mbs_minus1;
-	unsigned pic_height_in_map_units_minus1;
+	unsigned pic_width_in_mbs;
+	unsigned pic_height_in_map_units;
 };
 
 
@@ -176,8 +176,8 @@ static int sps_decode(struct sps *sps, const uint8_t *p, size_t len)
 	sps->max_num_ref_frames = get_ue_golomb(p, &offset);
 	sps->gaps_in_frame_num_value_allowed_flag = get_bits(p, &offset, 1);
 
-	sps->pic_width_in_mbs_minus1 = get_ue_golomb(p, &offset);
-	sps->pic_height_in_map_units_minus1 = get_ue_golomb(p, &offset);
+	sps->pic_width_in_mbs = get_ue_golomb(p, &offset) + 1;
+	sps->pic_height_in_map_units = get_ue_golomb(p, &offset) + 1;
 
 	/* success */
 	sps->profile_idc = profile_idc;
@@ -217,10 +217,10 @@ static void sps_print(const struct sps *sps)
 		  sps->max_num_ref_frames);
 	re_printf("gaps_in_frame_num_value_allowed_flag %u\n",
 		  sps->gaps_in_frame_num_value_allowed_flag);
-	re_printf("pic_width_in_mbs_minus1              %u\n",
-		  sps->pic_width_in_mbs_minus1);
-	re_printf("pic_height_in_map_units_minus1       %u\n",
-		  sps->pic_height_in_map_units_minus1);
+	re_printf("pic_width_in_mbs                     %u\n",
+		  sps->pic_width_in_mbs);
+	re_printf("pic_height_in_map_units              %u\n",
+		  sps->pic_height_in_map_units);
 	re_printf("\n");
 }
 
@@ -236,7 +236,7 @@ int test_h264_sps(void)
 		{
 			.buf = {0x42, 0x00, 0x0a, 0xf8, 0x41, 0xa2},
 			.sps = {
-				 66,10,0,4,0,4,0,0,7,5
+				 66,10,0,4,0,4,0,0,8,6
 			 }
 		},
 
@@ -244,7 +244,7 @@ int test_h264_sps(void)
 			.buf = {0x42, 0x00, 0x1e, 0xab, 0x40, 0xb0, 0x4b,
 				0x4d, 0x40, 0x40, 0x41, 0x80, 0x80},
 			.sps = {
-				 66,30,0,5,0,6,1,0,21,17
+				 66,30,0,5,0,6,1,0,22,18
 			 }
 		},
 
@@ -282,11 +282,11 @@ int test_h264_sps(void)
 		TEST_EQUALS(ref.gaps_in_frame_num_value_allowed_flag,
 			    sps.gaps_in_frame_num_value_allowed_flag);
 
-		TEST_EQUALS(ref.pic_width_in_mbs_minus1,
-			    sps.pic_width_in_mbs_minus1);
+		TEST_EQUALS(ref.pic_width_in_mbs,
+			    sps.pic_width_in_mbs);
 
-		TEST_EQUALS(ref.pic_height_in_map_units_minus1,
-			    sps.pic_height_in_map_units_minus1);
+		TEST_EQUALS(ref.pic_height_in_map_units,
+			    sps.pic_height_in_map_units);
 
 		sps_print(&sps);
 	}
