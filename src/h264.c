@@ -78,7 +78,6 @@ struct sps {
 	unsigned bit_depth_luma_minus8;
 	unsigned bit_depth_chroma_minus8;
 
-
 	unsigned log2_max_frame_num;
 	unsigned pic_order_cnt_type;
 
@@ -278,7 +277,6 @@ int test_h264_sps(void)
 
 	} testv[] = {
 
-#if 1
 		{
 			.buf = "42001eab40b04b4d4040418080",
 			.sps = {
@@ -300,9 +298,7 @@ int test_h264_sps(void)
 				 4,2,6,1,0,120,68
 			 }
 		},
-#endif
 
-#if 1
 		/* confcall
 		 *
 		 * .... sps: 67640028acd100780227e5c05a8080
@@ -322,7 +318,22 @@ int test_h264_sps(void)
 				 4,0,5,3,0,120,68
 			 }
 		},
-#endif
+
+		/* expert
+		 *
+		 * sps: 64001facd9405005bb011000000300100000030320f1831960
+		 *
+		 * sps:0 profile:100/31 poc:0 ref:4 80x45 FRM
+		 */
+		{
+			.buf =
+			"64001facd9405005bb011000000300100000030320f1831960",
+			.sps = {
+				 100,31,0,
+				 0,0,0,
+				 4,0,6,4,0,80,45
+			 }
+		},
 
 	};
 	size_t i;
