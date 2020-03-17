@@ -61,8 +61,8 @@ int test_h264(void)
 #define MAX_LOG2_MAX_FRAME_NUM    (12)
 
 
-/*
- * 7.3.2.1.1 Sequence parameter set data syntax
+/**
+ * H.264 Sequence Parameter Set (SPS)
  */
 struct sps {
 	uint8_t profile_idc;
@@ -84,38 +84,39 @@ struct sps {
 };
 
 
-static uint32_t get_bit(const uint8_t *base, uint32_t offset)
+static unsigned get_bit(const uint8_t *p, unsigned offset)
 {
-	return ((*(base + (offset >> 0x3))) >> (0x7 - (offset & 0x7))) & 0x1;
+	return ((*(p + (offset >> 0x3))) >> (0x7 - (offset & 0x7))) & 0x1;
 }
 
 
-static uint32_t get_bits(const uint8_t *base,
-			 uint32_t *offset, uint8_t bits)
+static unsigned get_bits(const uint8_t *p,
+			 unsigned *offset, uint8_t bits)
 {
-	uint32_t value = 0;
+	unsigned value = 0;
+
 	for (int i = 0; i < bits; i++) {
-		value = (value << 1) | (get_bit(base, (*offset)++) ? 1 : 0);
+		value = (value << 1) | (get_bit(p, (*offset)++) ? 1 : 0);
 	}
 
 	return value;
 }
 
 
-static uint32_t get_ue_golomb(const uint8_t * base, uint32_t * offset)
+static uint32_t get_ue_golomb(const uint8_t *p, uint32_t *offset)
 {
 	uint32_t zeros = 0;
 
-	while (0 == get_bit(base, (*offset)++))
+	while (0 == get_bit(p, (*offset)++))
 		++zeros;
 
 	uint32_t info = 1 << zeros;
 
 	for (int32_t i = zeros - 1; i >= 0; i--) {
-		info |= get_bit(base, (*offset)++) << i;
+		info |= get_bit(p, (*offset)++) << i;
 	}
 
-	return (info - 1);
+	return info - 1;
 }
 
 
@@ -166,8 +167,15 @@ static int sps_decode(struct sps *sps, const uint8_t *p, size_t len)
 
 	if (sps->pic_order_cnt_type == 0) {
 
-		sps->log2_max_pic_order_cnt_lsb
-			= get_ue_golomb(p, &offset) + 4;
+		unsigned t = get_ue_golomb(p, &offset);
+
+		if (t > 12) {
+			re_printf("sps: log2_max_poc_lsb (%d)"
+				  " is out of range\n", t);
+			return ENOTSUP;
+		}
+
+		sps->log2_max_pic_order_cnt_lsb = t + 4;
 	}
 	else if (sps->pic_order_cnt_type == 2) {
 	}
@@ -182,6 +190,11 @@ static int sps_decode(struct sps *sps, const uint8_t *p, size_t len)
 
 	sps->pic_width_in_mbs = get_ue_golomb(p, &offset) + 1;
 	sps->pic_height_in_map_units = get_ue_golomb(p, &offset) + 1;
+
+	if (sps->pic_height_in_map_units >= INT_MAX / 2U) {
+		re_printf("sps: height overflow\n");
+		return EBADMSG;
+	}
 
 	/* success */
 	sps->profile_idc = profile_idc;
