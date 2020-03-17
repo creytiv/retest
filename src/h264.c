@@ -5,6 +5,7 @@
  */
 
 #include <inttypes.h>
+#include <limits.h>
 #include <string.h>
 #include <re.h>
 #include <rem.h>
