@@ -73,6 +73,12 @@ struct sps {
 	uint8_t level_idc;
 	unsigned seq_parameter_set_id;
 
+	/* profile=X */
+	unsigned chroma_format_idc;
+	unsigned bit_depth_luma_minus8;
+	unsigned bit_depth_chroma_minus8;
+
+
 	unsigned log2_max_frame_num;
 	unsigned pic_order_cnt_type;
 
@@ -154,9 +160,27 @@ static int sps_decode(struct sps *sps, const uint8_t *p, size_t len)
 	    profile_idc == 138 ||
 	    profile_idc == 144) {
 
-		re_printf("sps: profile_idc '%u' not supported\n",
-			  profile_idc);
-		return ENOTSUP;
+		unsigned seq_scaling_matrix_present_flag;
+
+		sps->chroma_format_idc = get_ue_golomb(p, &offset);
+		if (sps->chroma_format_idc == 3)
+			return ENOTSUP;
+
+		re_printf(".. chroma_format_idc: %u\n",
+			  sps->chroma_format_idc);
+
+		sps->bit_depth_luma_minus8 = get_ue_golomb(p, &offset);
+		sps->bit_depth_chroma_minus8 = get_ue_golomb(p, &offset);
+
+		re_printf(".. luma %u\n", sps->bit_depth_luma_minus8);
+		re_printf(".. chroma %u\n", sps->bit_depth_chroma_minus8);
+
+		/* qpprime_y_zero_transform_bypass_flag */
+		get_bits(p, &offset, 1);
+
+		seq_scaling_matrix_present_flag = get_bits(p, &offset, 1);
+		if (seq_scaling_matrix_present_flag)
+			return ENOTSUP;
 	}
 
 	log2_max_frame_num_minus4 = get_ue_golomb(p, &offset);
@@ -254,10 +278,13 @@ int test_h264_sps(void)
 
 	} testv[] = {
 
+#if 1
 		{
 			.buf = "42001eab40b04b4d4040418080",
 			.sps = {
-				 66,30,0,5,0,6,1,0,22,18
+				 66,30,0,
+				 0,0,0,
+				 5,0,6,1,0,22,18
 			 }
 		},
 
@@ -268,11 +295,14 @@ int test_h264_sps(void)
 		{
 			.buf = "42c034da01e0089f961000000300",
 			.sps = {
-				 66,52,0,4,2,6,1,0,120,68
+				 66,52,0,
+				 0,0,0,
+				 4,2,6,1,0,120,68
 			 }
 		},
+#endif
 
-#if 0
+#if 1
 		/* confcall
 		 *
 		 * .... sps: 67640028acd100780227e5c05a8080
@@ -287,7 +317,9 @@ int test_h264_sps(void)
 			"640028acd100780227e5c05a808080"
 			"a0000003002000000781e3062240",
 			.sps = {
-				 66,52,0,4,2,6,1,0,120,68
+				 100,40,0,
+				 0,0,0,
+				 4,0,5,3,0,120,68
 			 }
 		},
 #endif
@@ -313,7 +345,9 @@ int test_h264_sps(void)
 			return err;
 
 		TEST_EQUALS(ref.profile_idc, sps.profile_idc);
+
 		TEST_EQUALS(ref.level_idc, sps.level_idc);
+
 		TEST_EQUALS(ref.seq_parameter_set_id,
 			    sps.seq_parameter_set_id);
 
