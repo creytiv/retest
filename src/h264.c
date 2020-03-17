@@ -59,8 +59,8 @@ int test_h264(void)
 }
 
 
-#define MAX_SPS_COUNT          32
-#define MAX_LOG2_MAX_FRAME_NUM    (12)
+#define MAX_SPS_COUNT           32
+#define MAX_LOG2_MAX_FRAME_NUM  12
 
 
 /**
@@ -68,8 +68,6 @@ int test_h264(void)
  */
 struct sps {
 	uint8_t profile_idc;
-	/* constraint_set0_flag */
-	/* reserved_zero_2bits */
 	uint8_t level_idc;
 	unsigned seq_parameter_set_id;
 
@@ -81,7 +79,7 @@ struct sps {
 	unsigned log2_max_frame_num;
 	unsigned pic_order_cnt_type;
 
-	/* pic_order_cnt_type=0 */
+	/* pic_order_cnt_type = 0 */
 	unsigned log2_max_pic_order_cnt_lsb;
 
 	unsigned max_num_ref_frames;
@@ -101,8 +99,9 @@ static unsigned get_bits(const uint8_t *p,
 			 unsigned *offset, uint8_t bits)
 {
 	unsigned value = 0;
+	uint8_t i;
 
-	for (int i = 0; i < bits; i++) {
+	for (i = 0; i < bits; i++) {
 		value = (value << 1) | (get_bit(p, (*offset)++) ? 1 : 0);
 	}
 
@@ -110,14 +109,15 @@ static unsigned get_bits(const uint8_t *p,
 }
 
 
-static uint32_t get_ue_golomb(const uint8_t *p, uint32_t *offset)
+static unsigned get_ue_golomb(const uint8_t *p, unsigned *offset)
 {
 	uint32_t zeros = 0;
+	unsigned info;
 
 	while (0 == get_bit(p, (*offset)++))
 		++zeros;
 
-	uint32_t info = 1 << zeros;
+	info = 1 << zeros;
 
 	for (int32_t i = zeros - 1; i >= 0; i--) {
 		info |= get_bit(p, (*offset)++) << i;
