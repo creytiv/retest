@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  */
 
+#include <inttypes.h>
 #include <string.h>
 #include <re.h>
 #include <rem.h>
