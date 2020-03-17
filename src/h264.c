@@ -154,6 +154,8 @@ static int sps_decode(struct sps *sps, const uint8_t *p, size_t len)
 	    profile_idc == 138 ||
 	    profile_idc == 144) {
 
+		re_printf("sps: profile_idc '%u' not supported\n",
+			  profile_idc);
 		return ENOTSUP;
 	}
 
@@ -247,21 +249,13 @@ static void sps_print(const struct sps *sps)
 int test_h264_sps(void)
 {
 	static const struct test {
-		uint8_t buf[14];
+		const char *buf;
 		struct sps sps;
 
 	} testv[] = {
 
 		{
-			.buf = {0x42, 0x00, 0x0a, 0xf8, 0x41, 0xa2},
-			.sps = {
-				 66,10,0,4,0,4,0,0,8,6
-			 }
-		},
-
-		{
-			.buf = {0x42, 0x00, 0x1e, 0xab, 0x40, 0xb0, 0x4b,
-				0x4d, 0x40, 0x40, 0x41, 0x80, 0x80},
+			.buf = "42001eab40b04b4d4040418080",
 			.sps = {
 				 66,30,0,5,0,6,1,0,22,18
 			 }
@@ -272,12 +266,31 @@ int test_h264_sps(void)
 		 * crop:0/0/0/8 VUI 420 1/360 b8 reo:0
 		 */
 		{
-			.buf = {0x42, 0xc0, 0x34, 0xda, 0x01, 0xe0, 0x08,
-				0x9f, 0x96, 0x10, 0x00, 0x00, 0x03, 0x00},
+			.buf = "42c034da01e0089f961000000300",
 			.sps = {
 				 66,52,0,4,2,6,1,0,120,68
 			 }
 		},
+
+#if 0
+		/* confcall
+		 *
+		 * .... sps: 67640028acd100780227e5c05a8080
+		 *           80a0000003002000000781e3062240
+		 *
+		 * sps:0 profile:100/40 poc:0 ref:3 120x68 FRM
+		 * 8B8 crop:0/0/0/8 VUI 420 1/60 b8 reo:1
+		 */
+
+		{
+			.buf =
+			"640028acd100780227e5c05a808080"
+			"a0000003002000000781e3062240",
+			.sps = {
+				 66,52,0,4,2,6,1,0,120,68
+			 }
+		},
+#endif
 
 	};
 	size_t i;
@@ -288,8 +301,14 @@ int test_h264_sps(void)
 		const struct test *test = &testv[i];
 		struct sps ref = test->sps;
 		struct sps sps;
+		uint8_t buf[256];
+		size_t len = str_len(test->buf)/2;
 
-		err = sps_decode(&sps, test->buf, sizeof(test->buf));
+		err = str_hex(buf, len, test->buf);
+		if (err)
+			return err;
+
+		err = sps_decode(&sps, buf, len);
 		if (err)
 			return err;
 
