@@ -394,6 +394,21 @@ int test_h264_sps(void)
 			 }
 		},
 
+		/* px
+		 *
+		 * sps: 42c01f95a014016c8400001f40000753023c2211a8
+		 *
+		 * sps:0 profile:66/31 poc:2 ref:1 80x45 FRM
+		 *       crop:0/0/0/0 VUI 420 2000/120000 b8 reo:0
+		 */
+		{
+			.buf =
+			"42c01f95a014016c8400001f40000753023c2211a8",
+			.sps = {
+				 66,31,0,
+				 8,2,6,1,0,80,45
+			 }
+		},
 	};
 	struct h264_sps sps;
 	size_t i;
