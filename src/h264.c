@@ -226,6 +226,9 @@ static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 		if (err)
 			return err;
 
+		if (getbit_get_left(&gb) < 2)
+			return ENODATA;
+
 		/* qpprime_y_zero_transform_bypass_flag */
 		get_bits(&gb, 1);
 
@@ -266,6 +269,9 @@ static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 	err = get_ue_golomb(&gb, &sps->max_num_ref_frames);
 	if (err)
 		return err;
+
+	if (getbit_get_left(&gb) < 1)
+		return ENODATA;
 	sps->gaps_in_frame_num_value_allowed_flag = get_bits(&gb, 1);
 
 	err  = get_ue_golomb(&gb, &sps->pic_width_in_mbs);
