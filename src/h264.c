@@ -140,12 +140,15 @@ static unsigned get_bits(struct getbitcontext *gb, uint8_t bits)
 }
 
 
-static unsigned get_ue_golomb(struct getbitcontext *gb)
+static int get_ue_golomb(struct getbitcontext *gb, unsigned *valp)
 {
 	uint32_t zeros = 0;
 	unsigned info;
 
 	while (1) {
+
+		if (getbit_get_left(gb) < 1)
+			return ENODATA;
 
 		if (0 == get_bit(gb))
 			++zeros;
@@ -156,10 +159,17 @@ static unsigned get_ue_golomb(struct getbitcontext *gb)
 	info = 1 << zeros;
 
 	for (int32_t i = zeros - 1; i >= 0; i--) {
+
+		if (getbit_get_left(gb) < 1)
+			return ENODATA;
+
 		info |= get_bit(gb) << i;
 	}
 
-	return info - 1;
+	if (valp)
+		*valp = info - 1;
+
+	return 0;
 }
 
 
@@ -169,6 +179,7 @@ static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 	uint8_t profile_idc;
 	unsigned seq_parameter_set_id;
 	unsigned log2_max_frame_num_minus4;
+	int err;
 
 	if (!sps || !p || !len)
 		return EINVAL;
@@ -182,7 +193,9 @@ static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 	(void)get_bits(&gb, 8);
 	sps->level_idc = get_bits(&gb, 8);
 
-	seq_parameter_set_id = get_ue_golomb(&gb);
+	err = get_ue_golomb(&gb, &seq_parameter_set_id);
+	if (err)
+		return err;
 
 	if (seq_parameter_set_id >= MAX_SPS_COUNT) {
 		re_printf("sps_id %u out of range\n", seq_parameter_set_id);
@@ -204,13 +217,17 @@ static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 		unsigned seq_scaling_matrix_present_flag;
 		unsigned chroma_format_idc;
 
-		chroma_format_idc = get_ue_golomb(&gb);
+		err = get_ue_golomb(&gb, &chroma_format_idc);
+		if (err)
+			return err;
 		if (chroma_format_idc == 3)
 			return ENOTSUP;
 
 		/* bit_depth_luma/chroma */
-		get_ue_golomb(&gb);
-		get_ue_golomb(&gb);
+		err  = get_ue_golomb(&gb, NULL);
+		err |= get_ue_golomb(&gb, NULL);
+		if (err)
+			return err;
 
 		/* qpprime_y_zero_transform_bypass_flag */
 		get_bits(&gb, 1);
@@ -220,7 +237,9 @@ static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 			return ENOTSUP;
 	}
 
-	log2_max_frame_num_minus4 = get_ue_golomb(&gb);
+	err = get_ue_golomb(&gb, &log2_max_frame_num_minus4);
+	if (err)
+		return err;
 	if (log2_max_frame_num_minus4 > MAX_LOG2_MAX_FRAME_NUM) {
 		re_printf("sps: log2_max_frame_num_minus4"
 			  " out of range (0-12): %d\n",
@@ -228,12 +247,17 @@ static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 		return EBADMSG;
 	}
 
-	sps->pic_order_cnt_type = get_ue_golomb(&gb);
+	err = get_ue_golomb(&gb, &sps->pic_order_cnt_type);
+	if (err)
+		return err;
 
 	if (sps->pic_order_cnt_type == 0) {
 
-		unsigned t = get_ue_golomb(&gb);
+		unsigned t;
 
+		err = get_ue_golomb(&gb, &t);
+		if (err)
+			return err;
 		if (t > 12) {
 			re_printf("sps: log2_max_poc_lsb (%d)"
 				  " is out of range\n", t);
@@ -250,11 +274,18 @@ static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 		return ENOTSUP;
 	}
 
-	sps->max_num_ref_frames = get_ue_golomb(&gb);
+	err = get_ue_golomb(&gb, &sps->max_num_ref_frames);
+	if (err)
+		return err;
 	sps->gaps_in_frame_num_value_allowed_flag = get_bits(&gb, 1);
 
-	sps->pic_width_in_mbs = get_ue_golomb(&gb) + 1;
-	sps->pic_height_in_map_units = get_ue_golomb(&gb) + 1;
+	err  = get_ue_golomb(&gb, &sps->pic_width_in_mbs);
+	err |= get_ue_golomb(&gb, &sps->pic_height_in_map_units);
+	if (err)
+		return err;
+
+	++sps->pic_width_in_mbs;
+	++sps->pic_height_in_map_units;
 
 	if (sps->pic_height_in_map_units >= INT_MAX / 2U) {
 		re_printf("sps: height overflow\n");
@@ -417,15 +448,16 @@ int test_h264_sps(void)
 	re_printf("-- Test short read:\n");
 
 	static const uint8_t dummy[] = {
-		/*0x64, 0x00, 0x1f, 0xac, 0xd9, 0x40, 0x50, 0x05*/
-		0x64, 0x00, 0x1f
+		0x64, 0x00, 0x1f, 0xac, 0xd9, 0x40, 0x50, 0x05
 	};
 
 	int e;
 
-	for (i=1; i<sizeof(dummy); i++) {
+	for (i=1; i <= sizeof(dummy); i++) {
 
 		size_t len = i;
+
+		re_printf("short read: %zu bytes\n", len);
 
 		e = h264_sps_decode(&sps, dummy, len);
 		TEST_EQUALS(ENODATA, e);
