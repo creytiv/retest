@@ -87,8 +87,8 @@ struct h264_sps {
 
 struct getbitcontext {
 	const uint8_t *buffer, *buffer_end;
-	size_t index;
-	size_t size_in_bits;
+	size_t pos;
+	size_t size;
 };
 
 
@@ -100,28 +100,28 @@ static void getbit_init(struct getbitcontext *s, const uint8_t *buffer,
 	buffer_size = (bit_size + 7) >> 3;
 
 	s->buffer             = buffer;
-	s->size_in_bits       = bit_size;
 	s->buffer_end         = buffer + buffer_size;
-	s->index              = 0;
+	s->pos                = 0;
+	s->size               = bit_size;
 }
 
 
 static size_t getbit_get_left(const struct getbitcontext *gb)
 {
-	return gb->size_in_bits - gb->index;
+	return gb->size - gb->pos;
 }
 
 
 static unsigned get_bit(struct getbitcontext *gb)
 {
-	unsigned tmp;
 	const uint8_t *p = gb->buffer;
+	unsigned tmp;
 
-	assert(gb->index < gb->size_in_bits);
+	assert(gb->pos < gb->size);
 
-	tmp = ((*(p + (gb->index >> 0x3))) >> (0x7 - (gb->index & 0x7))) & 0x1;
+	tmp = ((*(p + (gb->pos >> 0x3))) >> (0x7 - (gb->pos & 0x7))) & 0x1;
 
-	++gb->index;
+	++gb->pos;
 
 	return tmp;
 }
@@ -176,6 +176,7 @@ static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 	profile_idc = get_bits(&gb, 8);
 	(void)get_bits(&gb, 8);
 	sps->level_idc = get_bits(&gb, 8);
+
 	seq_parameter_set_id = get_ue_golomb(&gb);
 
 	if (seq_parameter_set_id >= MAX_SPS_COUNT) {
@@ -260,13 +261,8 @@ static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 	sps->seq_parameter_set_id = seq_parameter_set_id;
 	sps->log2_max_frame_num = log2_max_frame_num_minus4 + 4;
 
-	re_printf("sps: done. offset=%u bits\n", gb.index);
-
-	if (gb.index > 8*len) {
-		re_printf("sps: WARNING: read past end (%u > %u)\n",
-			  gb.index, 8*len);
-		return EBADMSG;
-	}
+	re_printf("sps: done. read %zu bits, %zu bits left\n",
+		  gb.pos, getbit_get_left(&gb));
 
 	return 0;
 }
