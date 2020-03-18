@@ -145,8 +145,13 @@ static unsigned get_ue_golomb(struct getbitcontext *gb)
 	uint32_t zeros = 0;
 	unsigned info;
 
-	while (0 == get_bit(gb))
-		++zeros;
+	while (1) {
+
+		if (0 == get_bit(gb))
+			++zeros;
+		else
+			break;
+	}
 
 	info = 1 << zeros;
 
@@ -411,11 +416,20 @@ int test_h264_sps(void)
 
 	re_printf("-- Test short read:\n");
 
-	static const uint8_t dummy[] = { 0x64, 0x00 };
+	static const uint8_t dummy[] = {
+		/*0x64, 0x00, 0x1f, 0xac, 0xd9, 0x40, 0x50, 0x05*/
+		0x64, 0x00, 0x1f
+	};
+
 	int e;
 
-	e = h264_sps_decode(&sps, dummy, sizeof(dummy));
-	TEST_EQUALS(ENODATA, e);
+	for (i=1; i<sizeof(dummy); i++) {
+
+		size_t len = i;
+
+		e = h264_sps_decode(&sps, dummy, len);
+		TEST_EQUALS(ENODATA, e);
+	}
 
  out:
 	return err;
