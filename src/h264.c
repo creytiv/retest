@@ -156,15 +156,14 @@ static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 
 		unsigned seq_scaling_matrix_present_flag;
 		unsigned chroma_format_idc;
-		unsigned bit_depth_luma_minus8;
-		unsigned bit_depth_chroma_minus8;
 
 		chroma_format_idc = get_ue_golomb(p, &offset);
 		if (chroma_format_idc == 3)
 			return ENOTSUP;
 
-		bit_depth_luma_minus8 = get_ue_golomb(p, &offset);
-		bit_depth_chroma_minus8 = get_ue_golomb(p, &offset);
+		/* bit_depth_luma/chroma */
+		get_ue_golomb(p, &offset);
+		get_ue_golomb(p, &offset);
 
 		/* qpprime_y_zero_transform_bypass_flag */
 		get_bits(p, &offset, 1);
