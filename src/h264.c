@@ -66,7 +66,7 @@ int test_h264(void)
 /**
  * H.264 Sequence Parameter Set (SPS)
  */
-struct sps {
+struct h264_sps {
 	uint8_t profile_idc;
 	uint8_t level_idc;
 	unsigned seq_parameter_set_id;
@@ -127,7 +127,7 @@ static unsigned get_ue_golomb(const uint8_t *p, unsigned *offset)
 }
 
 
-static int sps_decode(struct sps *sps, const uint8_t *p, size_t len)
+static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 {
 	unsigned offset = 0;
 	uint8_t profile_idc;
@@ -240,7 +240,7 @@ static int sps_decode(struct sps *sps, const uint8_t *p, size_t len)
 }
 
 
-static void sps_print(const struct sps *sps)
+static void h264_sps_print(const struct h264_sps *sps)
 {
 	re_printf("--- SPS ---\n");
 	re_printf("profile_idc          %u\n", sps->profile_idc);
@@ -273,7 +273,7 @@ int test_h264_sps(void)
 {
 	static const struct test {
 		const char *buf;
-		struct sps sps;
+		struct h264_sps sps;
 
 	} testv[] = {
 
@@ -342,8 +342,8 @@ int test_h264_sps(void)
 	for (i=0; i<ARRAY_SIZE(testv); i++) {
 
 		const struct test *test = &testv[i];
-		struct sps ref = test->sps;
-		struct sps sps;
+		struct h264_sps ref = test->sps;
+		struct h264_sps sps;
 		uint8_t buf[256];
 		size_t len = str_len(test->buf)/2;
 
@@ -351,7 +351,7 @@ int test_h264_sps(void)
 		if (err)
 			return err;
 
-		err = sps_decode(&sps, buf, len);
+		err = h264_sps_decode(&sps, buf, len);
 		if (err)
 			return err;
 
@@ -383,7 +383,7 @@ int test_h264_sps(void)
 		TEST_EQUALS(ref.pic_height_in_map_units,
 			    sps.pic_height_in_map_units);
 
-		sps_print(&sps);
+		h264_sps_print(&sps);
 	}
 
  out:
