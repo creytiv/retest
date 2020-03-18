@@ -71,11 +71,6 @@ struct h264_sps {
 	uint8_t level_idc;
 	unsigned seq_parameter_set_id;
 
-	/* profile=X */
-	unsigned chroma_format_idc;
-	unsigned bit_depth_luma_minus8;
-	unsigned bit_depth_chroma_minus8;
-
 	unsigned log2_max_frame_num;
 	unsigned pic_order_cnt_type;
 
@@ -160,19 +155,16 @@ static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 	    profile_idc == 144) {
 
 		unsigned seq_scaling_matrix_present_flag;
+		unsigned chroma_format_idc;
+		unsigned bit_depth_luma_minus8;
+		unsigned bit_depth_chroma_minus8;
 
-		sps->chroma_format_idc = get_ue_golomb(p, &offset);
-		if (sps->chroma_format_idc == 3)
+		chroma_format_idc = get_ue_golomb(p, &offset);
+		if (chroma_format_idc == 3)
 			return ENOTSUP;
 
-		re_printf(".. chroma_format_idc: %u\n",
-			  sps->chroma_format_idc);
-
-		sps->bit_depth_luma_minus8 = get_ue_golomb(p, &offset);
-		sps->bit_depth_chroma_minus8 = get_ue_golomb(p, &offset);
-
-		re_printf(".. luma %u\n", sps->bit_depth_luma_minus8);
-		re_printf(".. chroma %u\n", sps->bit_depth_chroma_minus8);
+		bit_depth_luma_minus8 = get_ue_golomb(p, &offset);
+		bit_depth_chroma_minus8 = get_ue_golomb(p, &offset);
 
 		/* qpprime_y_zero_transform_bypass_flag */
 		get_bits(p, &offset, 1);
@@ -228,7 +220,7 @@ static int h264_sps_decode(struct h264_sps *sps, const uint8_t *p, size_t len)
 	sps->seq_parameter_set_id = seq_parameter_set_id;
 	sps->log2_max_frame_num = log2_max_frame_num_minus4 + 4;
 
-	re_printf("done. offset=%u bits\n", offset);
+	re_printf("sps: done. offset=%u bits\n", offset);
 
 	if (offset > 8*len) {
 		re_printf("sps: WARNING: read past end (%u > %u)\n",
@@ -256,7 +248,6 @@ static void h264_sps_print(const struct h264_sps *sps)
 		  sps->log2_max_pic_order_cnt_lsb);
 	re_printf("\n");
 
-
 	re_printf("max_num_ref_frames                   %u\n",
 		  sps->max_num_ref_frames);
 	re_printf("gaps_in_frame_num_value_allowed_flag %u\n",
@@ -281,7 +272,6 @@ int test_h264_sps(void)
 			.buf = "42001eab40b04b4d4040418080",
 			.sps = {
 				 66,30,0,
-				 0,0,0,
 				 5,0,6,1,0,22,18
 			 }
 		},
@@ -294,7 +284,6 @@ int test_h264_sps(void)
 			.buf = "42c034da01e0089f961000000300",
 			.sps = {
 				 66,52,0,
-				 0,0,0,
 				 4,2,6,1,0,120,68
 			 }
 		},
@@ -314,7 +303,6 @@ int test_h264_sps(void)
 			"a0000003002000000781e3062240",
 			.sps = {
 				 100,40,0,
-				 0,0,0,
 				 4,0,5,3,0,120,68
 			 }
 		},
@@ -330,7 +318,6 @@ int test_h264_sps(void)
 			"64001facd9405005bb011000000300100000030320f1831960",
 			.sps = {
 				 100,31,0,
-				 0,0,0,
 				 4,0,6,4,0,80,45
 			 }
 		},
