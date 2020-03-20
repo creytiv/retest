@@ -15,7 +15,7 @@ addons:
 
 install:
     - git clone https://github.com/creytiv/re.git
-    - git clone https://github.com/creytiv/rem.git
+    - git clone -b h264_sps https://github.com/creytiv/rem.git
     - cd re && make && sudo PATH="$PATH" make install && cd ..
     - cd rem && make && sudo PATH="$PATH" make install && cd ..
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo ldconfig; fi
