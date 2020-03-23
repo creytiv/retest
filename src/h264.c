@@ -66,6 +66,7 @@ int test_h264_sps(void)
 	} testv[] = {
 
 		/* rv
+		 *
 		 * sps:0 profile:66/52 poc:2 ref:1 120x68 FRM 8B8
 		 * crop:0/0/0/8 VUI 420 1/360 b8 reo:0
 		 */
@@ -73,7 +74,8 @@ int test_h264_sps(void)
 			.buf = "42c034da01e0089f961000000300",
 			.sps = {
 				 66,52,0,
-				 4,2,1,0,120,68
+				 4,2,1,0,120,68,
+				 0,0,0,8
 			},
 			.size = {1920, 1080}
 		},
@@ -94,7 +96,8 @@ int test_h264_sps(void)
 			"a0000003002000000781e3062240",
 			.sps = {
 				 100,40,0,
-				 4,0,3,0,120,68
+				 4,0,3,0,120,68,
+				 0,0,0,8
 			},
 			.size = {1920, 1080}
 		},
@@ -110,7 +113,8 @@ int test_h264_sps(void)
 			"64001facd9405005bb011000000300100000030320f1831960",
 			.sps = {
 				 100,31,0,
-				 4,0,4,0,80,45
+				 4,0,4,0,80,45,
+				 0,0,0,0
 			},
 			.size = {1280, 720}
 		},
@@ -127,7 +131,8 @@ int test_h264_sps(void)
 			"42c01f95a014016c8400001f40000753023c2211a8",
 			.sps = {
 				 66,31,0,
-				 8,2,1,0,80,45
+				 8,2,1,0,80,45,
+				 0,0,0,0
 			},
 			.size = {1280, 720}
 		},
@@ -146,7 +151,8 @@ int test_h264_sps(void)
 			"4d401ee8806c1ef37808800000030080000019078b1689",
 			.sps = {
 				 77,30,0,
-				 4,0,3,0,54,30
+				 4,0,3,0,54,30,
+				 0,10,0,0
 			},
 			.size = {854, 480}
 		},
@@ -198,6 +204,16 @@ int test_h264_sps(void)
 		TEST_EQUALS(ref.pic_height_in_map_units,
 			    sps.pic_height_in_map_units);
 
+		TEST_EQUALS(ref.frame_crop_left_offset,
+			    sps.frame_crop_left_offset);
+		TEST_EQUALS(ref.frame_crop_right_offset,
+			    sps.frame_crop_right_offset);
+		TEST_EQUALS(ref.frame_crop_top_offset,
+			    sps.frame_crop_top_offset);
+		TEST_EQUALS(ref.frame_crop_bottom_offset,
+			    sps.frame_crop_bottom_offset);
+
+		/* verify correct resolution */
 		TEST_EQUALS(test->size.w, size.w);
 		TEST_EQUALS(test->size.h, size.h);
 	}
