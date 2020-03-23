@@ -62,6 +62,7 @@ int test_h264_sps(void)
 	static const struct test {
 		const char *buf;
 		struct h264_sps sps;
+		struct vidsz size;
 	} testv[] = {
 
 		/* rv
@@ -73,7 +74,8 @@ int test_h264_sps(void)
 			.sps = {
 				 66,52,0,
 				 4,2,1,0,120,68
-			 }
+			},
+			.size = {1920, 1080}
 		},
 
 #if 1
@@ -93,7 +95,8 @@ int test_h264_sps(void)
 			.sps = {
 				 100,40,0,
 				 4,0,3,0,120,68
-			 }
+			},
+			.size = {1920, 1080}
 		},
 
 		/* expert
@@ -108,7 +111,8 @@ int test_h264_sps(void)
 			.sps = {
 				 100,31,0,
 				 4,0,4,0,80,45
-			 }
+			},
+			.size = {1280, 720}
 		},
 
 		/* px
@@ -124,7 +128,8 @@ int test_h264_sps(void)
 			.sps = {
 				 66,31,0,
 				 8,2,1,0,80,45
-			 }
+			},
+			.size = {1280, 720}
 		},
 #endif
 
@@ -142,12 +147,13 @@ int test_h264_sps(void)
 			.sps = {
 				 77,30,0,
 				 4,0,3,0,54,30
-			 }
+			},
+			.size = {854, 480}
 		},
 	};
 	struct h264_sps sps;
 	size_t i;
-	int err;
+	int e, err;
 
 	for (i=0; i<ARRAY_SIZE(testv); i++) {
 
@@ -155,6 +161,7 @@ int test_h264_sps(void)
 		struct h264_sps ref = test->sps;
 		uint8_t buf[256];
 		size_t len = str_len(test->buf)/2;
+		struct vidsz size;
 
 		err = str_hex(buf, len, test->buf);
 		if (err)
@@ -163,6 +170,8 @@ int test_h264_sps(void)
 		err = h264_sps_decode(&sps, buf, len);
 		if (err)
 			return err;
+
+		h264_sps_resolution(&sps, &size);
 
 		TEST_EQUALS(ref.profile_idc, sps.profile_idc);
 
@@ -189,7 +198,8 @@ int test_h264_sps(void)
 		TEST_EQUALS(ref.pic_height_in_map_units,
 			    sps.pic_height_in_map_units);
 
-		h264_sps_print(&sps);
+		TEST_EQUALS(test->size.w, size.w);
+		TEST_EQUALS(test->size.h, size.h);
 	}
 
 	re_printf("-- Test short read:\n");
@@ -197,8 +207,6 @@ int test_h264_sps(void)
 	static const uint8_t dummy[] = {
 		0x64, 0x00, 0x1f, 0xac, 0xd9, 0x40, 0x50, 0x05
 	};
-
-	int e;
 
 	for (i=1; i <= sizeof(dummy); i++) {
 
