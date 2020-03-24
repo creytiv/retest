@@ -74,13 +74,12 @@ int test_h264_sps(void)
 			.buf = "42c034da01e0089f961000000300",
 			.sps = {
 				 66,52,0,
-				 4,2,1,0,120,68,
+				 4,2,1,120,68,
 				 0,0,0,8
 			},
 			.size = {1920, 1080}
 		},
 
-#if 1
 		/* confcall
 		 *
 		 * .... sps: 67640028acd100780227e5c05a8080
@@ -96,7 +95,7 @@ int test_h264_sps(void)
 			"a0000003002000000781e3062240",
 			.sps = {
 				 100,40,0,
-				 4,0,3,0,120,68,
+				 4,0,3,120,68,
 				 0,0,0,8
 			},
 			.size = {1920, 1080}
@@ -113,7 +112,7 @@ int test_h264_sps(void)
 			"64001facd9405005bb011000000300100000030320f1831960",
 			.sps = {
 				 100,31,0,
-				 4,0,4,0,80,45,
+				 4,0,4,80,45,
 				 0,0,0,0
 			},
 			.size = {1280, 720}
@@ -131,12 +130,11 @@ int test_h264_sps(void)
 			"42c01f95a014016c8400001f40000753023c2211a8",
 			.sps = {
 				 66,31,0,
-				 8,2,1,0,80,45,
+				 8,2,1,80,45,
 				 0,0,0,0
 			},
 			.size = {1280, 720}
 		},
-#endif
 
 		/* allonsy 854x480
 		 *
@@ -151,7 +149,7 @@ int test_h264_sps(void)
 			"4d401ee8806c1ef37808800000030080000019078b1689",
 			.sps = {
 				 77,30,0,
-				 4,0,3,0,54,30,
+				 4,0,3,54,30,
 				 0,10,0,0
 			},
 			.size = {854, 480}
@@ -171,7 +169,7 @@ int test_h264_sps(void)
 			"0000300100000030320f1831960",
 			.sps = {
 				 122,40,0,
-				 4,0,4,0,120,68,
+				 4,0,4,120,68,
 				 0,0,0,8
 			},
 			.size = {1920, 1080}
@@ -214,9 +212,6 @@ int test_h264_sps(void)
 
 		TEST_EQUALS(ref.max_num_ref_frames,
 			    sps.max_num_ref_frames);
-
-		TEST_EQUALS(ref.gaps_in_frame_num_value_allowed_flag,
-			    sps.gaps_in_frame_num_value_allowed_flag);
 
 		TEST_EQUALS(ref.pic_width_in_mbs,
 			    sps.pic_width_in_mbs);
