@@ -174,6 +174,25 @@ int test_h264_sps(void)
 			},
 			.size = {1920, 1080}
 		},
+
+		/* testsrc2 yuv444 400x200
+		 *
+		 * f4000d919b283237f13808800000030080000019078a14cb
+		 *
+		 * sps:0 profile:244/13 poc:0 ref:4 25x13 FRM 8B8
+		 *       crop:0/0/0/8 VUI 444 1/50 b8 reo:2
+		 *
+		 */
+		{
+			.buf =
+			"f4000d919b283237f13808800000030080000019078a14cb",
+			.sps = {
+				244,13,0,3,
+				4,0,4,25,13,
+				0,0,0,8
+			},
+			.size = {400, 200}
+		},
 	};
 	struct h264_sps sps;
 	size_t i;
@@ -201,6 +220,10 @@ int test_h264_sps(void)
 			  i,
 			  size.w, size.h,
 			  h264_sps_chroma_format_name(sps.chroma_format_idc));
+
+#if 0
+		h264_sps_print(&sps);
+#endif
 
 		TEST_EQUALS(ref.profile_idc, sps.profile_idc);
 
