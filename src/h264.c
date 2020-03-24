@@ -73,9 +73,9 @@ int test_h264_sps(void)
 		{
 			.buf = "42c034da01e0089f961000000300",
 			.sps = {
-				 66,52,0,
-				 4,2,1,120,68,
-				 0,0,0,8
+				66,52,0,1,
+				4,2,1,120,68,
+				0,0,0,8
 			},
 			.size = {1920, 1080}
 		},
@@ -94,9 +94,9 @@ int test_h264_sps(void)
 			"640028acd100780227e5c05a808080"
 			"a0000003002000000781e3062240",
 			.sps = {
-				 100,40,0,
-				 4,0,3,120,68,
-				 0,0,0,8
+				100,40,0,1,
+				4,0,3,120,68,
+				0,0,0,8
 			},
 			.size = {1920, 1080}
 		},
@@ -111,9 +111,9 @@ int test_h264_sps(void)
 			.buf =
 			"64001facd9405005bb011000000300100000030320f1831960",
 			.sps = {
-				 100,31,0,
-				 4,0,4,80,45,
-				 0,0,0,0
+				100,31,0,1,
+				4,0,4,80,45,
+				0,0,0,0
 			},
 			.size = {1280, 720}
 		},
@@ -129,9 +129,9 @@ int test_h264_sps(void)
 			.buf =
 			"42c01f95a014016c8400001f40000753023c2211a8",
 			.sps = {
-				 66,31,0,
-				 8,2,1,80,45,
-				 0,0,0,0
+				66,31,0,1,
+				8,2,1,80,45,
+				0,0,0,0
 			},
 			.size = {1280, 720}
 		},
@@ -148,9 +148,9 @@ int test_h264_sps(void)
 			.buf =
 			"4d401ee8806c1ef37808800000030080000019078b1689",
 			.sps = {
-				 77,30,0,
-				 4,0,3,54,30,
-				 0,10,0,0
+				77,30,0,1,
+				4,0,3,54,30,
+				0,10,0,0
 			},
 			.size = {854, 480}
 		},
@@ -168,9 +168,9 @@ int test_h264_sps(void)
 			"7a0028b6cd940780227e2701100"
 			"0000300100000030320f1831960",
 			.sps = {
-				 122,40,0,
-				 4,0,4,120,68,
-				 0,0,0,8
+				122,40,0,2,
+				4,0,4,120,68,
+				0,0,0,8
 			},
 			.size = {1920, 1080}
 		},
@@ -197,12 +197,20 @@ int test_h264_sps(void)
 
 		h264_sps_resolution(&sps, &size);
 
+		re_printf("sps test %zu: %u x %u (%s)\n",
+			  i,
+			  size.w, size.h,
+			  h264_sps_chroma_format_name(sps.chroma_format_idc));
+
 		TEST_EQUALS(ref.profile_idc, sps.profile_idc);
 
 		TEST_EQUALS(ref.level_idc, sps.level_idc);
 
 		TEST_EQUALS(ref.seq_parameter_set_id,
 			    sps.seq_parameter_set_id);
+
+		TEST_EQUALS(ref.chroma_format_idc,
+			    sps.chroma_format_idc);
 
 		TEST_EQUALS(ref.log2_max_frame_num,
 			    sps.log2_max_frame_num);
