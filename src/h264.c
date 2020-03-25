@@ -277,7 +277,7 @@ int test_h264_sps(void)
 		re_printf("short read: %zu bytes\n", len);
 
 		e = h264_sps_decode(&sps, dummy, len);
-		TEST_EQUALS(ENODATA, e);
+		TEST_EQUALS(EBADMSG, e);
 	}
 
  out:
