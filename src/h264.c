@@ -198,6 +198,10 @@ int test_h264_sps(void)
 	size_t i;
 	int e, err;
 
+	static const uint8_t dummy_sps[] = {
+		0x64, 0x00, 0x1f, 0xac, 0xd9, 0x40, 0x50, 0x05
+	};
+
 	for (i=0; i<ARRAY_SIZE(testv); i++) {
 
 		const struct test *test = &testv[i];
@@ -266,17 +270,14 @@ int test_h264_sps(void)
 
 	re_printf("-- Test short read:\n");
 
-	static const uint8_t dummy[] = {
-		0x64, 0x00, 0x1f, 0xac, 0xd9, 0x40, 0x50, 0x05
-	};
 
-	for (i=1; i <= sizeof(dummy); i++) {
+	for (i=1; i <= sizeof(dummy_sps); i++) {
 
 		size_t len = i;
 
 		re_printf("short read: %zu bytes\n", len);
 
-		e = h264_sps_decode(&sps, dummy, len);
+		e = h264_sps_decode(&sps, dummy_sps, len);
 		TEST_EQUALS(EBADMSG, e);
 	}
 
