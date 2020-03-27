@@ -82,9 +82,6 @@ int test_h264_sps(void)
 
 		/* confcall
 		 *
-		 * .... sps: 67640028acd100780227e5c05a8080
-		 *           80a0000003002000000781e3062240
-		 *
 		 * sps:0 profile:100/40 poc:0 ref:3 120x68 FRM
 		 * 8B8 crop:0/0/0/8 VUI 420 1/60 b8 reo:1
 		 */
@@ -103,8 +100,6 @@ int test_h264_sps(void)
 
 		/* expert
 		 *
-		 * sps: 64001facd9405005bb011000000300100000030320f1831960
-		 *
 		 * sps:0 profile:100/31 poc:0 ref:4 80x45 FRM
 		 */
 		{
@@ -119,8 +114,6 @@ int test_h264_sps(void)
 		},
 
 		/* px
-		 *
-		 * sps: 42c01f95a014016c8400001f40000753023c2211a8
 		 *
 		 * sps:0 profile:66/31 poc:2 ref:1 80x45 FRM
 		 *       crop:0/0/0/0 VUI 420 2000/120000 b8 reo:0
@@ -138,10 +131,8 @@ int test_h264_sps(void)
 
 		/* allonsy 854x480
 		 *
-		 * 4d401ee8806c1ef37808800000030080000019078b1689
-		 *
-		 * sps:0 profile:77/30 poc:0 ref:3 54x30 FRM 8B8 crop:0/10/0/0
-		 * VUI 420 1/50 b8 reo:1
+		 * sps:0 profile:77/30 poc:0 ref:3 54x30 FRM 8B8
+		 *       crop:0/10/0/0 VUI 420 1/50 b8 reo:1
 		 *
 		 */
 		{
@@ -156,8 +147,6 @@ int test_h264_sps(void)
 		},
 
 		/* sony 1920x1080
-		 *
-		 * 7a0028b6cd940780227e27011000000300100000030320f1831960
 		 *
 		 * sps:0 profile:122/40 poc:0 ref:4 120x68 FRM 8B8
 		 *       crop:0/0/0/8 VUI 422 1/50 b10 reo:2
@@ -177,8 +166,6 @@ int test_h264_sps(void)
 
 		/* testsrc2 yuv444 400x200
 		 *
-		 * f4000d919b283237f13808800000030080000019078a14cb
-		 *
 		 * sps:0 profile:244/13 poc:0 ref:4 25x13 FRM 8B8
 		 *       crop:0/0/0/8 VUI 444 1/50 b8 reo:2
 		 *
@@ -192,6 +179,24 @@ int test_h264_sps(void)
 				0,0,0,8
 			},
 			.size = {400, 200}
+		},
+
+		/* jellyfish 4K 3840 x 2160
+		 *
+		 * sps:0 profile:100/51 poc:0 ref:3 240x135 FRM 8B8
+		 *       crop:0/0/0/0 VUI 420 1001/60000 b8 reo:1
+		 *
+		 */
+		{
+			.buf =
+			"640033ac2ca400f0010fbff0001000152020202800001f"
+			"4800075307510001cd9400000568bc37e31c1da162d120",
+			.sps = {
+				100,51,0,1,
+				8,0,3,240,135,
+				0,0,0,0
+			},
+			.size = {3840, 2160}
 		},
 	};
 	struct h264_sps sps;
