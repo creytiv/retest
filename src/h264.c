@@ -65,6 +65,26 @@ int test_h264_sps(void)
 		struct vidsz size;
 	} testv[] = {
 
+		/* sony 1920 x 1080 (scaling list)
+		 *
+		 * sps:0 profile:122/41 poc:0 ref:0 120x68 MB-AFF 8B8
+		 *       crop:0/0/0/8 VUI 422 1/50 b10 reo:-1
+		 *
+		 */
+		{
+			.buf =
+			"7a1029b6d420223319c6632321011198ce33191821033a46"
+			"656a6524ade91232141a2634ada441822301502b1a246948"
+			"30402e111208c68c0441284c34f01e0113f2e03c60202028"
+			"0000030008000003019420",
+			.sps = {
+				122,41,0,2,
+				4,0,0,120,68,
+				0,0,0,8
+			},
+			.size = {1920, 1080}
+		},
+
 		/* rv
 		 *
 		 * sps:0 profile:66/52 poc:2 ref:1 120x68 FRM 8B8
@@ -203,10 +223,6 @@ int test_h264_sps(void)
 	size_t i;
 	int e, err;
 
-	static const uint8_t dummy_sps[] = {
-		0x64, 0x00, 0x1f, 0xac, 0xd9, 0x40, 0x50, 0x05
-	};
-
 	for (i=0; i<ARRAY_SIZE(testv); i++) {
 
 		const struct test *test = &testv[i];
@@ -275,15 +291,34 @@ int test_h264_sps(void)
 
 	re_printf("-- Test short read:\n");
 
+	const struct test *test = &testv[0];
 
-	for (i=1; i <= sizeof(dummy_sps); i++) {
+	uint8_t buf[256];
+	size_t max_len = str_len(test->buf) / 2;
+
+	err = str_hex(buf, max_len, test->buf);
+	if (err)
+		return err;
+
+	for (i = 1; i <= max_len; i++) {
 
 		size_t len = i;
 
 		re_printf("short read: %zu bytes\n", len);
 
-		e = h264_sps_decode(&sps, dummy_sps, len);
-		TEST_EQUALS(EBADMSG, e);
+		e = h264_sps_decode(&sps, buf, len);
+
+		switch (e) {
+
+		case EBADMSG:
+		case 0:
+			break;
+
+		default:
+			DEBUG_WARNING("unexpected error code %d (%m)\n",
+				      e, e);
+			return EINVAL;
+		}
 	}
 
  out:
