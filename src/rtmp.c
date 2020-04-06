@@ -545,7 +545,11 @@ static void command_handler(const struct odict *msg, void *arg)
 
 	if (0 == str_casecmp(name, "connect")) {
 
+		const struct odict_entry *entry;
 		uint32_t window_ack_size = 32000;
+
+		entry = odict_lookup(msg, "2");
+		TEST_ASSERT(entry != NULL);
 
 		err = rtmp_control(ep->conn, RTMP_TYPE_WINDOW_ACK_SIZE,
 				   (uint32_t)window_ack_size);
