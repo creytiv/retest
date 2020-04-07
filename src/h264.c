@@ -311,6 +311,7 @@ int test_h264_sps(void)
 		switch (e) {
 
 		case EBADMSG:
+		case EINVAL:
 		case 0:
 			break;
 
