@@ -289,8 +289,6 @@ int test_h264_sps(void)
 		TEST_EQUALS(test->size.h, size.h);
 	}
 
-	re_printf("-- Test short read:\n");
-
 	const struct test *test = &testv[0];
 
 	uint8_t buf[256];
@@ -303,8 +301,6 @@ int test_h264_sps(void)
 	for (i = 1; i <= max_len; i++) {
 
 		size_t len = i;
-
-		re_printf("short read: %zu bytes\n", len);
 
 		e = h264_sps_decode(&sps, buf, len);
 
