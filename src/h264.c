@@ -219,15 +219,17 @@ int test_h264_sps(void)
 			.size = {3840, 2160}
 		},
 	};
+	const struct test *test;
 	struct h264_sps sps;
+	uint8_t buf[256];
 	size_t i;
+	size_t max_len;
 	int e, err;
 
 	for (i=0; i<ARRAY_SIZE(testv); i++) {
 
-		const struct test *test = &testv[i];
+		test = &testv[i];
 		struct h264_sps ref = test->sps;
-		uint8_t buf[256];
 		size_t len = str_len(test->buf)/2;
 		struct vidsz size;
 
@@ -240,15 +242,6 @@ int test_h264_sps(void)
 			return err;
 
 		h264_sps_resolution(&sps, &size);
-
-		re_printf("sps test %zu: %u x %u (%s)\n",
-			  i,
-			  size.w, size.h,
-			  h264_sps_chroma_format_name(sps.chroma_format_idc));
-
-#if 0
-		h264_sps_print(&sps);
-#endif
 
 		TEST_EQUALS(ref.profile_idc, sps.profile_idc);
 
@@ -289,10 +282,8 @@ int test_h264_sps(void)
 		TEST_EQUALS(test->size.h, size.h);
 	}
 
-	const struct test *test = &testv[0];
-
-	uint8_t buf[256];
-	size_t max_len = str_len(test->buf) / 2;
+	test = &testv[0];
+	max_len = str_len(test->buf) / 2;
 
 	err = str_hex(buf, max_len, test->buf);
 	if (err)
