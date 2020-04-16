@@ -67,6 +67,7 @@ static const uint8_t fake_video_packet[CHUNK_SIZE + 8] = {
 };
 
 static const char *fake_stream_name = "sample.mp4";
+static const char *fake_app_inst = "vod";
 
 
 static void endpoint_terminate(struct rtmp_endpoint *ep, int err)
@@ -547,9 +548,14 @@ static void command_handler(const struct odict *msg, void *arg)
 
 		const struct odict_entry *entry;
 		uint32_t window_ack_size = 32000;
+		const char *app;
 
 		entry = odict_lookup(msg, "2");
 		TEST_ASSERT(entry != NULL);
+
+		app = odict_string(entry->u.odict, "app");
+		TEST_STRCMP(fake_app_inst, strlen(fake_app_inst),
+			    app, str_len(app));
 
 		err = rtmp_control(ep->conn, RTMP_TYPE_WINDOW_ACK_SIZE,
 				   (uint32_t)window_ack_size);
@@ -744,8 +750,8 @@ static int test_rtmp_client_server_conn(enum mode mode, bool secure)
 	err = tcp_local_get(srv->ts, &srv_addr);
 	TEST_ERR(err);
 
-	re_snprintf(uri, sizeof(uri), "rtmp%s://%J/vod/foo",
-		    secure ? "s" : "", &srv_addr);
+	re_snprintf(uri, sizeof(uri), "rtmp%s://%J/%s/foo",
+		    secure ? "s" : "", &srv_addr, fake_app_inst);
 
 	err = rtmp_connect(&cli->conn, NULL, uri, cli->tls, estab_handler,
 			   command_handler, close_handler, cli);
