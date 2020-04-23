@@ -33,6 +33,7 @@ int test_fmt_pl(void)
 	const struct pl pl7   = PL("hei");
 	const struct pl pl7_  = PL("Hei");
 	const struct pl pl7__ = PL("Duz");
+	const struct pl pl_empty = PL("");
 
 	/* pl_cmp() */
 	if (EINVAL != pl_cmp(NULL, NULL))
@@ -104,6 +105,14 @@ int test_fmt_pl(void)
 	if (pl0.p != pl_strchr(&pl0, 'r'))
 		goto out;
 	if (NULL != pl_strchr(&pl0, 'B'))
+		goto out;
+
+	/* pl_strrchr() */
+	if (pl0.p + 5 != pl_strrchr(&pl0, 'r'))
+		goto out;
+	if (NULL != pl_strrchr(&pl0, 'B'))
+		goto out;
+	if (NULL != pl_strrchr(&pl_empty, 'r'))
 		goto out;
 
 	return 0;
