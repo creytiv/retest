@@ -87,7 +87,6 @@ static const struct test tests[] = {
 	TEST(test_httpauth_resp),
 	TEST(test_ice_cand),
 	TEST(test_ice_loop),
-	TEST(test_ice_lite),
 	TEST(test_jbuf),
 	TEST(test_json),
 	TEST(test_json_file),

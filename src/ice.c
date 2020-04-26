@@ -196,10 +196,6 @@ static int agent_encode_sdp(struct agent *ag)
 	err |= attr_add(&ag->attr_m, "ice-ufrag", ag->lufrag);
 	err |= attr_add(&ag->attr_m, "ice-pwd", ag->lpwd);
 
-	if (ag->mode == ICE_MODE_LITE) {
-		err |= attr_add(&ag->attr_s, ice_attr_lite, NULL);
-	}
-
 	return err;
 }
 
@@ -227,9 +223,6 @@ static int agent_verify_outgoing_sdp(const struct agent *agent)
 
 	if (agent->mode == ICE_MODE_FULL) {
 		TEST_ASSERT(NULL == attr_find(&agent->attr_s, "ice-lite"));
-	}
-	else {
-		TEST_ASSERT(NULL != attr_find(&agent->attr_s, "ice-lite"));
 	}
 
  out:
@@ -497,9 +490,6 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 				goto out;
 		}
 	}
-	else {
-		TEST_ASSERT(use_turn == false);
-	}
 
 	err = sa_set_str(&agent->laddr, "127.0.0.1", 0);
 	if (err)
@@ -526,6 +516,7 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 	icem_conf(agent->icem)->debug = true;
 #endif
 
+#if 0
 	/* verify Mode and Role using debug strings (temp) */
 	if (mode == ICE_MODE_FULL) {
 		TEST_ASSERT(find_debug_string(agent->icem, "local_mode=Full"));
@@ -533,6 +524,7 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 	else {
 		TEST_ASSERT(find_debug_string(agent->icem, "local_mode=Lite"));
 	}
+#endif
 
 	if (offerer) {
 		TEST_EQUALS(ICE_ROLE_CONTROLLING,
@@ -574,16 +566,6 @@ static int agent_alloc(struct agent **agentp, struct ice_test *it,
 		if (err)
 			goto out;
 	}
-	else { /* Lite mode */
-
-		err = icem_lite_set_default_candidates(agent->icem);
-		if (err)
-			goto out;
-
-		err = send_sdp(agent);
-		if (err)
-			goto out;
-	}
 
  out:
 	if (err)
@@ -609,10 +591,6 @@ static int verify_after_sdp_exchange(struct agent *agent)
 	if (other->mode == ICE_MODE_FULL) {
 		TEST_ASSERT(find_debug_string(agent->icem,
 					      "remote_mode=Full"));
-	}
-	else {
-		TEST_ASSERT(find_debug_string(agent->icem,
-					      "remote_mode=Lite"));
 	}
 
 	/* verify ICE states */
@@ -670,11 +648,6 @@ static int agent_start(struct agent *agent)
 		TEST_EQUALS(agent->n_cand * other->n_cand,
 			    list_count(icem_checkl(agent->icem)));
 	}
-	else {
-		/* Formation of check lists is performed
-		   only by full implementations. */
-		TEST_EQUALS(0, list_count(icem_checkl(agent->icem)));
-	}
 
 	TEST_EQUALS(0, list_count(icem_validl(agent->icem)));
 
@@ -698,9 +671,6 @@ static int agent_verify_completed(struct agent *agent)
 	validc = list_count(icem_validl(agent->icem));
 	if (agent->mode == ICE_MODE_FULL) {
 		TEST_EQUALS(agent->n_cand * other->n_cand, validc);
-	}
-	else {
-		TEST_ASSERT(validc==0 || validc==1);
 	}
 
 	/* verify state of STUN/TURN server */
@@ -984,14 +954,4 @@ int test_ice_cand(void)
 int test_ice_loop(void)
 {
 	return _test_ice_loop(ICE_MODE_FULL, false, ICE_MODE_FULL, false);
-}
-
-
-int test_ice_lite(void)
-{
-	int err = 0;
-
-	err |= _test_ice_loop(ICE_MODE_FULL, false, ICE_MODE_LITE, false);
-
-	return err;
 }
