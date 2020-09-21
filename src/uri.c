@@ -115,15 +115,15 @@ int test_uri_encode(void)
 		  PL("")},
 		 "sip:user:pass@host:5060;transport=udp"
 		},
-		{{PL("http"),
+		{{PL("sip"),
 		  PL("user"),
 		  PL("pass"),
 		  PL("host"), 0,
-		  80,
-		  PL("/test"),
-		  PL(""),
+		  443,
+		  PL("/wss/"),
+		  PL(";transport=wss"),
 		  PL("")},
-		 "http:user:pass@host:80/test"
+		 "sip:user:pass@host:443/wss/;transport=wss"
 		},
 #ifdef HAVE_INET6
 		{{PL("sip"),
