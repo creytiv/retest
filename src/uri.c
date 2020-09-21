@@ -25,6 +25,7 @@ int test_uri(void)
 		"sip:user@81.187.91.2:28481",
 		"sip:81.187.91.2:28481",
 		"sips:81.187.91.2:28481",
+		"sip:192.168.43.83:443/wss/;transport=wss",
 
 		/* RFC 3261 */
 		"sip:alice@atlanta.com",
