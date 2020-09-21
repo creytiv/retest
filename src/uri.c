@@ -111,7 +111,7 @@ int test_uri_encode(void)
 		  5060,
 		  PL(""),
 		  PL(";transport=udp"),
-		  PL("")}, 
+		  PL("")},
 		 "sip:user:pass@host:5060;transport=udp"
 		},
 		{{PL("http"),
@@ -121,7 +121,7 @@ int test_uri_encode(void)
 		  80,
 		  PL("/test"),
 		  PL(""),
-		  PL("")}, 
+		  PL("")},
 		 "http:user:pass@host:80/test"
 		},
 #ifdef HAVE_INET6
