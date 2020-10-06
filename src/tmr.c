@@ -90,3 +90,48 @@ int test_tmr(void)
 
 	return err;
 }
+
+
+int test_tmr_jiffies(void)
+{
+	uint64_t tmr_start, tmr_end, diff;
+	int err = 0;
+
+	if (test_mode != TEST_REGULAR)
+		return ESKIPPED;
+
+	tmr_start = tmr_jiffies();
+	sys_msleep(1);
+	tmr_end = tmr_jiffies();
+	diff = tmr_end - tmr_start;
+
+	TEST_ASSERT(diff >= 1);
+	TEST_ASSERT(diff < 10);
+
+out:
+	return err;
+}
+
+
+int test_tmr_jiffies_usec(void)
+{
+	uint64_t tmr_start, tmr_end, diff;
+	int i;
+	int err = 0;
+
+	if (test_mode != TEST_REGULAR)
+		return ESKIPPED;
+
+	tmr_start = tmr_jiffies_usec();
+	for (i = 0; i<1000;) {
+		++i;
+	}
+	tmr_end = tmr_jiffies_usec();
+	diff = tmr_end - tmr_start;
+
+	TEST_ASSERT(diff >= 1);
+	TEST_ASSERT(diff < 100);
+
+out:
+	return err;
+}

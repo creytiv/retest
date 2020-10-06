@@ -159,6 +159,8 @@ static const struct test tests[] = {
 	TEST(test_tls_certificate),
 #endif
 	TEST(test_tmr),
+	TEST(test_tmr_jiffies),
+	TEST(test_tmr_jiffies_usec),
 	TEST(test_turn),
 	TEST(test_turn_tcp),
 	TEST(test_udp),
@@ -190,6 +192,7 @@ static char datapath[256] = "./data";
 
 static uint32_t timeout_override;
 
+enum test_mode test_mode = TEST_NONE;
 
 static const struct test *find_test(const char *name)
 {
@@ -279,6 +282,8 @@ int test_oom(const char *name, bool verbose)
 	size_t i;
 	const int levels = 64;
 	int err = 0;
+
+	test_mode = TEST_MEMORY;
 
 	(void)re_fprintf(stderr, "oom tests %u levels: \n", levels);
 
@@ -487,6 +492,8 @@ int test_perf(const char *name, bool verbose)
 	unsigned i;
 	(void)verbose;
 
+	test_mode = TEST_PERF;
+
 	if (name) {
 		const struct test *test;
 
@@ -559,6 +566,8 @@ int test_reg(const char *name, bool verbose)
 {
 	int err;
 
+	test_mode = TEST_REGULAR;
+
 	timeout_override = 10000;
 
 	(void)re_fprintf(stderr, "regular tests:       ");
@@ -622,6 +631,8 @@ int test_multithread(void)
 	size_t test_index=0;
 	size_t i;
 	int err = 0;
+
+	test_mode = TEST_THREAD;
 
 	timeout_override = 10000;
 

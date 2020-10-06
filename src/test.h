@@ -4,6 +4,18 @@
  * Copyright (C) 2010 Creytiv.com
  */
 
+enum test_mode {
+	TEST_NONE,
+	TEST_REGULAR,
+	TEST_MEMORY,
+	TEST_PERF,
+	TEST_THREAD
+};
+
+/*
+ * Global test mode
+ */
+extern enum test_mode test_mode;
 
 /*
  * Special negative error code for a skipped test
@@ -218,6 +230,8 @@ int test_sys_rand(void);
 int test_tcp(void);
 int test_telev(void);
 int test_tmr(void);
+int test_tmr_jiffies(void);
+int test_tmr_jiffies_usec(void);
 int test_turn(void);
 int test_turn_tcp(void);
 int test_udp(void);
