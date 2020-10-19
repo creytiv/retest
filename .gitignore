@@ -1,2 +1,8 @@
 build*
 retest
+
+# ctags
+tags
+
+# Vim swp files
+*.swp
