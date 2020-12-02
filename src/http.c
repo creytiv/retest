@@ -269,6 +269,7 @@ static int test_http_loop_base(bool secure)
 	struct sa srv, dns;
 	struct test t;
 	char url[256];
+	char path[256];
 	int err = 0;
 
 	memset(&t, 0, sizeof(t));
@@ -281,7 +282,6 @@ static int test_http_loop_base(bool secure)
 		goto out;
 
 	if (secure) {
-		char path[256];
 
 		re_snprintf(path, sizeof(path), "%s/server-ecdsa.pem",
 			    test_datapath());
@@ -306,6 +306,11 @@ static int test_http_loop_base(bool secure)
 	err = http_client_alloc(&cli, dnsc);
 	if (err)
 		goto out;
+
+#ifdef USE_TLS
+	if (secure)
+		err = http_client_add_ca(cli, path);
+#endif
 
 	(void)re_snprintf(url, sizeof(url),
 			  "http%s://127.0.0.1:%u/index.html",
