@@ -161,7 +161,10 @@ int test_jbuf_adaptive(void)
 
 	for (i=0; i<ARRAY_SIZE(frv); i++) {
 		frv[i] = mem_zalloc(32, NULL);
-		TEST_NOT_EQUALS(NULL, frv[i]);
+		if (frv[i] == NULL) {
+			err = ENOMEM;
+			goto out;
+		}
 	}
 
 	/* Empty list */
