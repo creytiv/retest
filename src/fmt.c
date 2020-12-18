@@ -165,6 +165,52 @@ out:
 }
 
 
+int test_fmt_pl_i64(void)
+{
+	const struct {
+		const struct pl pl;
+		int64_t v;
+	} testv[] = {
+		/* Error cases */
+		{PL("hei"),  0},
+		{PL("abc"),  0},
+		{PL(""),     0},
+		{{NULL, 2},  0},
+		{{"fo", 0},  0},
+		{PL("9223372036854775809"), -9223372036854775807L},
+
+		/* Working cases */
+		{PL("0"),         0},
+		{PL("1"),         1},
+		{PL("-1"),       -1},
+		{PL("123"),     123},
+		{PL("-123"),   -123},
+		{PL("5467"),   5467},
+		{PL("-123"),   -123},
+		{PL("-5467"), -5467},
+		{PL("2147483647"),   2147483647},
+		{PL("2147483648"), 2147483648L},
+		{PL("-2147483648"), -2147483648L},
+		{PL("9223372036854775807"), 9223372036854775807L},
+		{PL("-9223372036854775808"), -9223372036854775807L - 1L},
+	};
+	uint64_t i;
+	int err = 0;
+
+	for (i=0; i<ARRAY_SIZE(testv); i++) {
+		const int64_t v = pl_i64(&testv[i].pl);
+
+		TEST_EQUALS(testv[i].v, v);
+	}
+
+out:
+	if (err)
+		DEBUG_WARNING("failed pl was %r\n", &testv[i].pl);
+
+	return err;
+}
+
+
 int test_fmt_pl_u32(void)
 {
 	const struct {
