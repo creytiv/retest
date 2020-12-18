@@ -136,6 +136,7 @@ int test_fir(void);
 int test_fmt_human_time(void);
 int test_fmt_param(void);
 int test_fmt_pl(void);
+int test_fmt_pl_i32(void);
 int test_fmt_pl_u32(void);
 int test_fmt_pl_u64(void);
 int test_fmt_pl_x3264(void);

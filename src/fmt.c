@@ -121,6 +121,50 @@ int test_fmt_pl(void)
 }
 
 
+int test_fmt_pl_i32(void)
+{
+	const struct {
+		const struct pl pl;
+		int32_t v;
+	} testv[] = {
+		/* Error cases */
+		{PL("hei"),  0},
+		{PL("abc"),  0},
+		{PL(""),     0},
+		{{NULL, 2},  0},
+		{{"fo", 0},  0},
+		{PL("2147483648"), -2147483648},
+		{PL("9223372036854775808"), 0},
+
+		/* Working cases */
+		{PL("0"),         0},
+		{PL("1"),         1},
+		{PL("-1"),       -1},
+		{PL("123"),     123},
+		{PL("-123"),   -123},
+		{PL("5467"),   5467},
+		{PL("-123"),   -123},
+		{PL("-5467"), -5467},
+		{PL("2147483647"),   2147483647},
+		{PL("-2147483648"), -2147483648},
+	};
+	uint32_t i;
+	int err = 0;
+
+	for (i=0; i<ARRAY_SIZE(testv); i++) {
+		const int32_t v = pl_i32(&testv[i].pl);
+
+		TEST_EQUALS(testv[i].v, v);
+	}
+
+out:
+	if (err)
+		DEBUG_WARNING("failed pl was %r\n", &testv[i].pl);
+
+	return err;
+}
+
+
 int test_fmt_pl_u32(void)
 {
 	const struct {
