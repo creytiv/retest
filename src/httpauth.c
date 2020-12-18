@@ -163,7 +163,8 @@ int test_httpauth_resp(void)
 			 PL("sip:creytiv.com;transport=udp"),
 			 PL("00000002"),
 			 PL("66a7a21e46ad8edd"),
-			 PL("auth")},
+			 PL("auth"),
+			 NULL},
 			PL("REGISTER"),
 			"\x1c\x0a\x98\x61\x5b\x7b\x37\xc6"
 			"\x94\x51\xae\xb6\x4b\x2f\x11\x02",
@@ -172,7 +173,7 @@ int test_httpauth_resp(void)
 		{
 			"Digest bogus tull",
 			{PL_INIT, PL_INIT, PL_INIT, PL_INIT,
-			 PL_INIT, PL_INIT, PL_INIT, PL_INIT},
+			 PL_INIT, PL_INIT, PL_INIT, PL_INIT, NULL},
 			PL_INIT,
 			"",
 			EBADMSG
