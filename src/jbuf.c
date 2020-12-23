@@ -183,7 +183,6 @@ int test_jbuf_adaptive(void)
 
 	hdr.seq = 161;
 	hdr.ts = 20 * 8;
-	sys_msleep(20);
 	err = jbuf_put(jb, &hdr, frv[1]);
 	TEST_ERR(err);
 
@@ -208,25 +207,21 @@ int test_jbuf_adaptive(void)
 	DEBUG_INFO("test frame: Four frames\n");
 	hdr.seq = 320;
 	hdr.ts += 20 * 8;
-	sys_msleep(20);
 	err = jbuf_put(jb, &hdr, frv[0]);
 	TEST_ERR(err);
 
 	hdr.seq = 480;
 	hdr.ts += 20 * 8;
-	sys_msleep(20);
 	err = jbuf_put(jb, &hdr, frv[1]);
 	TEST_ERR(err);
 
 	hdr.seq = 490;
 	hdr.ts += 20 * 8;
-	sys_msleep(20);
 	err = jbuf_put(jb, &hdr, frv[2]);
 	TEST_ERR(err);
 
 	hdr.seq = 491;
 	hdr.ts += 20 * 8;
-	sys_msleep(20);
 	err = jbuf_put(jb, &hdr, frv[3]);
 	TEST_ERR(err);
 
