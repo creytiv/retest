@@ -230,6 +230,7 @@ int test_stun(void);
 int test_sys_div(void);
 int test_sys_endian(void);
 int test_sys_rand(void);
+int test_sys_fs_isdir(void);
 int test_tcp(void);
 int test_telev(void);
 int test_tmr(void);
