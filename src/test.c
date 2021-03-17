@@ -160,6 +160,7 @@ static const struct test tests[] = {
 	TEST(test_tls_ec),
 	/*TEST(test_tls_selfsigned),*/
 	TEST(test_tls_certificate),
+	TEST(test_tls_false_cafile_path),
 #endif
 	TEST(test_tmr),
 	TEST(test_tmr_jiffies),

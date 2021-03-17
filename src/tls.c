@@ -370,3 +370,34 @@ int test_tls_certificate(void)
 	mem_deref(tls);
 	return err;
 }
+
+
+int test_tls_false_cafile_path(void)
+{
+	int err = 0;
+	struct tls *tls = NULL;
+	const char *cafile_wrong = "/some/path/to/wrong/file.crt";
+	const char *capath_wrong = "/some/path/to/nothing";
+
+	err = tls_alloc(&tls, TLS_METHOD_SSLV23, NULL, NULL);
+	if (err)
+		goto out;
+
+	err = tls_add_cafile_path(tls, NULL, NULL);
+	TEST_EQUALS(EINVAL, err);
+
+	err = tls_add_cafile_path(tls, cafile_wrong, NULL);
+	TEST_EQUALS(ENOENT, err);
+
+	err = tls_add_cafile_path(tls, NULL, capath_wrong);
+	TEST_EQUALS(ENOENT, err);
+
+	err = tls_add_cafile_path(tls, cafile_wrong, capath_wrong);
+	TEST_EQUALS(ENOENT, err);
+
+	err = 0;
+
+  out:
+	mem_deref(tls);
+	return err;
+}

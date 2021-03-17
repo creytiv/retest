@@ -256,6 +256,7 @@ int test_tls(void);
 int test_tls_ec(void);
 int test_tls_selfsigned(void);
 int test_tls_certificate(void);
+int test_tls_false_cafile_path(void);
 #endif
 
 #ifdef USE_TLS
