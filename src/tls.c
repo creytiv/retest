@@ -390,10 +390,10 @@ int test_tls_false_cafile_path(void)
 	TEST_EQUALS(ENOENT, err);
 
 	err = tls_add_cafile_path(tls, NULL, capath_wrong);
-	TEST_EQUALS(ENOENT, err);
+	TEST_EQUALS(ENOTDIR, err);
 
 	err = tls_add_cafile_path(tls, cafile_wrong, capath_wrong);
-	TEST_EQUALS(ENOENT, err);
+	TEST_EQUALS(ENOTDIR, err);
 
 	err = 0;
 
