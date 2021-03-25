@@ -130,6 +130,7 @@ static const struct test tests[] = {
 	TEST(test_sdp_extmap),
 	TEST(test_sha1),
 	TEST(test_sip_addr),
+	TEST(test_sip_drequestf),
 	TEST(test_sip_apply),
 	TEST(test_sip_hdr),
 	TEST(test_sip_param),

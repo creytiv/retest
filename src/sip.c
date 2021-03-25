@@ -689,3 +689,52 @@ int test_sip_hdr(void)
 
 	return err;
 }
+
+
+/** SIP Authenticated Request */
+struct sip_req {
+	struct sip_request *req;
+	struct sip_auth *auth;
+	struct sip_dialog *dlg;
+	struct sip *sip;
+};
+
+int test_sip_drequestf(void)
+{
+	struct sip_req *sr;
+	struct sa laddr;
+	int err;
+
+	sr = mem_zalloc(sizeof(*sr), NULL);
+	if (!sr)
+		return ENOMEM;
+
+	err = sip_dialog_alloc(&sr->dlg, "sip:127.0.0.1;transport=UDP",
+			       "sip:test@127.0.0.1", NULL,
+			       "sip:test@127.0.0.1", NULL, 0);
+	TEST_ERR(err);
+
+	err = sip_auth_alloc(&sr->auth, NULL, NULL, false);
+	TEST_ERR(err);
+
+	err = sip_alloc(&sr->sip, NULL, 32, 32, 32, "retest", NULL, NULL);
+	TEST_ERR(err);
+
+	err  = sa_set_str(&laddr,  "127.0.0.1", 0);
+	TEST_ERR(err);
+
+	err  = sip_transp_add(sr->sip, SIP_TRANSP_UDP, &laddr);
+	TEST_ERR(err);
+
+	err = sip_drequestf(&sr->req, sr->sip, true, "REGISTER", sr->dlg, 0,
+			    sr->auth, NULL, NULL, NULL, "");
+	TEST_ERR(err);
+
+out:
+	mem_deref(sr->dlg);
+	mem_deref(sr->auth);
+	mem_deref(sr->sip);
+	mem_deref(sr);
+
+	return err;
+}
