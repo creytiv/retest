@@ -161,3 +161,31 @@ int test_sys_fs_isdir(void)
  out:
 	return err;
 }
+
+
+int test_sys_fs_isfile(void)
+{
+	int err = 0;
+	bool ret;
+	char path[256];
+	char file[256];
+	char *wpath = "/some/path/to/nothing";
+
+	re_snprintf(path, sizeof(path), "%s", test_datapath());
+	re_snprintf(file, sizeof(file), "%s/menu.json", test_datapath());
+
+	ret = fs_isfile(file);
+	TEST_EQUALS(true, ret);
+
+	ret = fs_isfile(NULL);
+	TEST_EQUALS(false, ret);
+
+	ret = fs_isfile(wpath);
+	TEST_EQUALS(false, ret);
+
+	ret = fs_isfile(path);
+	TEST_EQUALS(false, ret);
+
+ out:
+	return err;
+}
