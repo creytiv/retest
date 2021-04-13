@@ -136,6 +136,9 @@ static const struct test tests[] = {
 	TEST(test_sip_param),
 	TEST(test_sip_parse),
 	TEST(test_sip_via),
+#ifdef USE_TLS
+	TEST(test_sip_transp_add_client_cert),
+#endif
 	TEST(test_sipevent),
 	TEST(test_sipreg_udp),
 	TEST(test_sipreg_tcp),

@@ -213,6 +213,9 @@ int test_sip_msg(void);
 int test_sip_param(void);
 int test_sip_parse(void);
 int test_sip_via(void);
+#ifdef USE_TLS
+int test_sip_transp_add_client_cert(void);
+#endif
 int test_sipevent(void);
 int test_sipreg_udp(void);
 int test_sipreg_tcp(void);

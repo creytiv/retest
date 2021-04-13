@@ -738,3 +738,92 @@ out:
 
 	return err;
 }
+
+
+#ifdef USE_TLS
+struct sip_transp_tls {
+	struct sip *sip;
+	struct tls *tls;
+	struct uri uri;
+	const char *ccert_cn;
+};
+
+
+int test_sip_transp_add_client_cert(void)
+{
+	struct sip_transp_tls *stt;
+	struct sa laddr;
+	int err;
+	char clientcert[256];
+	char cafile[256];
+
+	const char *user    = "abcd";
+	const char *scheme  = "sip";
+	const char *host    = "localhost";
+	const uint16_t port = 5061;
+
+	memset(clientcert, 0, sizeof(clientcert));
+	(void)re_snprintf(clientcert, sizeof(clientcert), "%s/client.pem",
+		test_datapath());
+
+	stt = mem_zalloc(sizeof(*stt), NULL);
+	if (!stt)
+		return ENOMEM;
+
+	pl_set_str(&stt->uri.user, user);
+	pl_set_str(&stt->uri.scheme, scheme);
+	pl_set_str(&stt->uri.host, host);
+	stt->uri.port = port;
+
+
+	err = sa_set_str(&laddr, "127.0.0.1", 0);
+	TEST_ERR(err);
+
+	err = tls_alloc(&stt->tls, TLS_METHOD_SSLV23, NULL, NULL);
+	TEST_ERR(err);
+
+	(void)re_snprintf(cafile, sizeof(cafile), "%s/server-ecdsa.pem",
+		test_datapath());
+
+	err = tls_add_ca(stt->tls, cafile);
+	TEST_ERR(err);
+
+	err = sip_alloc(&stt->sip, NULL, 32, 32, 32, "retest", NULL, NULL);
+	TEST_ERR(err);
+
+	err = sip_transp_add(stt->sip, SIP_TRANSP_TLS, &laddr, stt->tls);
+	TEST_ERR(err);
+
+	/* actuall test cases */
+	err = sip_transp_add_ccert(NULL, &stt->uri, clientcert);
+	if (err == EINVAL) {
+		err = 0;
+		goto out;
+	}
+	TEST_ERR(err);
+
+	err = sip_transp_add_ccert(stt->sip, NULL, clientcert);
+	if (err == EINVAL) {
+		err = 0;
+		goto out;
+	}
+	TEST_ERR(err);
+
+	err = sip_transp_add_ccert(stt->sip, &stt->uri, NULL);
+	if (err == EINVAL) {
+		err = 0;
+		goto out;
+	}
+	TEST_ERR(err);
+
+	err = sip_transp_add_ccert(stt->sip, &stt->uri, clientcert);
+	TEST_EQUALS(0, err);
+
+ out:
+	mem_deref(stt->sip);
+	mem_deref(stt->tls);
+	mem_deref(stt);
+
+	return err;
+}
+#endif
