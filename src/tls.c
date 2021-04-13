@@ -411,3 +411,114 @@ int test_tls_false_cafile_path(void)
 	mem_deref(tls);
 	return err;
 }
+
+
+int test_tls_cli_conn_change_cert(void)
+{
+	struct tls_test tt;
+	struct sa srv;
+	int err;
+	char clientcert[256];
+	char clientcert_cn[256];
+	char *exp_clientcert_cn = "Mr Retest Client Cert";
+
+	memset(&tt, 0, sizeof(tt));
+
+
+	tt.keytype = TLS_KEYTYPE_RSA;
+
+	err = sa_set_str(&srv, "127.0.0.1", 0);
+	if (err)
+		goto out;
+
+	err = tls_alloc(&tt.tls, TLS_METHOD_SSLV23, NULL, NULL);
+	if (err)
+		goto out;
+
+	tls_set_verify_client(tt.tls);
+
+	err = tls_set_certificate(tt.tls, test_certificate_rsa,
+		strlen(test_certificate_rsa));
+	if (err)
+		goto out;
+
+	err = tcp_listen(&tt.ts, &srv, server_conn_handler, &tt);
+	if (err)
+		goto out;
+
+	err = tcp_sock_local_get(tt.ts, &srv);
+	if (err)
+		goto out;
+
+	err = tcp_connect(&tt.tc_cli, &srv, client_estab_handler,
+			  client_recv_handler, client_close_handler, &tt);
+	if (err)
+		goto out;
+
+	err = tls_start_tcp(&tt.sc_cli, tt.tls, tt.tc_cli, 0);
+	if (err)
+		goto out;
+
+	/* actuall test cases*/
+	err = tls_conn_change_cert(tt.sc_cli, NULL);
+	TEST_EQUALS(EINVAL, err);
+
+	err = tls_conn_change_cert(NULL, clientcert);
+	TEST_EQUALS(EINVAL, err);
+
+	memset(clientcert, 0, sizeof(clientcert));
+	(void)re_snprintf(clientcert, sizeof(clientcert),
+		"%s/not_a_file.pem", test_datapath());
+
+	err = tls_conn_change_cert(tt.sc_cli, clientcert);
+	TEST_EQUALS(EINVAL, err);
+
+	memset(clientcert, 0, sizeof(clientcert));
+	(void)re_snprintf(clientcert, sizeof(clientcert),
+		"%s/client_wrongkey.pem", test_datapath());
+
+	err = tls_conn_change_cert(tt.sc_cli, clientcert);
+	TEST_EQUALS(EKEYREJECTED, err);
+
+	memset(clientcert, 0, sizeof(clientcert));
+	(void)re_snprintf(clientcert, sizeof(clientcert), "%s/client.pem",
+		test_datapath());
+
+	err = tls_conn_change_cert(tt.sc_cli, clientcert);
+	if (err)
+		goto out;
+
+	err = re_main_timeout(800);
+	if (err)
+		goto out;
+
+	err = tls_peer_common_name(tt.sc_srv, clientcert_cn,
+		sizeof(clientcert_cn));
+	if (err) {
+		if (!tt.sc_srv) {
+			TEST_EQUALS(EINVAL, err);
+			err = 0;
+			goto out;
+		}
+	}
+
+	TEST_STRCMP(exp_clientcert_cn, strlen(exp_clientcert_cn),
+		clientcert_cn, strlen(clientcert_cn));
+
+	if (tt.err) {
+		err = tt.err;
+		goto out;
+	}
+
+ out:
+	/* NOTE: close context first */
+	mem_deref(tt.tls);
+
+	mem_deref(tt.sc_cli);
+	mem_deref(tt.sc_srv);
+	mem_deref(tt.tc_cli);
+	mem_deref(tt.tc_srv);
+	mem_deref(tt.ts);
+
+	return err;
+}
