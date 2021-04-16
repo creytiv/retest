@@ -349,11 +349,17 @@ int test_tls_certificate(void)
 		"\xAE\xDA\x8A\xEC\xE5\xF6\x72\x1A\x07\xFE"
 		"\x4B\xA9\xF0\x1B\x71\x67\xA5\xC9\xBB\x48";
 	uint8_t fp[20];
+	struct mbuf *mb = NULL;
 	int err;
 
 	err = tls_alloc(&tls, TLS_METHOD_SSLV23, NULL, NULL);
 	if (err)
 		goto out;
+
+	mb = mbuf_alloc(20);
+	TEST_NOT_EQUALS(NULL, mb);
+	err = tls_get_subject(tls, mb);
+	TEST_EQUALS(ENOENT, err);
 
 	err = tls_set_certificate(tls, test_certificate_ecdsa,
 				  strlen(test_certificate_ecdsa));
@@ -366,8 +372,12 @@ int test_tls_certificate(void)
 	TEST_MEMCMP(test_fingerprint, sizeof(test_fingerprint),
 		    fp, sizeof(fp));
 
+	err = tls_get_subject(tls, mb);
+	TEST_EQUALS(0, err);
+
  out:
 	mem_deref(tls);
+	mem_deref(mb);
 	return err;
 }
 
