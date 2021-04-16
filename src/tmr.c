@@ -115,7 +115,7 @@ out:
 
 int test_tmr_jiffies_usec(void)
 {
-	uint64_t tmr_start, tmr_end, diff;
+	uint64_t tmr_start, diff;
 	int i;
 	int err = 0;
 
@@ -123,11 +123,9 @@ int test_tmr_jiffies_usec(void)
 		return ESKIPPED;
 
 	tmr_start = tmr_jiffies_usec();
-	for (i = 0; i<1000;) {
-		++i;
-	}
-	tmr_end = tmr_jiffies_usec();
-	diff = tmr_end - tmr_start;
+	diff = 0;
+	for (i = 0; i < 100000 && !diff; i++)
+		diff = tmr_jiffies_usec() - tmr_start;
 
 	TEST_ASSERT(diff >= 1);
 	TEST_ASSERT(diff < 100);
