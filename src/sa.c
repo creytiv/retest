@@ -72,7 +72,17 @@ int test_sa_cmp(void)
 			"::ffff:208.68.208.201",                   3478,
 			"208.68.208.201",                          3478,
 			true
-		}
+		},
+		{
+			"fe80::215:58ff:fe2d:90ab", 3333,
+			"fe80:0000:0000:0000:0215:58ff:fe2d:90ab", 3333,
+			true
+		},
+		{
+			"fe80::215:58ff:fe2d:90ab", 3333,
+			"fe80:0000:0000:0000:1215:58ff:fe2d:90ab", 3333,
+			false
+		},
 #endif
 	};
 	size_t i;
@@ -219,6 +229,11 @@ int test_sa_class(void)
 				      i, testv[i].addr, testv[i].ll, ll);
 			err = EINVAL;
 			goto out;
+		}
+
+		if (ll && sa_af(&sa)==AF_INET6) {
+			sa_set_scopeid(&sa, 2);
+			TEST_EQUALS(2, sa_scopeid(&sa));
 		}
 
 		any = sa_is_any(&sa);
