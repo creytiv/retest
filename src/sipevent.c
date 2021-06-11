@@ -308,9 +308,10 @@ static void destructor(void *data)
 }
 
 
-static int agent_alloc(struct agent **agp, const char *name)
+static int agent_alloc(struct agent **agp, const char *name,
+		const struct sa *laddr)
 {
-	struct sa laddr;
+	struct sa sa;
 	struct agent *ag;
 	int err;
 
@@ -325,12 +326,11 @@ static int agent_alloc(struct agent **agp, const char *name)
 	if (err)
 		goto out;
 
-	(void)sa_set_str(&laddr, "127.0.0.1", 0);
-	err = sip_transp_add(ag->sip, SIP_TRANSP_UDP, &laddr);
+	err = sip_transp_add(ag->sip, SIP_TRANSP_UDP, laddr);
 	if (err)
 		goto out;
 
-	err = sip_transp_laddr(ag->sip, &laddr, SIP_TRANSP_UDP, NULL);
+	err = sip_transp_laddr(ag->sip, &sa, SIP_TRANSP_UDP, NULL);
 	if (err)
 		goto out;
 
@@ -339,8 +339,7 @@ static int agent_alloc(struct agent **agp, const char *name)
 	if (err)
 		goto out;
 
-	re_snprintf(ag->uri, sizeof(ag->uri),
-		    "sip:%s@127.0.0.1:%u", name, sa_port(&laddr));
+	re_snprintf(ag->uri, sizeof(ag->uri), "sip:%s@%J", name, &sa);
 
 #if 0
 	re_printf("agent %s (%s)\n", name, ag->uri);
@@ -369,13 +368,13 @@ static int agent_subscribe(struct agent *ag, struct agent *peer)
 }
 
 
-int test_sipevent(void)
+static int do_sipevent(struct sa *laddr)
 {
 	struct agent *a = NULL, *b = NULL;
 	int err = 0;
 
-	err |= agent_alloc(&a, "a");
-	err |= agent_alloc(&b, "b");
+	err |= agent_alloc(&a, "a", laddr);
+	err |= agent_alloc(&b, "b", laddr);
 	if (err)
 		goto out;
 
@@ -405,5 +404,25 @@ int test_sipevent(void)
 	mem_deref(b);
 	mem_deref(a);
 
+	return err;
+}
+
+
+int test_sipevent(void)
+{
+	int err;
+	struct sa laddr;
+
+	err = sa_set_str(&laddr, "127.0.0.1", 0);
+	TEST_ERR(err);
+
+	err = do_sipevent(&laddr);
+	TEST_ERR(err);
+
+	err = net_if_getlinklocal(NULL, AF_INET6, &laddr);
+	TEST_ERR(err);
+
+	err = do_sipevent(&laddr);
+out:
 	return err;
 }
