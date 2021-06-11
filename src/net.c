@@ -40,3 +40,20 @@ int test_net_dst_source_addr_get(void)
 out:
 	return err;
 }
+
+
+int test_net_if(void)
+{
+	struct sa ip;
+	int err;
+	char ifname[255];
+
+	sa_set_str(&ip, "127.0.0.1", 0);
+
+	err = net_if_getname(ifname, sizeof(ifname), AF_INET, &ip);
+	TEST_ERR(err);
+	TEST_ASSERT(str_isset(ifname));
+
+out:
+	return err;
+}

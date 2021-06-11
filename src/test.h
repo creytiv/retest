@@ -187,6 +187,7 @@ int test_mem(void);
 int test_mem_reallocarray(void);
 int test_mem_secure(void);
 int test_mqueue(void);
+int test_net_if(void);
 int test_net_dst_source_addr_get(void);
 int test_odict(void);
 int test_odict_array(void);
