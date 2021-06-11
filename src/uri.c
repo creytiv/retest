@@ -30,8 +30,7 @@ int test_uri(void)
 		/* RFC 3261 */
 		"sip:alice@atlanta.com",
 		"sip:alice:secretword@atlanta.com;transport=tcp",
-		"sips:alice@atlanta.com?subject=project%20"
-		   "&priority=urgent",
+		"sips:alice@atlanta.com?subject=project%20&priority=urgent",
 		"sip:+1-212-555-1212:1234@gateway.com;user=phone",
 		"sips:1212@gateway.com",
 		"sip:alice@192.0.2.4",
