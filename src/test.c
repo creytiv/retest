@@ -147,6 +147,7 @@ static const struct test tests[] = {
 	TEST(test_sipreg_tls),
 #endif
 	TEST(test_sipsess),
+	TEST(test_sipsess_blind_transfer),
 	TEST(test_srtp),
 	TEST(test_srtcp),
 	TEST(test_srtp_gcm),

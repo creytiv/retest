@@ -228,6 +228,7 @@ int test_sipreg_tcp(void);
 int test_sipreg_tls(void);
 #endif
 int test_sipsess(void);
+int test_sipsess_blind_transfer(void);
 int test_srtp(void);
 int test_srtcp(void);
 int test_srtp_gcm(void);

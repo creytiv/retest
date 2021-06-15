@@ -20,6 +20,7 @@ struct test {
 	struct sipsess *b;
 	bool estab_a;
 	bool estab_b;
+	bool blind_transfer;
 	int err;
 };
 
@@ -117,6 +118,39 @@ static void conn_handler(const struct sip_msg *msg, void *arg)
 }
 
 
+static void conn_transfer_handler(const struct sip_msg *msg, void *arg)
+{
+	struct test *test = arg;
+	int err = 0;
+
+	if (test->blind_transfer) {
+		conn_handler(msg, arg);
+	}
+	else {
+		err = sip_replyf(test->sip, msg, 302, "Moved Temporarily",
+			"Contact: \"alt retest\" "
+			"<sip:127.0.0.1:8888>\r\n\r\n");
+		if (err) {
+			abort_test(test, err);
+		}
+	}
+
+	return;
+}
+
+
+static void redirect_handler(const struct sip_msg *msg, const char *uri,
+	void *arg)
+{
+	struct test *test = arg;
+
+	(void) msg;
+	(void) uri;
+
+	test->blind_transfer = true;
+}
+
+
 int test_sipsess(void)
 {
 	struct test test;
@@ -173,6 +207,93 @@ int test_sipsess(void)
 	}
 
 	/* okay here -- verify */
+	TEST_ASSERT(test.estab_a);
+	TEST_ASSERT(test.estab_b);
+
+ out:
+	test.a = mem_deref(test.a);
+	test.b = mem_deref(test.b);
+
+	sipsess_close_all(test.sock);
+	test.sock = mem_deref(test.sock);
+
+	sip_close(test.sip, false);
+	test.sip = mem_deref(test.sip);
+
+#ifndef WIN32
+	/* Restore stderr */
+	freopen("/dev/tty", "w", stderr);
+#endif
+
+	return err;
+}
+
+
+int test_sipsess_blind_transfer(void)
+{
+	struct test test;
+	struct sa laddr, altaddr;
+	char to_uri[256];
+	int err;
+	uint16_t port;
+
+	memset(&test, 0, sizeof(test));
+
+#ifndef WIN32
+	/* slurp warnings from SIP (todo: temp) */
+	(void)freopen("/dev/null", "w", stderr);
+#endif
+
+	err = sip_alloc(&test.sip, NULL, 32, 32, 32,
+			"retest", exit_handler, NULL);
+	if (err)
+		goto out;
+
+	(void)sa_set_str(&laddr, "127.0.0.1", 0);
+	err = sip_transp_add(test.sip, SIP_TRANSP_UDP, &laddr);
+	if (err)
+		goto out;
+
+	err = sip_transp_laddr(test.sip, &laddr, SIP_TRANSP_UDP, NULL);
+	if (err)
+		goto out;
+
+	port = sa_port(&laddr);
+
+	err = sipsess_listen(&test.sock, test.sip, 32, conn_transfer_handler,
+		&test);
+	if (err)
+		goto out;
+
+	(void)sa_set_str(&altaddr, "127.0.0.1", 8888);
+	err = sip_transp_add(test.sip, SIP_TRANSP_UDP, &altaddr);
+
+	/* Connect to "b" */
+	(void)re_snprintf(to_uri, sizeof(to_uri), "sip:b@127.0.0.1:%u", port);
+	err = sipsess_connect(&test.a, test.sock, to_uri, NULL,
+			      "sip:a@127.0.0.1", "a", NULL, 0,
+			      "application/sdp", NULL, NULL, NULL, false,
+			      offer_handler, answer_handler, NULL,
+			      estab_handler_a, NULL, NULL,
+			      close_handler, &test, NULL);
+	if (err)
+		goto out;
+
+	err = sipsess_set_redirect_handler(test.a, redirect_handler);
+	if (err)
+		goto out;
+
+	err = re_main_timeout(200);
+	if (err)
+		goto out;
+
+	if (test.err) {
+		err = test.err;
+		goto out;
+	}
+
+	/* okay here -- verify */
+	TEST_ASSERT(test.blind_transfer);
 	TEST_ASSERT(test.estab_a);
 	TEST_ASSERT(test.estab_b);
 
