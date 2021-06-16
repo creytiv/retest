@@ -699,19 +699,24 @@ struct sip_req {
 	struct sip *sip;
 };
 
-int test_sip_drequestf(void)
+
+static int do_sip_drequestf(struct sa *laddr)
 {
 	struct sip_req *sr;
-	struct sa laddr;
 	int err;
+	char uri[64];
+	char touri[64];
 
 	sr = mem_zalloc(sizeof(*sr), NULL);
 	if (!sr)
 		return ENOMEM;
 
-	err = sip_dialog_alloc(&sr->dlg, "sip:127.0.0.1;transport=UDP",
-			       "sip:test@127.0.0.1", NULL,
-			       "sip:test@127.0.0.1", NULL, 0);
+	err  = re_snprintf(uri, 64, "sip:%J;transport=UDP", laddr);
+	err |= re_snprintf(touri, 64, "sip:test@%J", laddr);
+
+	err = sip_dialog_alloc(&sr->dlg, uri,
+			       touri, NULL,
+			       touri, NULL, 0);
 	TEST_ERR(err);
 
 	err = sip_auth_alloc(&sr->auth, NULL, NULL, false);
@@ -720,10 +725,7 @@ int test_sip_drequestf(void)
 	err = sip_alloc(&sr->sip, NULL, 32, 32, 32, "retest", NULL, NULL);
 	TEST_ERR(err);
 
-	err  = sa_set_str(&laddr,  "127.0.0.1", 0);
-	TEST_ERR(err);
-
-	err  = sip_transp_add(sr->sip, SIP_TRANSP_UDP, &laddr);
+	err  = sip_transp_add(sr->sip, SIP_TRANSP_UDP, laddr);
 	TEST_ERR(err);
 
 	err = sip_drequestf(&sr->req, sr->sip, true, "REGISTER", sr->dlg, 0,
@@ -736,6 +738,38 @@ out:
 	mem_deref(sr->sip);
 	mem_deref(sr);
 
+	return err;
+}
+
+
+int test_sip_drequestf(void)
+{
+	int err;
+	struct sa laddr;
+
+	err = sa_set_str(&laddr, "127.0.0.1", 0);
+	TEST_ERR(err);
+
+	err = do_sip_drequestf(&laddr);
+	TEST_ERR(err);
+
+out:
+	return err;
+}
+
+
+int test_sip_drequestf_network(void)
+{
+	int err;
+	struct sa laddr;
+
+	err = net_if_getlinklocal(NULL, AF_INET6, &laddr);
+	TEST_ERR(err);
+
+	err = do_sip_drequestf(&laddr);
+	TEST_ERR(err);
+
+out:
 	return err;
 }
 

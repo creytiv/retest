@@ -289,6 +289,7 @@ extern const char test_certificate_ecdsa[];
 /* Network specific tests */
 int  test_network(const char *name, bool verbose);
 int  test_sipevent_network(void);
+int  test_sip_drequestf_network(void);
 
 /* High-level API */
 int  test_reg(const char *name, bool verbose);

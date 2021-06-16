@@ -202,6 +202,7 @@ static const struct test tests[] = {
 
 static const struct test tests_network[] = {
 	TEST(test_sipevent_network),
+	TEST(test_sip_drequestf_network),
 };
 
 
