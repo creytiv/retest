@@ -417,7 +417,16 @@ int test_sipevent(void)
 	TEST_ERR(err);
 
 	err = do_sipevent(&laddr);
-	TEST_ERR(err);
+
+out:
+	return err;
+}
+
+
+int test_sipevent_network(void)
+{
+	int err;
+	struct sa laddr;
 
 	err = net_if_getlinklocal(NULL, AF_INET6, &laddr);
 	TEST_ERR(err);

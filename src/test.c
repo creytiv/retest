@@ -200,6 +200,11 @@ static const struct test tests[] = {
 };
 
 
+static const struct test tests_network[] = {
+	TEST(test_sipevent_network),
+};
+
+
 #ifdef DATA_PATH
 static char datapath[256] = DATA_PATH;
 #else
@@ -900,4 +905,37 @@ void test_set_datapath(const char *path)
 const char *test_datapath(void)
 {
 	return datapath;
+}
+
+
+int  test_network(const char *name, bool verbose)
+{
+	size_t i;
+	int err;
+	const struct test *test;
+	(void) verbose;
+
+	(void)re_fprintf(stderr, "network tests\n");
+
+	for (i=0; i<ARRAY_SIZE(tests_network); i++) {
+
+		test = &tests_network[i];
+		if (str_isset(name) && test->name)
+			continue;
+
+		(void)re_fprintf(stderr, "  %-24s: ", test->name);
+
+		if (test->exec)
+			err = test->exec();
+
+		if (err) {
+			DEBUG_WARNING("  %-24s: NOK: %m\n", test->name, err);
+			break;
+		}
+		else {
+			(void)re_fprintf(stderr, "\x1b[32mOK\x1b[;m\t\n");
+		}
+	}
+
+	return 0;
 }

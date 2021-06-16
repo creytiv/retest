@@ -41,6 +41,7 @@ static void usage(void)
 	(void)re_fprintf(stderr, "\ntest group options:\n");
 	(void)re_fprintf(stderr, "\t-r        Run regular tests\n");
 	(void)re_fprintf(stderr, "\t-o        Run OOM memory tests\n");
+	(void)re_fprintf(stderr, "\t-n        Run network tests\n");
 	(void)re_fprintf(stderr, "\t-p        Run performance tests\n");
 	(void)re_fprintf(stderr, "\t-t        Run tests in multi-threads\n");
 	(void)re_fprintf(stderr, "\t-a        Run all tests (default)\n");
@@ -69,6 +70,7 @@ int main(int argc, char *argv[])
 	struct memstat mstat;
 	bool do_reg = false;
 	bool do_oom = false;
+	bool do_net = false;
 	bool do_perf = false;
 	bool do_all = true;    /* run all tests is default */
 	bool do_list = false;
@@ -88,7 +90,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "hropaltvm:d:");
+		const int c = getopt(argc, argv, "hronpaltvm:d:");
 		if (0 > c)
 			break;
 
@@ -106,6 +108,11 @@ int main(int argc, char *argv[])
 
 		case 'o':
 			do_oom = true;
+			do_all = false;
+			break;
+
+		case 'n':
+			do_net = true;
 			do_all = false;
 			break;
 
@@ -168,6 +175,7 @@ int main(int argc, char *argv[])
 	(void)argv;
 	do_reg = true;
 	do_oom = true;
+	do_net = true;
 	do_perf = true;
 #endif
 
@@ -202,6 +210,7 @@ int main(int argc, char *argv[])
 	if (do_all) {
 		do_reg = true;
 		do_oom = true;
+		do_net = true;
 		do_thread = true;
 	}
 
@@ -229,6 +238,12 @@ int main(int argc, char *argv[])
 
 	if (do_oom) {
 		err = test_oom(name, verbose);
+		if (err)
+			(void)re_fprintf(stderr, "Failed (%m)\n", err);
+	}
+
+	if (do_net) {
+		err = test_network(name, verbose);
 		if (err)
 			(void)re_fprintf(stderr, "Failed (%m)\n", err);
 	}
