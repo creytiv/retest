@@ -22,6 +22,10 @@ extern enum test_mode test_mode;
  */
 #define ESKIPPED (-1000)
 
+#define TEST_EINVAL(func, ...)					\
+	err = func(__VA_ARGS__);				\
+	if (err != EINVAL)					\
+		goto out;
 
 #define TEST_EQUALS(expected, actual)				\
 	if ((expected) != (actual)) {				\
@@ -157,6 +161,7 @@ int test_hash(void);
 int test_hmac_sha1(void);
 int test_hmac_sha256(void);
 int test_http(void);
+int test_http_client_set_tls(void);
 int test_http_loop(void);
 #ifdef USE_TLS
 int test_https_loop(void);

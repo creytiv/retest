@@ -81,6 +81,7 @@ static const struct test tests[] = {
 	TEST(test_hmac_sha1),
 	TEST(test_hmac_sha256),
 	TEST(test_http),
+	TEST(test_http_client_set_tls),
 	TEST(test_http_loop),
 #ifdef USE_TLS
 	TEST(test_https_loop),
