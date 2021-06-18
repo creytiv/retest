@@ -70,6 +70,7 @@ static const struct test tests[] = {
 	TEST(test_fmt_regex),
 	TEST(test_fmt_snprintf),
 	TEST(test_fmt_str),
+	TEST(test_fmt_str_bool),
 	TEST(test_fmt_str_error),
 	TEST(test_fmt_unicode),
 	TEST(test_fmt_unicode_decode),

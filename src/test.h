@@ -150,6 +150,7 @@ int test_fmt_print(void);
 int test_fmt_regex(void);
 int test_fmt_snprintf(void);
 int test_fmt_str(void);
+int test_fmt_str_bool(void);
 int test_fmt_str_error(void);
 int test_fmt_unicode(void);
 int test_fmt_unicode_decode(void);

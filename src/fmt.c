@@ -929,3 +929,80 @@ int test_fmt_unicode_decode(void)
  out:
 	return err;
 }
+
+
+int test_fmt_str_bool(void)
+{
+	bool en;
+	int err = 0;
+	size_t i;
+
+	enum curstate {
+		STATE_TRUE,
+		STATE_FALSE,
+		STATE_UNSUP
+	};
+
+
+	enum curstate state = STATE_TRUE;
+
+	static const char *truestr[] = {
+		"1",
+		"true",
+		"enable",
+		"on",
+		"yes",
+		"Yes",
+		"YEs",
+	};
+
+	static const char *falsestr[] = {
+		"0",
+		"false",
+		"disable",
+		"off",
+		"no",
+		"NO",
+	};
+
+	static const char *notsup[] = {
+		"xxx",
+		"not",
+		"sure",
+		"notsure",
+		"YESS",
+	};
+
+	for (i = 0; i < ARRAY_SIZE(truestr); i++) {
+		err = str_bool(&en, truestr[i]);
+		TEST_ERR(err);
+		TEST_EQUALS(true, en);
+	}
+
+	state = STATE_FALSE;
+	for (i = 0; i < ARRAY_SIZE(falsestr); i++) {
+		err = str_bool(&en, falsestr[i]);
+		TEST_ERR(err);
+		TEST_EQUALS(false, en);
+	}
+
+	state = STATE_UNSUP;
+	for (i = 0; i < ARRAY_SIZE(notsup); i++) {
+		err = str_bool(&en, notsup[i]);
+		TEST_EQUALS(err, EINVAL);
+	}
+
+	err = 0;
+ out:
+	if (err && state == STATE_UNSUP) {
+		DEBUG_WARNING("processed unsupported string number %d: %s\n",
+			      i, notsup[i]);
+	}
+	else if (err) {
+		DEBUG_WARNING("could not successfully convert %s\n",
+				state == STATE_TRUE ? truestr[i] :
+				falsestr[i]);
+	}
+
+	return err;
+}
