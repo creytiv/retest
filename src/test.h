@@ -205,6 +205,7 @@ int test_sa_class(void);
 int test_sa_cmp(void);
 int test_sa_decode(void);
 int test_sa_ntop(void);
+int test_sa_pton(void);
 int test_sdp_all(void);
 int test_sdp_bfcp(void);
 int test_sdp_parse(void);

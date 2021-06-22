@@ -302,3 +302,37 @@ int test_sa_ntop(void)
 	return err;
 }
 
+
+int test_sa_pton(void)
+{
+	struct sa sa;
+	int err;
+	uint32_t i;
+
+	const struct {
+		const char *addr;
+		int err;
+	} testv[] = {
+		{"github.com", EINVAL},
+		{"6002", EINVAL},
+		{"ga01::3a28", EINVAL},
+		{"fa01::2a29", 0},
+		{"127.0.0.1", 0},
+		{"192.168.110.2", 0},
+		{"fe80::3a28:d8d9:ddc3:25dd%eth0", 0},
+		{"fe80::xxxx:d8d9:ddc3:25dd:%eth0", EADDRNOTAVAIL},
+	};
+
+	for (i=0; i<ARRAY_SIZE(testv); i++) {
+		err = sa_pton(testv[i].addr, &sa);
+		TEST_EQUALS(testv[i].err, err);
+	}
+
+	err = 0;
+out:
+	if (err)
+		DEBUG_WARNING("%s failed with addr %s\n", __func__,
+				testv[i].addr);
+
+	return err;
+}
