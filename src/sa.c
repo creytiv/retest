@@ -118,8 +118,8 @@ int test_sa_decode(void)
 		{EINVAL, AF_INET,  "1.2.3.4.:1234", "",        0},
 #ifdef HAVE_INET6
 		{0, AF_INET6, "[::1]:1", "::1", 1},
-		{0, AF_INET6, "[fe80:c827:1507:7707:7b75:5489:feb7:2c45]:3333",
-		 "fe80:c827:1507:7707:7b75:5489:feb7:2c45", 3333},
+		{0, AF_INET6, "[fe80::215:58ff:fe2d:90ab]:3333",
+		 "fe80::215:58ff:fe2d:90ab", 3333},
 		{EINVAL, AF_INET6, "[::1]", "", 0},
 #endif
 	};
@@ -190,7 +190,7 @@ int test_sa_class(void)
 		{false, false, true,  "::"},
 		{true,  false, false, "::1"},
 		{false, true,  false,
-		 "fe80:c827:1507:7707:7b75:5489:feb7:2c45"},
+		 "fe80::215:58ff:fe2d:90ab"},
 		{false, false, false, "2610:a0:c779:b::d1ad:35b4"}
 #endif
 	};
@@ -253,7 +253,7 @@ int test_sa_ntop(void)
 		{AF_INET,  "255.254.253.128"},
 #ifdef HAVE_INET6
 		{AF_INET6, "::1"},
-		{AF_INET6, "fe80:c827:1507:7707:7b75:5489:feb7:2c45"},
+		{AF_INET6, "fe80::215:58ff:fe2d:90ab"},
 		{AF_INET6, "2610:a0:c779:b::d1ad:35b4"}
 #endif
 	};
