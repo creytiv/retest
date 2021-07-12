@@ -283,7 +283,7 @@ int test_sipsess_blind_transfer(void)
 	if (err)
 		goto out;
 
-	err = re_main_timeout(200);
+	err = re_main_timeout(500);
 	if (err)
 		goto out;
 
