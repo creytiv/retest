@@ -306,9 +306,11 @@ int test_sa_ntop(void)
 int test_sa_pton(void)
 {
 	struct sa sa;
+	struct sa sa_default_ip;
 	int err;
 	uint32_t i;
-
+	char ifname[64];
+	char test_ipv6ll_scope[128] = "fe80::3a28:d8d9:ddc3:25dd%";
 	const struct {
 		const char *addr;
 		int err;
@@ -319,7 +321,6 @@ int test_sa_pton(void)
 		{"fa01::2a29", 0},
 		{"127.0.0.1", 0},
 		{"192.168.110.2", 0},
-		{"fe80::3a28:d8d9:ddc3:25dd%eth0", 0},
 		{"fe80::xxxx:d8d9:ddc3:25dd:%eth0", EADDRNOTAVAIL},
 	};
 
@@ -328,11 +329,22 @@ int test_sa_pton(void)
 		TEST_EQUALS(testv[i].err, err);
 	}
 
-	err = 0;
+	/* Use IPv4 since not all test systems have a default IPv6 route */
+	net_default_source_addr_get(AF_INET, &sa_default_ip);
+	net_if_getname(ifname, sizeof(ifname), AF_INET, &sa_default_ip);
+	re_snprintf(test_ipv6ll_scope, sizeof(test_ipv6ll_scope), "%s%s",
+		    test_ipv6ll_scope, ifname);
+
+	err = sa_pton(test_ipv6ll_scope, &sa);
+	TEST_ERR(err);
+
 out:
-	if (err)
+	if (err && i < ARRAY_SIZE(testv))
 		DEBUG_WARNING("%s failed with addr %s\n", __func__,
 				testv[i].addr);
+	else if (err)
+		DEBUG_WARNING("%s failed with addr %s\n", __func__,
+				test_ipv6ll_scope);
 
 	return err;
 }
