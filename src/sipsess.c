@@ -263,6 +263,7 @@ int test_sipsess_blind_transfer(void)
 
 	(void)sa_set_str(&altaddr, "127.0.0.1", 8888);
 	err = sip_transp_add(test.sip, SIP_TRANSP_UDP, &altaddr);
+	TEST_ERR(err);
 
 	/* Connect to "b" */
 	(void)re_snprintf(to_uri, sizeof(to_uri), "sip:b@127.0.0.1:%u", port);
