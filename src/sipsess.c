@@ -21,6 +21,7 @@ struct test {
 	bool estab_a;
 	bool estab_b;
 	bool blind_transfer;
+	uint16_t altaddr_port;
 	int err;
 };
 
@@ -129,7 +130,7 @@ static void conn_transfer_handler(const struct sip_msg *msg, void *arg)
 	else {
 		err = sip_replyf(test->sip, msg, 302, "Moved Temporarily",
 			"Contact: \"alt retest\" "
-			"<sip:127.0.0.1:8888>\r\n\r\n");
+			"<sip:127.0.0.1:%u>\r\n\r\n", test->altaddr_port);
 		if (err) {
 			abort_test(test, err);
 		}
@@ -239,11 +240,6 @@ int test_sipsess_blind_transfer(void)
 
 	memset(&test, 0, sizeof(test));
 
-#ifndef WIN32
-	/* slurp warnings from SIP (todo: temp) */
-	(void)freopen("/dev/null", "w", stderr);
-#endif
-
 	err = sip_alloc(&test.sip, NULL, 32, 32, 32,
 			"retest", exit_handler, NULL);
 	TEST_ERR(err);
@@ -261,9 +257,14 @@ int test_sipsess_blind_transfer(void)
 		&test);
 	TEST_ERR(err);
 
-	(void)sa_set_str(&altaddr, "127.0.0.1", 8888);
+	(void)sa_set_str(&altaddr, "127.0.0.1", 0);
 	err = sip_transp_add(test.sip, SIP_TRANSP_UDP, &altaddr);
 	TEST_ERR(err);
+
+	err = sip_transp_laddr(test.sip, &altaddr, SIP_TRANSP_UDP, NULL);
+	TEST_ERR(err);
+
+	test.altaddr_port = sa_port(&altaddr);
 
 	/* Connect to "b" */
 	(void)re_snprintf(to_uri, sizeof(to_uri), "sip:b@127.0.0.1:%u", port);
@@ -278,7 +279,7 @@ int test_sipsess_blind_transfer(void)
 	err = sipsess_set_redirect_handler(test.a, redirect_handler);
 	TEST_ERR(err);
 
-	err = re_main_timeout(500);
+	err = re_main_timeout(200);
 	TEST_ERR(err);
 
 	if (test.err) {
@@ -300,11 +301,6 @@ int test_sipsess_blind_transfer(void)
 
 	sip_close(test.sip, false);
 	test.sip = mem_deref(test.sip);
-
-#ifndef WIN32
-	/* Restore stderr */
-	freopen("/dev/tty", "w", stderr);
-#endif
 
 	return err;
 }
