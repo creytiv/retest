@@ -246,24 +246,20 @@ int test_sipsess_blind_transfer(void)
 
 	err = sip_alloc(&test.sip, NULL, 32, 32, 32,
 			"retest", exit_handler, NULL);
-	if (err)
-		goto out;
+	TEST_ERR(err);
 
 	(void)sa_set_str(&laddr, "127.0.0.1", 0);
 	err = sip_transp_add(test.sip, SIP_TRANSP_UDP, &laddr);
-	if (err)
-		goto out;
+	TEST_ERR(err);
 
 	err = sip_transp_laddr(test.sip, &laddr, SIP_TRANSP_UDP, NULL);
-	if (err)
-		goto out;
+	TEST_ERR(err);
 
 	port = sa_port(&laddr);
 
 	err = sipsess_listen(&test.sock, test.sip, 32, conn_transfer_handler,
 		&test);
-	if (err)
-		goto out;
+	TEST_ERR(err);
 
 	(void)sa_set_str(&altaddr, "127.0.0.1", 8888);
 	err = sip_transp_add(test.sip, SIP_TRANSP_UDP, &altaddr);
@@ -276,20 +272,17 @@ int test_sipsess_blind_transfer(void)
 			      offer_handler, answer_handler, NULL,
 			      estab_handler_a, NULL, NULL,
 			      close_handler, &test, NULL);
-	if (err)
-		goto out;
+	TEST_ERR(err);
 
 	err = sipsess_set_redirect_handler(test.a, redirect_handler);
-	if (err)
-		goto out;
+	TEST_ERR(err);
 
 	err = re_main_timeout(500);
-	if (err)
-		goto out;
+	TEST_ERR(err);
 
 	if (test.err) {
 		err = test.err;
-		goto out;
+		TEST_ERR(err);
 	}
 
 	/* okay here -- verify */
