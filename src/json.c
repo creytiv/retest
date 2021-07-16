@@ -55,75 +55,80 @@ static int test_json_basic_parser(void)
 
 	o = odict_lookup(dict, "name");
 	TEST_ASSERT(o != NULL);
-	TEST_EQUALS(ODICT_STRING, o->type);
-	TEST_STRCMP("Herr Alfred", 11, o->u.str, str_len(o->u.str));
+	TEST_EQUALS(ODICT_STRING, odict_entry_type(o));
+	TEST_STRCMP("Herr Alfred", 11, odict_entry_str(o),
+		    str_len(odict_entry_str(o)));
 
 	o = odict_lookup(dict, "height");
 	TEST_ASSERT(o != NULL);
-	TEST_EQUALS(ODICT_DOUBLE, o->type);
-	TEST_ASSERT(o->u.dbl > .0);
+	TEST_EQUALS(ODICT_DOUBLE, odict_entry_type(o));
+	TEST_ASSERT(odict_entry_dbl(o) > .0);
 
 	o = odict_lookup(dict, "weight");
 	TEST_ASSERT(o != NULL);
-	TEST_EQUALS(ODICT_INT, o->type);
-	TEST_EQUALS(90, o->u.integer);
+	TEST_EQUALS(ODICT_INT, odict_entry_type(o));
+	TEST_EQUALS(90, odict_entry_int(o));
 
 	o = odict_lookup(dict, "has_depth");
 	TEST_ASSERT(o != NULL);
-	TEST_EQUALS(ODICT_BOOL, o->type);
-	TEST_ASSERT(!o->u.boolean);
+	TEST_EQUALS(ODICT_BOOL, odict_entry_type(o));
+	TEST_ASSERT(!odict_entry_boolean(o));
 
 	o = odict_lookup(dict, "has_money");
 	TEST_ASSERT(o != NULL);
-	TEST_EQUALS(ODICT_BOOL, o->type);
-	TEST_ASSERT(o->u.boolean);
+	TEST_EQUALS(ODICT_BOOL, odict_entry_type(o));
+	TEST_ASSERT(odict_entry_boolean(o));
 
 	o = odict_lookup(dict, "array");
 	TEST_ASSERT(o != NULL);
-	TEST_EQUALS(ODICT_ARRAY, o->type);
-	TEST_EQUALS(5U, odict_count(o->u.odict, false));
-	TEST_EQUALS(1, odict_lookup(o->u.odict, "0")->u.integer);
-	TEST_EQUALS(2, odict_lookup(o->u.odict, "1")->u.integer);
-	TEST_EQUALS(3, odict_lookup(o->u.odict, "2")->u.integer);
+	TEST_EQUALS(ODICT_ARRAY, odict_entry_type(o));
+	TEST_EQUALS(5U, odict_count(odict_entry_array(o), false));
+	e = odict_get_type(odict_entry_array(o), ODICT_INT, "0");
+	TEST_EQUALS(1, odict_entry_int(e));
+	e = odict_get_type(odict_entry_array(o), ODICT_INT, "1");
+	TEST_EQUALS(2, odict_entry_int(e));
+	e = odict_get_type(odict_entry_array(o), ODICT_INT, "2");
+	TEST_EQUALS(3, odict_entry_int(e));
 
 	o = odict_lookup(dict, "negative");
 	TEST_ASSERT(o != NULL);
-	TEST_EQUALS(ODICT_INT, o->type);
-	TEST_EQUALS(-42, o->u.integer);
+	TEST_EQUALS(ODICT_INT, odict_entry_type(o));
+	TEST_EQUALS(-42, odict_entry_int(o));
 
 	o = odict_lookup(dict, "negativef");
 	TEST_ASSERT(o != NULL);
-	TEST_EQUALS(ODICT_DOUBLE, o->type);
-	TEST_ASSERT(o->u.dbl < .0);
+	TEST_EQUALS(ODICT_DOUBLE, odict_entry_type(o));
+	TEST_ASSERT(odict_entry_dbl(o) < .0);
 
 	o = odict_lookup(dict, "expo_pos");
 	TEST_ASSERT(o != NULL);
-	TEST_EQUALS(ODICT_DOUBLE, o->type);
-	TEST_ASSERT(o->u.dbl > .0);
+	TEST_EQUALS(ODICT_DOUBLE, odict_entry_type(o));
+	TEST_ASSERT(odict_entry_dbl(o) > .0);
 
 	o = odict_lookup(dict, "expo_neg");
 	TEST_ASSERT(o != NULL);
-	TEST_EQUALS(ODICT_DOUBLE, o->type);
-	TEST_ASSERT(o->u.dbl > .0);
+	TEST_EQUALS(ODICT_DOUBLE, odict_entry_type(o));
+	TEST_ASSERT(odict_entry_dbl(o) > .0);
 
 	o = odict_lookup(dict, "foo\x1d");
 	TEST_ASSERT(o != NULL);
-	TEST_EQUALS(ODICT_STRING, o->type);
-	TEST_STRCMP("foo\x1d", 4, o->u.str, str_len(o->u.str));
+	TEST_EQUALS(ODICT_STRING, odict_entry_type(o));
+	TEST_STRCMP("foo\x1d", 4, odict_entry_str(o),
+		    str_len(odict_entry_str(o)));
 
 	/* object */
 	o = odict_lookup(dict, "object");
 	TEST_ASSERT(o != NULL);
-	TEST_EQUALS(ODICT_OBJECT, o->type);
-	sub = o->u.odict;
+	TEST_EQUALS(ODICT_OBJECT, odict_entry_type(o));
+	sub = odict_entry_object(o);
 	e = odict_lookup(sub, "one");
 	TEST_ASSERT(e != NULL);
-	TEST_EQUALS(ODICT_INT, e->type);
-	TEST_EQUALS(1, e->u.integer);
+	TEST_EQUALS(ODICT_INT, odict_entry_type(e));
+	TEST_EQUALS(1, odict_entry_int(e));
 	e = odict_lookup(sub, "two");
 	TEST_ASSERT(e != NULL);
-	TEST_EQUALS(ODICT_INT, e->type);
-	TEST_EQUALS(2, e->u.integer);
+	TEST_EQUALS(ODICT_INT, odict_entry_type(e));
+	TEST_EQUALS(2, odict_entry_int(e));
 
 	/* non-existing entry */
 	o = odict_lookup(dict, "not-found");
@@ -450,15 +455,17 @@ static int test_json_exponent(void)
 
 	arr = odict_lookup(dict, "exponents");
 
-	TEST_EQUALS(ARRAY_SIZE(values), odict_count(arr->u.odict, false));
+	TEST_EQUALS(ARRAY_SIZE(values),
+		    odict_count(odict_entry_array(arr), false));
 
-	for (le = list_head(&arr->u.odict->lst), i=0; le; le = le->next, ++i) {
+	for (le = list_head(&odict_entry_array(arr)->lst), i = 0; le;
+	     le = le->next, ++i) {
 
 		e = le->data;
 
 		TEST_ASSERT(e != NULL);
-		TEST_EQUALS(ODICT_DOUBLE, e->type);
-		TEST_EQUALS( values[i], e->u.dbl );
+		TEST_EQUALS(ODICT_DOUBLE, odict_entry_type(e));
+		TEST_EQUALS( values[i], odict_entry_dbl(e));
 	}
 
  out:
@@ -750,7 +757,7 @@ static int verify_array(const struct odict *arr, unsigned num)
 		struct odict_entry *ae = le->data;
 		unsigned key;
 
-		key = atoi(ae->key);
+		key = atoi(odict_entry_key(ae));
 
 		TEST_EQUALS(i, key);
 	}
@@ -785,15 +792,15 @@ int test_json_array(void)
 	if (err)
 		goto out;
 
-	err |= verify_array(odict_lookup(dict, "array1")->u.odict, 8);
-	err |= verify_array(odict_lookup(dict, "array2")->u.odict, 3);
-	err |= verify_array(odict_lookup(dict, "array3")->u.odict, 3);
+	err |= verify_array(odict_get_array(dict, "array1"), 8);
+	err |= verify_array(odict_get_array(dict, "array2"), 3);
+	err |= verify_array(odict_get_array(dict, "array3"), 3);
 	if (err)
 		goto out;
 
-	obj = odict_lookup(dict, "object")->u.odict;
+	obj = odict_get_object(dict, "object");
 	TEST_ASSERT(obj != NULL);
-	err |= verify_array(odict_lookup(obj, "array4")->u.odict, 4);
+	err |= verify_array(odict_get_array(obj, "array4"), 4);
 	if (err)
 		goto out;
 

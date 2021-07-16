@@ -243,13 +243,10 @@ static void stream_command_handler(const struct odict *msg, void *arg)
 	}
 	else if (0 == str_casecmp(name, "onStatus")) {
 
-		const struct odict_entry *entry;
 		struct odict *obj;
 		const char *level;
 
-		entry = odict_lookup(msg, "3");
-
-		obj = entry->u.odict;
+		obj = odict_get_object(msg, "3");
 
 		level = odict_string(obj, "level");
 		if (0 == str_casecmp(level, "status")) {
@@ -416,11 +413,13 @@ static void stream_data_handler(const struct odict *msg, void *arg)
 		e = odict_get_type(msg, ODICT_OBJECT, "2");
 		TEST_ASSERT(e != NULL);
 
-		ret = odict_get_number(e->u.odict, &num, "audiocodecid");
+		ret = odict_get_number(odict_entry_object(e), &num,
+				       "audiocodecid");
 		TEST_ASSERT(ret);
 		TEST_EQUALS(10ULL, num);
 
-		ret = odict_get_number(e->u.odict, &num, "videocodecid");
+		ret = odict_get_number(odict_entry_object(e), &num,
+				       "videocodecid");
 		TEST_ASSERT(ret);
 		TEST_EQUALS(7ULL, num);
 	}
@@ -553,7 +552,7 @@ static void command_handler(const struct odict *msg, void *arg)
 		entry = odict_lookup(msg, "2");
 		TEST_ASSERT(entry != NULL);
 
-		app = odict_string(entry->u.odict, "app");
+		app = odict_string(odict_entry_object(entry), "app");
 		TEST_STRCMP(fake_app_inst, strlen(fake_app_inst),
 			    app, str_len(app));
 

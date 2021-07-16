@@ -28,40 +28,42 @@ static bool odict_value_compare(const struct odict_entry *e1,
 	if (!e1 || !e2)
 		return false;
 
-	if (e1->type != e2->type) {
+	if (odict_entry_type(e1) != odict_entry_type(e2)) {
 		re_printf("type mismatch\n");
 		return false;
 	}
 
-	switch (e1->type) {
+	switch (odict_entry_type(e1)) {
 
 	case ODICT_OBJECT:
-		return odict_compare(e1->u.odict, e2->u.odict);
+		return odict_compare(odict_entry_object(e1),
+				     odict_entry_object(e2));
 
 	case ODICT_ARRAY:
-		return odict_compare(e1->u.odict, e2->u.odict);
+		return odict_compare(odict_entry_array(e1),
+				     odict_entry_array(e2));
 
 	case ODICT_INT:
-		if (e1->u.integer != e2->u.integer) {
+		if (odict_entry_int(e1) != odict_entry_int(e2)) {
 			re_printf("integer diff: %lld != %lld\n",
-				  e1->u.integer, e2->u.integer);
+				  odict_entry_int(e1), odict_entry_int(e2));
 		}
 		else
 			return true;
 		break;
 
 	case ODICT_DOUBLE:
-		if (cmp_double(e1->u.dbl, e2->u.dbl)) {
+		if (cmp_double(odict_entry_dbl(e1), odict_entry_dbl(e2))) {
 			return true;
 		}
 		else {
 			re_printf("double differs: %f != %f\n",
-				  e1->u.dbl, e2->u.dbl);
+				  odict_entry_dbl(e1), odict_entry_dbl(e2));
 		}
 		break;
 
 	case ODICT_STRING:
-		if ( 0 == str_cmp(e1->u.str, e2->u.str))
+		if ( 0 == str_cmp(odict_entry_str(e1), odict_entry_str(e2)))
 			return true;
 		else {
 			re_printf("string differs\n");
@@ -69,7 +71,7 @@ static bool odict_value_compare(const struct odict_entry *e1,
 		break;
 
 	case ODICT_BOOL:
-		if (e1->u.boolean == e2->u.boolean)
+		if (odict_entry_boolean(e1) == odict_entry_boolean(e2))
 			return true;
 		else {
 			re_printf("bool differs\n");
@@ -107,10 +109,10 @@ bool odict_compare(const struct odict *dict1, const struct odict *dict2)
 		struct odict_entry *e1 = le1->data;
 		struct odict_entry *e2 = le2->data;
 
-		if (0 != str_cmp(e1->key, e2->key)) {
+		if (0 != str_cmp(odict_entry_key(e1), odict_entry_key(e2))) {
 			re_printf("key mismatch\n");
-			re_printf("(%s) %r\n", e1->key);
-			re_printf("(%s) %r\n", e2->key);
+			re_printf("(%s) %r\n", odict_entry_key(e1));
+			re_printf("(%s) %r\n", odict_entry_key(e2));
 			return false;
 		}
 

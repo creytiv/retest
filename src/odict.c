@@ -32,29 +32,28 @@ static int compare(const struct dtest *test, const struct odict_entry *entry)
 	TEST_ASSERT(entry != NULL);
 
 	TEST_STRCMP(test->key, str_len(test->key),
-		    entry->key, strlen(entry->key));
+		    odict_entry_key(entry), strlen(odict_entry_key(entry)));
 
-	TEST_EQUALS(test->type, entry->type);
+	TEST_EQUALS(test->type, odict_entry_type(entry));
 
 	switch (test->type) {
 
 	case ODICT_INT:
-		TEST_EQUALS(test->u.i, entry->u.integer);
+		TEST_EQUALS(test->u.i, odict_entry_int(entry));
 		break;
 
 	case ODICT_BOOL:
-		TEST_EQUALS(test->u.i, entry->u.integer);
+		TEST_EQUALS(test->u.i, odict_entry_boolean(entry));
 		break;
 
 	case ODICT_DOUBLE:
-		TEST_MEMCMP(&test->u.d, sizeof(test->u.d),
-			    &entry->u.dbl,
-			    sizeof(entry->u.dbl));
+		TEST_EQUALS(test->u.d, odict_entry_dbl(entry));
 		break;
 
 	case ODICT_STRING:
 		TEST_STRCMP(test->u.s, str_len(test->u.s),
-			    entry->u.str, str_len(entry->u.str));
+			    odict_entry_str(entry),
+			    str_len(odict_entry_str(entry)));
 		break;
 
 	default:
@@ -220,13 +219,14 @@ int test_odict_array(void)
 	/* verify that elements are correct */
 	e = odict_lookup(arr, "0");
 	TEST_ASSERT(e != NULL);
-	TEST_EQUALS(ODICT_STRING, e->type);
-	TEST_STRCMP("hei", (size_t)3, e->u.str, str_len(e->u.str));
+	TEST_EQUALS(ODICT_STRING, odict_entry_type(e));
+	TEST_STRCMP("hei", (size_t)3, odict_entry_str(e),
+		    str_len(odict_entry_str(e)));
 
 	e = odict_lookup(arr, "3");
 	TEST_ASSERT(e != NULL);
-	TEST_EQUALS(ODICT_INT, e->type);
-	TEST_EQUALS(3LL, e->u.integer);
+	TEST_EQUALS(ODICT_INT, odict_entry_type(e));
+	TEST_EQUALS(3LL, odict_entry_int(e));
 
 #if 0
 	re_printf("%H\n", odict_debug, arr);
