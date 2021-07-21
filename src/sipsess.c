@@ -159,6 +159,7 @@ int test_sipsess(void)
 	char to_uri[256];
 	int err;
 	uint16_t port;
+	char *callid;
 
 	memset(&test, 0, sizeof(test));
 
@@ -187,14 +188,20 @@ int test_sipsess(void)
 	if (err)
 		goto out;
 
+	err = str_x64dup(&callid, rand_u64());
+	if (err)
+		goto out;
+
 	/* Connect to "b" */
 	(void)re_snprintf(to_uri, sizeof(to_uri), "sip:b@127.0.0.1:%u", port);
 	err = sipsess_connect(&test.a, test.sock, to_uri, NULL,
 			      "sip:a@127.0.0.1", "a", NULL, 0,
 			      "application/sdp", NULL, NULL, NULL, false,
+			      callid,
 			      offer_handler, answer_handler, NULL,
 			      estab_handler_a, NULL, NULL,
 			      close_handler, &test, NULL);
+	mem_deref(callid);
 	if (err)
 		goto out;
 
@@ -237,6 +244,7 @@ int test_sipsess_blind_transfer(void)
 	char to_uri[256];
 	int err;
 	uint16_t port;
+	char *callid;
 
 	memset(&test, 0, sizeof(test));
 
@@ -266,14 +274,20 @@ int test_sipsess_blind_transfer(void)
 
 	test.altaddr_port = sa_port(&altaddr);
 
+	err = str_x64dup(&callid, rand_u64());
+	if (err)
+		goto out;
+
 	/* Connect to "b" */
 	(void)re_snprintf(to_uri, sizeof(to_uri), "sip:b@127.0.0.1:%u", port);
 	err = sipsess_connect(&test.a, test.sock, to_uri, NULL,
 			      "sip:a@127.0.0.1", "a", NULL, 0,
 			      "application/sdp", NULL, NULL, NULL, false,
+			      callid,
 			      offer_handler, answer_handler, NULL,
 			      estab_handler_a, NULL, NULL,
 			      close_handler, &test, NULL);
+	mem_deref(callid);
 	TEST_ERR(err);
 
 	err = sipsess_set_redirect_handler(test.a, redirect_handler);
