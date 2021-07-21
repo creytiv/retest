@@ -815,3 +815,164 @@ int test_sdp_extmap(void)
  out:
 	return err;
 }
+
+
+static int disabled_local_medialine(struct oa *oa)
+{
+	int err = 0;
+
+	err |= oa_addmedia(oa, 1, "audio", 49170, "RTP/AVP", SDP_SENDRECV, 3,
+			   "0", "PCMU", 8000,
+			   "8", "PCMA", 8000,
+			   "97", "iLBC", 8000);
+	err |= oa_addmedia(oa, 1, "video", 51372, "RTP/AVP", SDP_INACTIVE, 2,
+			   "31", "H261", 90000,
+			   "32", "MPV", 90000);
+	err |= oa_addmedia(oa, 0, "audio", 49174, "RTP/AVP", SDP_SENDRECV, 1,
+			   "0", "PCMU", 8000);
+	err |= oa_addmedia(oa, 0, "video", 49170, "RTP/AVP", SDP_SENDRECV, 1,
+			   "32", "MPV", 90000);
+	if (err)
+		return err;
+
+	err = oa_offeranswer(oa,
+			     "v=0\r\n"
+			     "o=alice 2890844526 2890844526 IN IP4 1.2.3.4\r\n"
+			     "s=-\r\n"
+			     "c=IN IP4 1.2.3.4\r\n"
+			     "t=0 0\r\n"
+			     "m=audio 49170 RTP/AVP 0 8 97\r\n"
+			     "a=rtpmap:0 PCMU/8000\r\n"
+			     "a=rtpmap:8 PCMA/8000\r\n"
+			     "a=rtpmap:97 iLBC/8000\r\n"
+			     "a=sendrecv\r\n"
+			     "m=video 51372 RTP/AVP 31 32\r\n"
+			     "a=rtpmap:31 H261/90000\r\n"
+			     "a=rtpmap:32 MPV/90000\r\n"
+			     "a=inactive\r\n"
+			     ,
+			     "v=0\r\n"
+			     "o=bob 2808844564 2808844564 IN IP4 5.6.7.8\r\n"
+			     "s=-\r\n"
+			     "c=IN IP4 5.6.7.8\r\n"
+			     "t=0 0\r\n"
+			     "m=audio 49174 RTP/AVP 0\r\n"
+			     "a=rtpmap:0 PCMU/8000\r\n"
+			     "a=sendrecv\r\n"
+			     "m=video 49170 RTP/AVP 32\r\n"
+			     "a=rtpmap:32 MPV/90000\r\n"
+			     "a=inactive\r\n");
+	return err;
+}
+
+
+static int disabled_remote_medialine(struct oa *oa)
+{
+	int err = 0;
+
+	err |= oa_addmedia(oa, 1, "audio", 49170, "RTP/AVP", SDP_SENDRECV, 3,
+			   "0", "PCMU", 8000,
+			   "8", "PCMA", 8000,
+			   "97", "iLBC", 8000);
+	err |= oa_addmedia(oa, 1, "video", 51372, "RTP/AVP", SDP_SENDRECV, 2,
+			   "31", "H261", 90000,
+			   "32", "MPV", 90000);
+	err |= oa_addmedia(oa, 0, "audio", 49174, "RTP/AVP", SDP_SENDRECV, 1,
+			   "0", "PCMU", 8000);
+	err |= oa_addmedia(oa, 0, "video", 49170, "RTP/AVP", SDP_INACTIVE, 1,
+			   "32", "MPV", 90000);
+	if (err)
+		return err;
+
+	err = oa_offeranswer(oa,
+			     "v=0\r\n"
+			     "o=alice 2890844526 2890844526 IN IP4 1.2.3.4\r\n"
+			     "s=-\r\n"
+			     "c=IN IP4 1.2.3.4\r\n"
+			     "t=0 0\r\n"
+			     "m=audio 49170 RTP/AVP 0 8 97\r\n"
+			     "a=rtpmap:0 PCMU/8000\r\n"
+			     "a=rtpmap:8 PCMA/8000\r\n"
+			     "a=rtpmap:97 iLBC/8000\r\n"
+			     "a=sendrecv\r\n"
+			     "m=video 51372 RTP/AVP 31 32\r\n"
+			     "a=rtpmap:31 H261/90000\r\n"
+			     "a=rtpmap:32 MPV/90000\r\n"
+			     "a=sendrecv\r\n"
+			     ,
+			     "v=0\r\n"
+			     "o=bob 2808844564 2808844564 IN IP4 5.6.7.8\r\n"
+			     "s=-\r\n"
+			     "c=IN IP4 5.6.7.8\r\n"
+			     "t=0 0\r\n"
+			     "m=audio 49174 RTP/AVP 0\r\n"
+			     "a=rtpmap:0 PCMU/8000\r\n"
+			     "a=sendrecv\r\n"
+			     "m=video 49170 RTP/AVP 32\r\n"
+			     "a=rtpmap:32 MPV/90000\r\n"
+			     "a=inactive\r\n");
+	return err;
+}
+
+
+static int reject_video_medialine(struct oa *oa)
+{
+	int err = 0;
+
+	err |= oa_addmedia(oa, 1, "audio", 49170, "RTP/AVP", SDP_SENDRECV, 3,
+			   "0", "PCMU", 8000,
+			   "8", "PCMA", 8000,
+			   "97", "iLBC", 8000);
+	err |= oa_addmedia(oa, 1, "video", 51372, "RTP/AVP", SDP_SENDRECV, 2,
+			   "31", "H261", 90000,
+			   "32", "MPV", 90000);
+	err |= oa_addmedia(oa, 0, "audio", 49174, "RTP/AVP", SDP_SENDRECV, 1,
+			   "0", "PCMU", 8000);
+
+	if (err)
+		return err;
+
+	err = oa_offeranswer(oa,
+			     "v=0\r\n"
+			     "o=alice 2890844526 2890844526 IN IP4 1.2.3.4\r\n"
+			     "s=-\r\n"
+			     "c=IN IP4 1.2.3.4\r\n"
+			     "t=0 0\r\n"
+			     "m=audio 49170 RTP/AVP 0 8 97\r\n"
+			     "a=rtpmap:0 PCMU/8000\r\n"
+			     "a=rtpmap:8 PCMA/8000\r\n"
+			     "a=rtpmap:97 iLBC/8000\r\n"
+			     "a=sendrecv\r\n"
+			     "m=video 51372 RTP/AVP 31 32\r\n"
+			     "a=rtpmap:31 H261/90000\r\n"
+			     "a=rtpmap:32 MPV/90000\r\n"
+			     "a=sendrecv\r\n"
+			     ,
+			     "v=0\r\n"
+			     "o=bob 2808844564 2808844564 IN IP4 5.6.7.8\r\n"
+			     "s=-\r\n"
+			     "c=IN IP4 5.6.7.8\r\n"
+			     "t=0 0\r\n"
+			     "m=audio 49174 RTP/AVP 0\r\n"
+			     "a=rtpmap:0 PCMU/8000\r\n"
+			     "a=sendrecv\r\n"
+			     "m=video 0 RTP/AVP 0\r\n");
+	return err;
+}
+
+
+int test_sdp_disabled_rejected(void)
+{
+	struct oa oa;
+	int err = 0;
+
+	memset(&oa, 0, sizeof(oa));
+
+	err |= disabled_local_medialine(&oa);
+	err |= disabled_remote_medialine(&oa);
+	err |= reject_video_medialine(&oa);
+
+	oa_reset(&oa);
+
+	return err;
+}
