@@ -414,7 +414,7 @@ static int test_json_verify_decode(void)
 			goto out;
 		}
 
-		TEST_ASSERT(odict_compare(dict, dict2));
+		TEST_ASSERT(odict_compare(dict, dict2, false));
 
 		dict = mem_deref(dict);
 		dict2 = mem_deref(dict2);
@@ -672,7 +672,7 @@ static int test_json_file_parse(const char *filename)
 		goto out;
 	}
 
-	TEST_ASSERT(odict_compare(dict, dict2));
+	TEST_ASSERT(odict_compare(dict, dict2, false));
 
  out:
 	mem_deref(dict2);
@@ -727,7 +727,7 @@ int test_json_unicode(void)
 	if (err)
 		goto out;
 
-	TEST_ASSERT(odict_compare(dict, dict2));
+	TEST_ASSERT(odict_compare(dict, dict2, false));
 
  out:
 	mem_deref(dict2);

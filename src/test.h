@@ -310,10 +310,6 @@ void test_set_datapath(const char *path);
 const char *test_datapath(void);
 
 
-/* util */
-bool odict_compare(const struct odict *dict1, const struct odict *dict2);
-
-
 /*
  * Mock objects
  */

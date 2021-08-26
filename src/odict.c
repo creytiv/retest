@@ -158,7 +158,7 @@ int test_odict(void)
 	TEST_EQUALS(ARRAY_SIZE(testv), odict_count(dict, false));
 
 	/* compare dictionary with itself */
-	TEST_ASSERT(odict_compare(dict, dict));
+	TEST_ASSERT(odict_compare(dict, dict, false));
 
 	/* remove all entries */
 	for (i=0; i<ARRAY_SIZE(testv); i++) {

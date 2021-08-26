@@ -68,8 +68,6 @@ SRCS	+= combo/dtls_turn.c
 SRCS	+= mock/cert.c
 endif
 
-SRCS	+= util.c
-
 # Mock servers
 SRCS	+= mock/pf.c
 SRCS	+= mock/sipsrv.c
