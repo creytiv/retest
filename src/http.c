@@ -348,6 +348,7 @@ static int test_http_loop_base(bool secure)
 }
 
 
+#ifdef USE_TLS
 int test_http_client_set_tls(void)
 {
 	struct sa dns;
@@ -409,6 +410,7 @@ out:
 
 	return err;
 }
+#endif
 
 
 int test_http_loop(void)
