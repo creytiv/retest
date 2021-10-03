@@ -61,7 +61,7 @@ all: $(BIN)
 
 $(BIN): $(OBJS)
 	@echo "  LD      $@"
-	@$(CC) $(LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
+	@$(CC) $(LFLAGS) $(APP_LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
 
 $(BUILD)/%.o: %.c $(BUILD) Makefile src/srcs.mk
 	@echo "  CC      $@"
