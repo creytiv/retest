@@ -196,7 +196,7 @@ int test_sipsess(void)
 	(void)re_snprintf(to_uri, sizeof(to_uri), "sip:b@127.0.0.1:%u", port);
 	err = sipsess_connect(&test.a, test.sock, to_uri, NULL,
 			      "sip:a@127.0.0.1", "a", NULL, 0,
-			      "application/sdp", NULL, NULL, NULL, false,
+			      "application/sdp", NULL, NULL, NULL, NULL, false,
 			      callid,
 			      offer_handler, answer_handler, NULL,
 			      estab_handler_a, NULL, NULL,
@@ -282,7 +282,7 @@ int test_sipsess_blind_transfer(void)
 	(void)re_snprintf(to_uri, sizeof(to_uri), "sip:b@127.0.0.1:%u", port);
 	err = sipsess_connect(&test.a, test.sock, to_uri, NULL,
 			      "sip:a@127.0.0.1", "a", NULL, 0,
-			      "application/sdp", NULL, NULL, NULL, false,
+			      "application/sdp", NULL, NULL, NULL, NULL, false,
 			      callid,
 			      offer_handler, answer_handler, NULL,
 			      estab_handler_a, NULL, NULL,
